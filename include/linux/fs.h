@@ -580,7 +580,7 @@ struct inode {
 #endif
 
 	const struct inode_operations	*i_op;
-	struct super_block	*i_sb;
+	struct fs_view		*i_view;
 	struct address_space	*i_mapping;
 
 #ifdef CONFIG_SECURITY
@@ -1340,6 +1340,24 @@ struct sb_writers {
 	struct percpu_rw_semaphore	rw_sem[SB_FREEZE_LEVELS];
 };
 
+/*
+ * "View" into a filesystem. Allows us to abstract out those
+ * superblock fields which change between the roots on a given
+ * filesystem. Most filesystems can ignore this - inodes are pointed
+ * to the default view 's_view' during initialization.
+ *
+ * A file system with multiple roots should allocate a view structure
+ * per root and point each inodes view pointer to it in iget.
+ */
+struct fs_view {
+	struct super_block	*v_sb;
+};
+
+static inline struct super_block *inode_sb(const struct inode *inode)
+{
+	return inode->i_view->v_sb;
+}
+
 struct super_block {
 	struct list_head	s_list;		/* Keep this first */
 	dev_t			s_dev;		/* search index; _not_ kdev_t */
@@ -1358,6 +1376,7 @@ struct super_block {
 	struct rw_semaphore	s_umount;
 	int			s_count;
 	atomic_t		s_active;
+	struct fs_view		s_view;		/* default view into the fs */
 #ifdef CONFIG_SECURITY
 	void                    *s_security;
 #endif

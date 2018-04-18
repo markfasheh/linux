@@ -133,7 +133,7 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	static const struct file_operations no_open_fops = {.open = no_open};
 	struct address_space *const mapping = &inode->i_data;
 
-	inode->i_sb = sb;
+	inode->i_view = &sb->s_view;
 	inode->i_blkbits = sb->s_blocksize_bits;
 	inode->i_flags = 0;
 	atomic_set(&inode->i_count, 1);
