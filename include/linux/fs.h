@@ -1351,6 +1351,7 @@ struct sb_writers {
  */
 struct fs_view {
 	struct super_block	*v_sb;
+	dev_t			v_dev;		/* search index; _not_ kdev_t */
 };
 
 static inline struct super_block *inode_sb(const struct inode *inode)
@@ -1358,9 +1359,13 @@ static inline struct super_block *inode_sb(const struct inode *inode)
 	return inode->i_view->v_sb;
 }
 
+static inline struct fs_view *inode_view(const struct inode *inode)
+{
+	return inode->i_view;
+}
+
 struct super_block {
 	struct list_head	s_list;		/* Keep this first */
-	dev_t			s_dev;		/* search index; _not_ kdev_t */
 	unsigned char		s_blocksize_bits;
 	unsigned long		s_blocksize;
 	loff_t			s_maxbytes;	/* Max file size */
