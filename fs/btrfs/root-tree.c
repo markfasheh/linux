@@ -308,7 +308,7 @@ int btrfs_find_orphan_roots(struct btrfs_fs_info *fs_info)
 			continue;
 		}
 
-		err = btrfs_init_fs_root(root);
+		err = btrfs_init_fs_root(root, fs_info->sb);
 		if (err) {
 			btrfs_free_fs_root(root);
 			break;
