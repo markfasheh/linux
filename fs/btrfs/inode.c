@@ -5705,6 +5705,7 @@ static int btrfs_init_locked_inode(struct inode *inode, void *p)
 	memcpy(&BTRFS_I(inode)->location, args->location,
 	       sizeof(*args->location));
 	BTRFS_I(inode)->root = args->root;
+	inode->i_view = &args->root->view;
 	return 0;
 }
 
@@ -6346,6 +6347,7 @@ static struct inode *btrfs_new_inode(struct btrfs_trans_handle *trans,
 	BTRFS_I(inode)->root = root;
 	BTRFS_I(inode)->generation = trans->transid;
 	inode->i_generation = BTRFS_I(inode)->generation;
+	inode->i_view = &root->view;
 
 	/*
 	 * We could have gotten an inode number from somebody who was fsynced
@@ -9528,8 +9530,7 @@ static int btrfs_getattr(const struct path *path, struct kstat *stat,
 				  STATX_ATTR_NODUMP);
 
 	generic_fillattr(inode, stat);
-	stat->dev = BTRFS_I(inode)->root->anon_dev;
-
+	stat->dev = inode->i_view->v_dev;
 	spin_lock(&BTRFS_I(inode)->lock);
 	delalloc_bytes = BTRFS_I(inode)->new_delalloc_bytes;
 	spin_unlock(&BTRFS_I(inode)->lock);
