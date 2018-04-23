@@ -1214,7 +1214,7 @@ int btrfs_commit_inode_delayed_items(struct btrfs_trans_handle *trans,
 
 int btrfs_commit_inode_delayed_inode(struct btrfs_inode *inode)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_trans_handle *trans;
 	struct btrfs_delayed_node *delayed_node = btrfs_get_delayed_node(inode);
 	struct btrfs_path *path;
@@ -1829,7 +1829,7 @@ release_node:
 
 int btrfs_delayed_delete_inode_ref(struct btrfs_inode *inode)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_delayed_node *delayed_node;
 
 	/*

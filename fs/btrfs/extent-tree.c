@@ -4382,7 +4382,7 @@ commit_trans:
 int btrfs_check_data_free_space(struct inode *inode,
 			struct extent_changeset **reserved, u64 start, u64 len)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	int ret;
 
 	/* align the range */
@@ -4414,7 +4414,7 @@ int btrfs_check_data_free_space(struct inode *inode,
 void btrfs_free_reserved_data_space_noquota(struct inode *inode, u64 start,
 					    u64 len)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_space_info *data_sinfo;
 
 	/* Make sure the range is aligned to sectorsize */
@@ -5934,7 +5934,7 @@ void btrfs_trans_release_chunk_metadata(struct btrfs_trans_handle *trans)
 int btrfs_orphan_reserve_metadata(struct btrfs_trans_handle *trans,
 				  struct btrfs_inode *inode)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_root *root = inode->root;
 	/*
 	 * We always use trans->block_rsv here as we will have reserved space
@@ -5959,7 +5959,7 @@ int btrfs_orphan_reserve_metadata(struct btrfs_trans_handle *trans,
 
 void btrfs_orphan_release_metadata(struct btrfs_inode *inode)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_root *root = inode->root;
 	u64 num_bytes = btrfs_calc_trans_metadata_size(fs_info, 1);
 
@@ -6051,7 +6051,7 @@ static void btrfs_calculate_inode_block_rsv_size(struct btrfs_fs_info *fs_info,
 
 int btrfs_delalloc_reserve_metadata(struct btrfs_inode *inode, u64 num_bytes)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_root *root = inode->root;
 	unsigned nr_extents;
 	enum btrfs_reserve_flush_enum flush = BTRFS_RESERVE_FLUSH_ALL;
@@ -6133,7 +6133,7 @@ out_fail:
  */
 void btrfs_delalloc_release_metadata(struct btrfs_inode *inode, u64 num_bytes)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 
 	num_bytes = ALIGN(num_bytes, fs_info->sectorsize);
 	spin_lock(&inode->lock);
@@ -6160,7 +6160,7 @@ void btrfs_delalloc_release_metadata(struct btrfs_inode *inode, u64 num_bytes)
  */
 void btrfs_delalloc_release_extents(struct btrfs_inode *inode, u64 num_bytes)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	unsigned num_extents;
 
 	spin_lock(&inode->lock);

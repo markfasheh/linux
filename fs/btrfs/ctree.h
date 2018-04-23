@@ -1271,7 +1271,7 @@ struct btrfs_file_private {
 
 static inline u32 btrfs_inode_sectorsize(const struct inode *inode)
 {
-	return btrfs_sb(inode->i_sb)->sectorsize;
+	return btrfs_sb(inode_sb(inode))->sectorsize;
 }
 
 static inline u32 BTRFS_LEAF_DATA_SIZE(const struct btrfs_fs_info *info)

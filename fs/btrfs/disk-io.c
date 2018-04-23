@@ -226,7 +226,7 @@ struct extent_map *btree_get_extent(struct btrfs_inode *inode,
 		struct page *page, size_t pg_offset, u64 start, u64 len,
 		int create)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct extent_map_tree *em_tree = &inode->extent_tree;
 	struct extent_map *em;
 	int ret;
@@ -829,7 +829,7 @@ static blk_status_t __btree_submit_bio_done(void *private_data, struct bio *bio,
 	 * when we're called for a write, we're already in the async
 	 * submission context.  Just jump into btrfs_map_bio
 	 */
-	ret = btrfs_map_bio(btrfs_sb(inode->i_sb), bio, mirror_num, 1);
+	ret = btrfs_map_bio(btrfs_sb(inode_sb(inode)), bio, mirror_num, 1);
 	if (ret) {
 		bio->bi_status = ret;
 		bio_endio(bio);
@@ -853,7 +853,7 @@ static blk_status_t btree_submit_bio_hook(void *private_data, struct bio *bio,
 					  u64 bio_offset)
 {
 	struct inode *inode = private_data;
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	int async = check_async_write(BTRFS_I(inode));
 	blk_status_t ret;
 
@@ -4438,7 +4438,7 @@ static int btrfs_cleanup_transaction(struct btrfs_fs_info *fs_info)
 static struct btrfs_fs_info *btree_fs_info(void *private_data)
 {
 	struct inode *inode = private_data;
-	return btrfs_sb(inode->i_sb);
+	return btrfs_sb(inode_sb(inode));
 }
 
 static const struct extent_io_ops btree_extent_io_ops = {
