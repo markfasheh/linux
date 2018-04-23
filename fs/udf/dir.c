@@ -57,7 +57,7 @@ static int udf_readdir(struct file *file, struct dir_context *ctx)
 	sector_t offset;
 	int i, num, ret = 0;
 	struct extent_position epos = { NULL, 0, {0, 0} };
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 
 	if (ctx->pos == 0) {
 		if (!dir_emit_dot(file, ctx))

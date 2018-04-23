@@ -31,7 +31,7 @@ static int coda_symlink_filler(struct file *file, struct page *page)
 
 	cii = ITOC(inode);
 
-	error = venus_readlink(inode->i_sb, &cii->c_fid, p, &len);
+	error = venus_readlink(inode_sb(inode), &cii->c_fid, p, &len);
 	if (error)
 		goto fail;
 	SetPageUptodate(page);

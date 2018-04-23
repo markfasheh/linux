@@ -60,7 +60,7 @@ struct genericFormat *udf_add_extendedattr(struct inode *inode, uint32_t size,
 		size += sizeof(struct extendedAttrHeaderDesc);
 	}
 
-	offset = inode->i_sb->s_blocksize - udf_file_entry_alloc_offset(inode) -
+	offset = inode_sb(inode)->s_blocksize - udf_file_entry_alloc_offset(inode) -
 		iinfo->i_lenAlloc;
 
 	/* TODO - Check for FreeEASpace */
@@ -80,7 +80,7 @@ struct genericFormat *udf_add_extendedattr(struct inode *inode, uint32_t size,
 					iinfo->i_location.logicalBlockNum)
 				return NULL;
 		} else {
-			struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
+			struct udf_sb_info *sbi = UDF_SB(inode_sb(inode));
 
 			size -= sizeof(struct extendedAttrHeaderDesc);
 			iinfo->i_lenEAttr +=

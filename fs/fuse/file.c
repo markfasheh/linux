@@ -2250,12 +2250,12 @@ static sector_t fuse_bmap(struct address_space *mapping, sector_t block)
 	struct fuse_bmap_out outarg;
 	int err;
 
-	if (!inode->i_sb->s_bdev || fc->no_bmap)
+	if (!inode_sb(inode)->s_bdev || fc->no_bmap)
 		return 0;
 
 	memset(&inarg, 0, sizeof(inarg));
 	inarg.block = block;
-	inarg.blocksize = inode->i_sb->s_blocksize;
+	inarg.blocksize = inode_sb(inode)->s_blocksize;
 	args.in.h.opcode = FUSE_BMAP;
 	args.in.h.nodeid = get_node_id(inode);
 	args.in.numargs = 1;
@@ -2305,7 +2305,7 @@ static loff_t fuse_lseek(struct file *file, loff_t offset, int whence)
 		return err;
 	}
 
-	return vfs_setpos(file, outarg.offset, inode->i_sb->s_maxbytes);
+	return vfs_setpos(file, outarg.offset, inode_sb(inode)->s_maxbytes);
 
 fallback:
 	err = fuse_update_attributes(inode, file);

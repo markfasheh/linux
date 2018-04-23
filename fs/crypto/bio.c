@@ -92,7 +92,7 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 	struct bio *bio;
 	int ret, err = 0;
 
-	BUG_ON(inode->i_sb->s_blocksize != PAGE_SIZE);
+	BUG_ON(inode_sb(inode)->s_blocksize != PAGE_SIZE);
 
 	ctx = fscrypt_get_ctx(inode, GFP_NOFS);
 	if (IS_ERR(ctx))
@@ -116,13 +116,13 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 			err = -ENOMEM;
 			goto errout;
 		}
-		bio_set_dev(bio, inode->i_sb->s_bdev);
+		bio_set_dev(bio, inode_sb(inode)->s_bdev);
 		bio->bi_iter.bi_sector =
-			pblk << (inode->i_sb->s_blocksize_bits - 9);
+			pblk << (inode_sb(inode)->s_blocksize_bits - 9);
 		bio_set_op_attrs(bio, REQ_OP_WRITE, 0);
 		ret = bio_add_page(bio, ciphertext_page,
-					inode->i_sb->s_blocksize, 0);
-		if (ret != inode->i_sb->s_blocksize) {
+					inode_sb(inode)->s_blocksize, 0);
+		if (ret != inode_sb(inode)->s_blocksize) {
 			/* should never happen! */
 			WARN_ON(1);
 			bio_put(bio);

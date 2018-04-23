@@ -81,7 +81,7 @@ static int ocfs2_set_inode_attr(struct inode *inode, unsigned flags,
 				unsigned mask)
 {
 	struct ocfs2_inode_info *ocfs2_inode = OCFS2_I(inode);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	handle_t *handle = NULL;
 	struct buffer_head *bh = NULL;
 	unsigned oldflags;
@@ -151,7 +151,7 @@ static int ocfs2_info_handle_blocksize(struct inode *inode,
 	if (o2info_from_user(oib, req))
 		return -EFAULT;
 
-	oib.ib_blocksize = inode->i_sb->s_blocksize;
+	oib.ib_blocksize = inode_sb(inode)->s_blocksize;
 
 	o2info_set_request_filled(&oib.ib_req);
 
@@ -165,7 +165,7 @@ static int ocfs2_info_handle_clustersize(struct inode *inode,
 					 struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_clustersize oic;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oic, req))
 		return -EFAULT;
@@ -184,7 +184,7 @@ static int ocfs2_info_handle_maxslots(struct inode *inode,
 				      struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_maxslots oim;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oim, req))
 		return -EFAULT;
@@ -203,7 +203,7 @@ static int ocfs2_info_handle_label(struct inode *inode,
 				   struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_label oil;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oil, req))
 		return -EFAULT;
@@ -222,7 +222,7 @@ static int ocfs2_info_handle_uuid(struct inode *inode,
 				  struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_uuid oiu;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oiu, req))
 		return -EFAULT;
@@ -241,7 +241,7 @@ static int ocfs2_info_handle_fs_features(struct inode *inode,
 					 struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_fs_features oif;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oif, req))
 		return -EFAULT;
@@ -262,7 +262,7 @@ static int ocfs2_info_handle_journal_size(struct inode *inode,
 					  struct ocfs2_info_request __user *req)
 {
 	struct ocfs2_info_journal_size oij;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (o2info_from_user(oij, req))
 		return -EFAULT;
@@ -333,7 +333,7 @@ static int ocfs2_info_handle_freeinode(struct inode *inode,
 	char namebuf[40];
 	int status, type = INODE_ALLOC_SYSTEM_INODE;
 	struct ocfs2_info_freeinode *oifi = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct inode *inode_alloc = NULL;
 
 	oifi = kzalloc(sizeof(struct ocfs2_info_freeinode), GFP_KERNEL);
@@ -621,7 +621,7 @@ static int ocfs2_info_handle_freefrag(struct inode *inode,
 	int status, type = GLOBAL_BITMAP_SYSTEM_INODE;
 
 	struct ocfs2_info_freefrag *oiff;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct inode *gb_inode = NULL;
 
 	oiff = kzalloc(sizeof(struct ocfs2_info_freefrag), GFP_KERNEL);
@@ -924,7 +924,7 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return ocfs2_info_handle(inode, &info, 0);
 	case FITRIM:
 	{
-		struct super_block *sb = inode->i_sb;
+		struct super_block *sb = inode_sb(inode);
 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
 		struct fstrim_range range;
 		int ret = 0;

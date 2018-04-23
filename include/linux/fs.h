@@ -1475,22 +1475,22 @@ struct super_block {
  */
 static inline uid_t i_uid_read(const struct inode *inode)
 {
-	return from_kuid(inode->i_sb->s_user_ns, inode->i_uid);
+	return from_kuid(inode_sb(inode)->s_user_ns, inode->i_uid);
 }
 
 static inline gid_t i_gid_read(const struct inode *inode)
 {
-	return from_kgid(inode->i_sb->s_user_ns, inode->i_gid);
+	return from_kgid(inode_sb(inode)->s_user_ns, inode->i_gid);
 }
 
 static inline void i_uid_write(struct inode *inode, uid_t uid)
 {
-	inode->i_uid = make_kuid(inode->i_sb->s_user_ns, uid);
+	inode->i_uid = make_kuid(inode_sb(inode)->s_user_ns, uid);
 }
 
 static inline void i_gid_write(struct inode *inode, gid_t gid)
 {
-	inode->i_gid = make_kgid(inode->i_sb->s_user_ns, gid);
+	inode->i_gid = make_kgid(inode_sb(inode)->s_user_ns, gid);
 }
 
 extern struct timespec current_time(struct inode *inode);
@@ -1899,10 +1899,10 @@ struct super_operations {
  * i_flags updated.  Hence, i_flags no longer inherit the superblock mount
  * flags, so these have to be checked separately. -- rmk@arm.uk.linux.org
  */
-#define __IS_FLG(inode, flg)	((inode)->i_sb->s_flags & (flg))
+#define __IS_FLG(inode, flg)	(inode_sb((inode))->s_flags & (flg))
 
 static inline bool sb_rdonly(const struct super_block *sb) { return sb->s_flags & SB_RDONLY; }
-#define IS_RDONLY(inode)	sb_rdonly((inode)->i_sb)
+#define IS_RDONLY(inode)	sb_rdonly(inode_sb((inode)))
 #define IS_SYNC(inode)		(__IS_FLG(inode, SB_SYNCHRONOUS) || \
 					((inode)->i_flags & S_SYNC))
 #define IS_DIRSYNC(inode)	(__IS_FLG(inode, SB_SYNCHRONOUS|SB_DIRSYNC) || \
@@ -2725,21 +2725,22 @@ static inline void file_start_write(struct file *file)
 {
 	if (!S_ISREG(file_inode(file)->i_mode))
 		return;
-	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
+	__sb_start_write(inode_sb(file_inode(file)), SB_FREEZE_WRITE, true);
 }
 
 static inline bool file_start_write_trylock(struct file *file)
 {
 	if (!S_ISREG(file_inode(file)->i_mode))
 		return true;
-	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, false);
+	return __sb_start_write(inode_sb(file_inode(file)), SB_FREEZE_WRITE,
+				false);
 }
 
 static inline void file_end_write(struct file *file)
 {
 	if (!S_ISREG(file_inode(file)->i_mode))
 		return;
-	__sb_end_write(file_inode(file)->i_sb, SB_FREEZE_WRITE);
+	__sb_end_write(inode_sb(file_inode(file)), SB_FREEZE_WRITE);
 }
 
 static inline int do_clone_file_range(struct file *file_in, loff_t pos_in,
@@ -3018,8 +3019,10 @@ static inline ssize_t blockdev_direct_IO(struct kiocb *iocb,
 					 struct iov_iter *iter,
 					 get_block_t get_block)
 {
-	return __blockdev_direct_IO(iocb, inode, inode->i_sb->s_bdev, iter,
-			get_block, NULL, NULL, DIO_LOCKING | DIO_SKIP_HOLES);
+	return __blockdev_direct_IO(iocb, inode, inode_sb(inode)->s_bdev,
+				    iter,
+				    get_block, NULL, NULL,
+				    DIO_LOCKING | DIO_SKIP_HOLES);
 }
 #endif
 
@@ -3370,13 +3373,13 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
 
 static inline void inode_has_no_xattr(struct inode *inode)
 {
-	if (!is_sxid(inode->i_mode) && (inode->i_sb->s_flags & SB_NOSEC))
+	if (!is_sxid(inode->i_mode) && (inode_sb(inode)->s_flags & SB_NOSEC))
 		inode->i_flags |= S_NOSEC;
 }
 
 static inline bool is_root_inode(struct inode *inode)
 {
-	return inode == inode->i_sb->s_root->d_inode;
+	return inode == inode_sb(inode)->s_root->d_inode;
 }
 
 static inline bool dir_emit(struct dir_context *ctx,

@@ -45,7 +45,7 @@
 
 static int ufs_block_to_path(struct inode *inode, sector_t i_block, unsigned offsets[4])
 {
-	struct ufs_sb_private_info *uspi = UFS_SB(inode->i_sb)->s_uspi;
+	struct ufs_sb_private_info *uspi = UFS_SB(inode_sb(inode))->s_uspi;
 	int ptrs = uspi->s_apb;
 	int ptrs_bits = uspi->s_apbshift;
 	const long direct_blocks = UFS_NDADDR,
@@ -70,7 +70,8 @@ static int ufs_block_to_path(struct inode *inode, sector_t i_block, unsigned off
 		offsets[n++] = (i_block >> ptrs_bits) & (ptrs - 1);
 		offsets[n++] = i_block & (ptrs - 1);
 	} else {
-		ufs_warning(inode->i_sb, "ufs_block_to_path", "block > big");
+		ufs_warning(inode_sb(inode), "ufs_block_to_path",
+			    "block > big");
 	}
 	return n;
 }
@@ -124,7 +125,7 @@ static inline int grow_chain64(struct ufs_inode_info *ufsi,
 static u64 ufs_frag_map(struct inode *inode, unsigned offsets[4], int depth)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	u64 mask = (u64) uspi->s_apbmask>>uspi->s_fpbshift;
 	int shift = uspi->s_apbshift-uspi->s_fpbshift;
@@ -222,7 +223,7 @@ ufs_extend_tail(struct inode *inode, u64 writes_to,
 		  int *err, struct page *locked_page)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	unsigned lastfrag = ufsi->i_lastfrag;	/* it's a short file, so unsigned is enough */
 	unsigned block = ufs_fragstoblks(lastfrag);
@@ -257,7 +258,7 @@ ufs_inode_getfrag(struct inode *inode, unsigned index,
 		  int *new, struct page *locked_page)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	u64 tmp, goal, lastfrag;
 	unsigned nfrags = uspi->s_fpb;
@@ -335,7 +336,7 @@ ufs_inode_getblock(struct inode *inode, u64 ind_block,
 		  unsigned index, sector_t new_fragment, int *err,
 		  int *new, struct page *locked_page)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	int shift = uspi->s_apbshift - uspi->s_fpbshift;
 	u64 tmp = 0, goal;
@@ -395,7 +396,7 @@ out:
 
 static int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head *bh_result, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	int err = 0, new = 0;
 	unsigned offsets[4];
@@ -554,13 +555,13 @@ static void ufs_set_inode_ops(struct inode *inode)
 		}
 	} else
 		init_special_inode(inode, inode->i_mode,
-				   ufs_get_inode_dev(inode->i_sb, UFS_I(inode)));
+				   ufs_get_inode_dev(inode_sb(inode), UFS_I(inode)));
 }
 
 static int ufs1_read_inode(struct inode *inode, struct ufs_inode *ufs_inode)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	umode_t mode;
 
 	/*
@@ -605,7 +606,7 @@ static int ufs1_read_inode(struct inode *inode, struct ufs_inode *ufs_inode)
 static int ufs2_read_inode(struct inode *inode, struct ufs2_inode *ufs2_inode)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	umode_t mode;
 
 	UFSD("Reading ufs2 inode, ino %lu\n", inode->i_ino);
@@ -713,7 +714,7 @@ bad_inode:
 
 static void ufs1_update_inode(struct inode *inode, struct ufs_inode *ufs_inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
  	struct ufs_inode_info *ufsi = UFS_I(inode);
 
 	ufs_inode->ui_mode = cpu_to_fs16(sb, inode->i_mode);
@@ -756,7 +757,7 @@ static void ufs1_update_inode(struct inode *inode, struct ufs_inode *ufs_inode)
 
 static void ufs2_update_inode(struct inode *inode, struct ufs2_inode *ufs_inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
  	struct ufs_inode_info *ufsi = UFS_I(inode);
 
 	UFSD("ENTER\n");
@@ -796,7 +797,7 @@ static void ufs2_update_inode(struct inode *inode, struct ufs2_inode *ufs_inode)
 
 static int ufs_update_inode(struct inode * inode, int do_sync)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	struct buffer_head * bh;
 
@@ -897,7 +898,7 @@ static void ufs_trunc_direct(struct inode *inode)
 
 	UFSD("ENTER: ino %lu\n", inode->i_ino);
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 
 	frag1 = DIRECT_FRAGMENT;
@@ -975,7 +976,7 @@ next1:
 
 static void free_full_branch(struct inode *inode, u64 ind_block, int depth)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	struct ufs_buffer_head *ubh = ubh_bread(sb, ind_block, uspi->s_bsize);
 	unsigned i;
@@ -1008,7 +1009,7 @@ static void free_full_branch(struct inode *inode, u64 ind_block, int depth)
 
 static void free_branch_tail(struct inode *inode, unsigned from, struct ufs_buffer_head *ubh, int depth)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	unsigned i;
 
@@ -1048,7 +1049,7 @@ static void free_branch_tail(struct inode *inode, unsigned from, struct ufs_buff
 static int ufs_alloc_lastblock(struct inode *inode, loff_t size)
 {
 	int err = 0;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct address_space *mapping = inode->i_mapping;
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	unsigned i, end;
@@ -1117,7 +1118,7 @@ out:
 static void ufs_truncate_blocks(struct inode *inode)
 {
 	struct ufs_inode_info *ufsi = UFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
 	unsigned offsets[4];
 	int depth;

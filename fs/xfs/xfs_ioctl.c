@@ -98,7 +98,7 @@ xfs_find_handle(
 	 * and only for regular files, directories or symbolic links.
 	 */
 	error = -EINVAL;
-	if (inode->i_sb->s_magic != XFS_SB_MAGIC)
+	if (inode_sb(inode)->s_magic != XFS_SB_MAGIC)
 		goto out_put;
 
 	error = -EBADF;
@@ -688,9 +688,9 @@ xfs_ioc_space(
 	}
 
 	if (bf->l_start < 0 ||
-	    bf->l_start > inode->i_sb->s_maxbytes ||
+	    bf->l_start > inode_sb(inode)->s_maxbytes ||
 	    bf->l_start + bf->l_len < 0 ||
-	    bf->l_start + bf->l_len >= inode->i_sb->s_maxbytes) {
+	    bf->l_start + bf->l_len >= inode_sb(inode)->s_maxbytes) {
 		error = -EINVAL;
 		goto out_unlock;
 	}
@@ -1090,7 +1090,7 @@ xfs_ioctl_setattr_dax_invalidate(
 	int			*join_flags)
 {
 	struct inode		*inode = VFS_I(ip);
-	struct super_block	*sb = inode->i_sb;
+	struct super_block	*sb = inode_sb(inode);
 	int			error;
 
 	*join_flags = 0;

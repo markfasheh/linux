@@ -374,7 +374,7 @@ static ssize_t ntfs_prepare_file_for_write(struct kiocb *iocb,
 		 * compression kick in.  This is in contrast to encrypted files
 		 * (see above).
 		 */
-		ntfs_error(vi->i_sb, "Writing to compressed files is not "
+		ntfs_error(inode_sb(vi), "Writing to compressed files is not "
 				"implemented yet.  Sorry.");
 		err = -EOPNOTSUPP;
 		goto out;
@@ -439,7 +439,8 @@ static ssize_t ntfs_prepare_file_for_write(struct kiocb *iocb,
 				iov_iter_truncate(from, ll - pos);
 			} else {
 				if (err != -ENOSPC)
-					ntfs_error(vi->i_sb, "Cannot perform "
+					ntfs_error(inode_sb(vi),
+							"Cannot perform "
 							"write to inode "
 							"0x%lx, attribute "
 							"type 0x%x, because "
@@ -479,7 +480,8 @@ static ssize_t ntfs_prepare_file_for_write(struct kiocb *iocb,
 		inode_dio_wait(vi);
 		err = ntfs_attr_extend_initialized(ni, pos);
 		if (unlikely(err < 0))
-			ntfs_error(vi->i_sb, "Cannot perform write to inode "
+			ntfs_error(inode_sb(vi),
+					"Cannot perform write to inode "
 					"0x%lx, attribute type 0x%x, because "
 					"extending the initialized size "
 					"failed (error %d).", vi->i_ino,
@@ -1412,7 +1414,7 @@ static inline int ntfs_commit_pages_after_non_resident_write(
 
 	vi = pages[0]->mapping->host;
 	ni = NTFS_I(vi);
-	blocksize = vi->i_sb->s_blocksize;
+	blocksize = inode_sb(vi)->s_blocksize;
 	end = pos + bytes;
 	u = 0;
 	do {
@@ -1507,7 +1509,8 @@ err_out:
 		ntfs_attr_put_search_ctx(ctx);
 	if (m)
 		unmap_mft_record(base_ni);
-	ntfs_error(vi->i_sb, "Failed to update initialized_size/i_size (error "
+	ntfs_error(inode_sb(vi),
+			"Failed to update initialized_size/i_size (error "
 			"code %i).", err);
 	if (err != -ENOMEM)
 		NVolSetErrors(ni->vol);
@@ -1664,10 +1667,12 @@ static int ntfs_commit_pages_after_write(struct page **pages,
 	return 0;
 err_out:
 	if (err == -ENOMEM) {
-		ntfs_warning(vi->i_sb, "Error allocating memory required to "
+		ntfs_warning(inode_sb(vi),
+				"Error allocating memory required to "
 				"commit the write.");
 		if (PageUptodate(page)) {
-			ntfs_warning(vi->i_sb, "Page is uptodate, setting "
+			ntfs_warning(inode_sb(vi),
+					"Page is uptodate, setting "
 					"dirty so the write will be retried "
 					"later on by the VM.");
 			/*
@@ -1677,10 +1682,12 @@ err_out:
 			__set_page_dirty_nobuffers(page);
 			err = 0;
 		} else
-			ntfs_error(vi->i_sb, "Page is not uptodate.  Written "
+			ntfs_error(inode_sb(vi),
+					"Page is not uptodate.  Written "
 					"data has been lost.");
 	} else {
-		ntfs_error(vi->i_sb, "Resident attribute commit write failed "
+		ntfs_error(inode_sb(vi),
+				"Resident attribute commit write failed "
 				"with error %i.", err);
 		NVolSetErrors(ni->vol);
 	}
@@ -2003,13 +2010,14 @@ static int ntfs_file_fsync(struct file *filp, loff_t start, loff_t end,
 	 * fs/buffer.c) for dirty blocks then we could optimize the below to be
 	 * sync_mapping_buffers(vi->i_mapping).
 	 */
-	err = sync_blockdev(vi->i_sb->s_bdev);
+	err = sync_blockdev(inode_sb(vi)->s_bdev);
 	if (unlikely(err && !ret))
 		ret = err;
 	if (likely(!ret))
 		ntfs_debug("Done.");
 	else
-		ntfs_warning(vi->i_sb, "Failed to f%ssync inode 0x%lx.  Error "
+		ntfs_warning(inode_sb(vi),
+				"Failed to f%ssync inode 0x%lx.  Error "
 				"%u.", datasync ? "data" : "", vi->i_ino, -ret);
 	inode_unlock(vi);
 	return ret;

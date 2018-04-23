@@ -65,7 +65,7 @@ static int qnx6_dir_longfilename(struct inode *inode,
 			unsigned de_inode)
 {
 	struct qnx6_long_filename *lf;
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	struct qnx6_sb_info *sbi = QNX6_SB(s);
 	struct page *page;
 	int lf_size;
@@ -112,7 +112,7 @@ static int qnx6_dir_longfilename(struct inode *inode,
 static int qnx6_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	struct qnx6_sb_info *sbi = QNX6_SB(s);
 	loff_t pos = ctx->pos & ~(QNX6_DIR_ENTRY_SIZE - 1);
 	unsigned long npages = dir_pages(inode);
@@ -175,7 +175,7 @@ static int qnx6_readdir(struct file *file, struct dir_context *ctx)
 static unsigned qnx6_long_match(int len, const char *name,
 			struct qnx6_long_dir_entry *de, struct inode *dir)
 {
-	struct super_block *s = dir->i_sb;
+	struct super_block *s = inode_sb(dir);
 	struct qnx6_sb_info *sbi = QNX6_SB(s);
 	struct page *page;
 	int thislen;
@@ -213,7 +213,7 @@ static unsigned qnx6_match(struct super_block *s, int len, const char *name,
 unsigned qnx6_find_entry(int len, struct inode *dir, const char *name,
 			 struct page **res_page)
 {
-	struct super_block *s = dir->i_sb;
+	struct super_block *s = inode_sb(dir);
 	struct qnx6_inode_info *ei = QNX6_I(dir);
 	struct page *page = NULL;
 	unsigned long start, n;

@@ -24,7 +24,7 @@ nfsd4_block_proc_layoutget(struct inode *inode, const struct svc_fh *fhp,
 		struct nfsd4_layoutget *args)
 {
 	struct nfsd4_layout_seg *seg = &args->lg_seg;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	u32 block_size = i_blocksize(inode);
 	struct pnfs_block_extent *bex;
 	struct iomap iomap;
@@ -134,7 +134,7 @@ nfsd4_block_commit_blocks(struct inode *inode, struct nfsd4_layoutcommit *lcp,
 		iattr.ia_size = new_size;
 	}
 
-	error = inode->i_sb->s_export_op->commit_blocks(inode, iomaps,
+	error = inode_sb(inode)->s_export_op->commit_blocks(inode, iomaps,
 			nr_iomaps, &iattr);
 	kfree(iomaps);
 	return nfserrno(error);

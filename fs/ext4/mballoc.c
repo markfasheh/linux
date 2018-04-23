@@ -822,7 +822,7 @@ static int ext4_mb_init_cache(struct page *page, char *incore, gfp_t gfp)
 	mb_debug(1, "init page %lu\n", page->index);
 
 	inode = page->mapping->host;
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	ngroups = ext4_get_groups_count(sb);
 	blocksize = i_blocksize(inode);
 	blocks_per_page = PAGE_SIZE / blocksize;
@@ -4006,7 +4006,7 @@ out:
 void ext4_discard_preallocations(struct inode *inode)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bitmap_bh = NULL;
 	struct ext4_prealloc_space *pa, *tmp;
 	ext4_group_t group = 0;
@@ -4233,7 +4233,7 @@ static noinline_for_stack int
 ext4_mb_initialize_context(struct ext4_allocation_context *ac,
 				struct ext4_allocation_request *ar)
 {
-	struct super_block *sb = ar->inode->i_sb;
+	struct super_block *sb = inode_sb(ar->inode);
 	struct ext4_sb_info *sbi = EXT4_SB(sb);
 	struct ext4_super_block *es = sbi->s_es;
 	ext4_group_t group;
@@ -4490,7 +4490,7 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t *handle,
 	unsigned int reserv_clstrs = 0;
 
 	might_sleep();
-	sb = ar->inode->i_sb;
+	sb = inode_sb(ar->inode);
 	sbi = EXT4_SB(sb);
 
 	trace_ext4_request_blocks(ar);
@@ -4723,7 +4723,7 @@ void ext4_free_blocks(handle_t *handle, struct inode *inode,
 		      unsigned long count, int flags)
 {
 	struct buffer_head *bitmap_bh = NULL;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ext4_group_desc *gdp;
 	unsigned int overflow;
 	ext4_grpblk_t bit;
@@ -4800,7 +4800,8 @@ void ext4_free_blocks(handle_t *handle, struct inode *inode,
 		for (i = 0; i < count; i++) {
 			cond_resched();
 			if (is_metadata)
-				bh = sb_find_get_block(inode->i_sb, block + i);
+				bh = sb_find_get_block(inode_sb(inode),
+						       block + i);
 			ext4_forget(handle, is_metadata, inode, bh, block + i);
 		}
 	}

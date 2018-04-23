@@ -192,7 +192,7 @@ struct inode *sysv_iget(struct super_block *sb, unsigned int ino)
 	raw_inode = sysv_raw_inode(sb, ino, &bh);
 	if (!raw_inode) {
 		printk("Major problem: unable to read inode from dev %s\n",
-		       inode->i_sb->s_id);
+		       inode_sb(inode)->s_id);
 		goto bad_inode;
 	}
 	/* SystemV FS: kludge permissions if ino==SYSV_ROOT_INO ?? */
@@ -230,7 +230,7 @@ bad_inode:
 
 static int __sysv_write_inode(struct inode *inode, int wait)
 {
-	struct super_block * sb = inode->i_sb;
+	struct super_block * sb = inode_sb(inode);
 	struct sysv_sb_info * sbi = SYSV_SB(sb);
 	struct buffer_head * bh;
 	struct sysv_inode * raw_inode;
@@ -241,7 +241,7 @@ static int __sysv_write_inode(struct inode *inode, int wait)
 	ino = inode->i_ino;
 	if (!ino || ino > sbi->s_ninodes) {
 		printk("Bad inode number on dev %s: %d is out of range\n",
-		       inode->i_sb->s_id, ino);
+		       inode_sb(inode)->s_id, ino);
 		return -EIO;
 	}
 	raw_inode = sysv_raw_inode(sb, ino, &bh);

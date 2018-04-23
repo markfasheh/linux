@@ -3136,7 +3136,7 @@ static void nfs4_free_closedata(void *data)
 {
 	struct nfs4_closedata *calldata = data;
 	struct nfs4_state_owner *sp = calldata->state->owner;
-	struct super_block *sb = calldata->state->inode->i_sb;
+	struct super_block *sb = inode_sb(calldata->state->inode);
 
 	if (calldata->lr.roc)
 		pnfs_roc_release(&calldata->lr.arg, &calldata->lr.res,
@@ -3393,7 +3393,7 @@ int nfs4_do_close(struct nfs4_state *state, gfp_t gfp_mask, int wait)
 		calldata->arg.lr_args = &calldata->lr.arg;
 		calldata->res.lr_res = &calldata->lr.res;
 	}
-	nfs_sb_active(calldata->inode->i_sb);
+	nfs_sb_active(inode_sb(calldata->inode));
 
 	msg.rpc_argp = &calldata->arg;
 	msg.rpc_resp = &calldata->res;

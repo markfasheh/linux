@@ -75,7 +75,7 @@ static long coda_pioctl(struct file *filp, unsigned int cmd,
 	target_inode = d_inode(path.dentry);
 
 	/* return if it is not a Coda inode */
-	if (target_inode->i_sb != inode->i_sb) {
+	if (inode_sb(target_inode) != inode_sb(inode)) {
 		error = -EINVAL;
 		goto out;
 	}
@@ -83,7 +83,7 @@ static long coda_pioctl(struct file *filp, unsigned int cmd,
 	/* now proceed to make the upcall */
 	cnp = ITOC(target_inode);
 
-	error = venus_pioctl(inode->i_sb, &(cnp->c_fid), cmd, &data);
+	error = venus_pioctl(inode_sb(inode), &(cnp->c_fid), cmd, &data);
 out:
 	path_put(&path);
 	return error;

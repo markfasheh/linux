@@ -75,7 +75,8 @@ int __ntfs_bitmap_set_bits_in_run(struct inode *vi, const s64 start_bit,
 	page = ntfs_map_page(mapping, index);
 	if (IS_ERR(page)) {
 		if (!is_rollback)
-			ntfs_error(vi->i_sb, "Failed to map first page (error "
+			ntfs_error(inode_sb(vi),
+					"Failed to map first page (error "
 					"%li), aborting.", PTR_ERR(page));
 		return PTR_ERR(page);
 	}
@@ -177,15 +178,17 @@ rollback:
 		pos = 0;
 	if (!pos) {
 		/* Rollback was successful. */
-		ntfs_error(vi->i_sb, "Failed to map subsequent page (error "
+		ntfs_error(inode_sb(vi),
+				"Failed to map subsequent page (error "
 				"%li), aborting.", PTR_ERR(page));
 	} else {
 		/* Rollback failed. */
-		ntfs_error(vi->i_sb, "Failed to map subsequent page (error "
+		ntfs_error(inode_sb(vi),
+				"Failed to map subsequent page (error "
 				"%li) and rollback failed (error %i).  "
 				"Aborting and leaving inconsistent metadata.  "
 				"Unmount and run chkdsk.", PTR_ERR(page), pos);
-		NVolSetErrors(NTFS_SB(vi->i_sb));
+		NVolSetErrors(NTFS_SB(inode_sb(vi)));
 	}
 	return PTR_ERR(page);
 }

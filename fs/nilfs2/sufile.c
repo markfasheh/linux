@@ -180,7 +180,7 @@ int nilfs_sufile_updatev(struct inode *sufile, __u64 *segnumv, size_t nsegs,
 	down_write(&NILFS_MDT(sufile)->mi_sem);
 	for (seg = segnumv; seg < segnumv + nsegs; seg++) {
 		if (unlikely(*seg >= nilfs_sufile_get_nsegments(sufile))) {
-			nilfs_msg(sufile->i_sb, KERN_WARNING,
+			nilfs_msg(inode_sb(sufile), KERN_WARNING,
 				  "%s: invalid segment number: %llu",
 				  __func__, (unsigned long long)*seg);
 			nerr++;
@@ -239,7 +239,7 @@ int nilfs_sufile_update(struct inode *sufile, __u64 segnum, int create,
 	int ret;
 
 	if (unlikely(segnum >= nilfs_sufile_get_nsegments(sufile))) {
-		nilfs_msg(sufile->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(sufile), KERN_WARNING,
 			  "%s: invalid segment number: %llu",
 			  __func__, (unsigned long long)segnum);
 		return -EINVAL;
@@ -419,7 +419,7 @@ void nilfs_sufile_do_cancel_free(struct inode *sufile, __u64 segnum,
 	kaddr = kmap_atomic(su_bh->b_page);
 	su = nilfs_sufile_block_get_segment_usage(sufile, segnum, su_bh, kaddr);
 	if (unlikely(!nilfs_segment_usage_clean(su))) {
-		nilfs_msg(sufile->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(sufile), KERN_WARNING,
 			  "%s: segment %llu must be clean", __func__,
 			  (unsigned long long)segnum);
 		kunmap_atomic(kaddr);
@@ -477,7 +477,7 @@ void nilfs_sufile_do_free(struct inode *sufile, __u64 segnum,
 	kaddr = kmap_atomic(su_bh->b_page);
 	su = nilfs_sufile_block_get_segment_usage(sufile, segnum, su_bh, kaddr);
 	if (nilfs_segment_usage_clean(su)) {
-		nilfs_msg(sufile->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(sufile), KERN_WARNING,
 			  "%s: segment %llu is already clean",
 			  __func__, (unsigned long long)segnum);
 		kunmap_atomic(kaddr);
@@ -575,7 +575,7 @@ int nilfs_sufile_get_stat(struct inode *sufile, struct nilfs_sustat *sustat)
 {
 	struct buffer_head *header_bh;
 	struct nilfs_sufile_header *header;
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	void *kaddr;
 	int ret;
 
@@ -649,7 +649,7 @@ void nilfs_sufile_do_set_error(struct inode *sufile, __u64 segnum,
 static int nilfs_sufile_truncate_range(struct inode *sufile,
 				       __u64 start, __u64 end)
 {
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	struct buffer_head *header_bh;
 	struct buffer_head *su_bh;
 	struct nilfs_segment_usage *su, *su2;
@@ -752,7 +752,7 @@ out:
  */
 int nilfs_sufile_resize(struct inode *sufile, __u64 newnsegs)
 {
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	struct buffer_head *header_bh;
 	struct nilfs_sufile_header *header;
 	struct nilfs_sufile_info *sui = NILFS_SUI(sufile);
@@ -825,7 +825,7 @@ ssize_t nilfs_sufile_get_suinfo(struct inode *sufile, __u64 segnum, void *buf,
 	struct nilfs_segment_usage *su;
 	struct nilfs_suinfo *si = buf;
 	size_t susz = NILFS_MDT(sufile)->mi_entry_size;
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	void *kaddr;
 	unsigned long nsegs, segusages_per_block;
 	ssize_t n;
@@ -899,7 +899,7 @@ ssize_t nilfs_sufile_get_suinfo(struct inode *sufile, __u64 segnum, void *buf,
 ssize_t nilfs_sufile_set_suinfo(struct inode *sufile, void *buf,
 				unsigned int supsz, size_t nsup)
 {
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	struct buffer_head *header_bh, *bh;
 	struct nilfs_suinfo_update *sup, *supend = buf + supsz * nsup;
 	struct nilfs_segment_usage *su;
@@ -1025,7 +1025,7 @@ ssize_t nilfs_sufile_set_suinfo(struct inode *sufile, void *buf,
  */
 int nilfs_sufile_trim_fs(struct inode *sufile, struct fstrim_range *range)
 {
-	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(sufile)->s_fs_info;
 	struct buffer_head *su_bh;
 	struct nilfs_segment_usage *su;
 	void *kaddr;

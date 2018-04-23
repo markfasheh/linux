@@ -26,7 +26,7 @@ long reiserfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	unsigned int flags;
 	int err = 0;
 
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 
 	switch (cmd) {
 	case REISERFS_IOC_UNPACK:
@@ -41,7 +41,7 @@ long reiserfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		 * Card (card@masi.ibp.fr)
 		 */
 	case REISERFS_IOC_GETFLAGS:
-		if (!reiserfs_attrs(inode->i_sb)) {
+		if (!reiserfs_attrs(inode_sb(inode))) {
 			err = -ENOTTY;
 			break;
 		}
@@ -50,7 +50,7 @@ long reiserfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		err = put_user(flags, (int __user *)arg);
 		break;
 	case REISERFS_IOC_SETFLAGS:{
-			if (!reiserfs_attrs(inode->i_sb)) {
+			if (!reiserfs_attrs(inode_sb(inode))) {
 				err = -ENOTTY;
 				break;
 			}
@@ -123,7 +123,7 @@ setversion_out:
 		err = -ENOTTY;
 	}
 
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 
 	return err;
 }
@@ -174,7 +174,7 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
 	struct page *page;
 	struct address_space *mapping;
 	unsigned long write_from;
-	unsigned long blocksize = inode->i_sb->s_blocksize;
+	unsigned long blocksize = inode_sb(inode)->s_blocksize;
 
 	if (inode->i_size == 0) {
 		REISERFS_I(inode)->i_flags |= i_nopack_mask;
@@ -187,12 +187,12 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
 
 	/* we need to make sure nobody is changing the file size beneath us */
 {
-	int depth = reiserfs_write_unlock_nested(inode->i_sb);
+	int depth = reiserfs_write_unlock_nested(inode_sb(inode));
 	inode_lock(inode);
-	reiserfs_write_lock_nested(inode->i_sb, depth);
+	reiserfs_write_lock_nested(inode_sb(inode), depth);
 }
 
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 
 	write_from = inode->i_size & (blocksize - 1);
 	/* if we are on a block boundary, we are already unpacked.  */
@@ -228,6 +228,6 @@ out_unlock:
 
 out:
 	inode_unlock(inode);
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 	return retval;
 }

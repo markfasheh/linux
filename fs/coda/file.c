@@ -112,7 +112,8 @@ int coda_open(struct inode *coda_inode, struct file *coda_file)
 	if (!cfi)
 		return -ENOMEM;
 
-	error = venus_open(coda_inode->i_sb, coda_i2f(coda_inode), coda_flags,
+	error = venus_open(inode_sb(coda_inode), coda_i2f(coda_inode),
+			   coda_flags,
 			   &host_file);
 	if (!host_file)
 		error = -EIO;
@@ -145,7 +146,7 @@ int coda_release(struct inode *coda_inode, struct file *coda_file)
 	cfi = CODA_FTOC(coda_file);
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
-	err = venus_close(coda_inode->i_sb, coda_i2f(coda_inode),
+	err = venus_close(inode_sb(coda_inode), coda_i2f(coda_inode),
 			  coda_flags, coda_file->f_cred->fsuid);
 
 	host_inode = file_inode(cfi->cfi_container);
@@ -191,7 +192,7 @@ int coda_fsync(struct file *coda_file, loff_t start, loff_t end, int datasync)
 
 	err = vfs_fsync(host_file, datasync);
 	if (!err && !datasync)
-		err = venus_fsync(coda_inode->i_sb, coda_i2f(coda_inode));
+		err = venus_fsync(inode_sb(coda_inode), coda_i2f(coda_inode));
 	inode_unlock(coda_inode);
 
 	return err;

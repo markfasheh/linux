@@ -46,7 +46,7 @@ static inline struct ncp_server *NCP_SBP(const struct super_block *sb)
 	return sb->s_fs_info;
 }
 
-#define NCP_SERVER(inode)	NCP_SBP((inode)->i_sb)
+#define NCP_SERVER(inode)	NCP_SBP(inode_sb((inode)))
 static inline struct ncp_inode_info *NCP_FINFO(const struct inode *inode)
 {
 	return container_of(inode, struct ncp_inode_info, vfs_inode);

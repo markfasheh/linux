@@ -70,7 +70,7 @@ nilfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
 		return ERR_PTR(-ENAMETOOLONG);
 
 	ino = nilfs_inode_by_name(dir, &dentry->d_name);
-	inode = ino ? nilfs_iget(dir->i_sb, NILFS_I(dir)->i_root, ino) : NULL;
+	inode = ino ? nilfs_iget(inode_sb(dir), NILFS_I(dir)->i_root, ino) : NULL;
 	return d_splice_alias(inode, dentry);
 }
 
@@ -89,7 +89,7 @@ static int nilfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 1);
 	if (err)
 		return err;
 	inode = nilfs_new_inode(dir, mode);
@@ -102,9 +102,9 @@ static int nilfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		err = nilfs_add_nondir(dentry, inode);
 	}
 	if (!err)
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 }
@@ -116,7 +116,7 @@ nilfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 1);
 	if (err)
 		return err;
 	inode = nilfs_new_inode(dir, mode);
@@ -127,9 +127,9 @@ nilfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
 		err = nilfs_add_nondir(dentry, inode);
 	}
 	if (!err)
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 }
@@ -138,7 +138,7 @@ static int nilfs_symlink(struct inode *dir, struct dentry *dentry,
 			 const char *symname)
 {
 	struct nilfs_transaction_info ti;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	unsigned int l = strlen(symname) + 1;
 	struct inode *inode;
 	int err;
@@ -146,7 +146,7 @@ static int nilfs_symlink(struct inode *dir, struct dentry *dentry,
 	if (l > sb->s_blocksize)
 		return -ENAMETOOLONG;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 1);
 	if (err)
 		return err;
 
@@ -169,9 +169,9 @@ static int nilfs_symlink(struct inode *dir, struct dentry *dentry,
 	err = nilfs_add_nondir(dentry, inode);
 out:
 	if (!err)
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 
@@ -190,7 +190,7 @@ static int nilfs_link(struct dentry *old_dentry, struct inode *dir,
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 1);
 	if (err)
 		return err;
 
@@ -201,11 +201,11 @@ static int nilfs_link(struct dentry *old_dentry, struct inode *dir,
 	err = nilfs_add_link(dentry, inode);
 	if (!err) {
 		d_instantiate(dentry, inode);
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	} else {
 		inode_dec_link_count(inode);
 		iput(inode);
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 	}
 
 	return err;
@@ -217,7 +217,7 @@ static int nilfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 1);
 	if (err)
 		return err;
 
@@ -247,9 +247,9 @@ static int nilfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 	unlock_new_inode(inode);
 out:
 	if (!err)
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 
@@ -283,7 +283,7 @@ static int nilfs_do_unlink(struct inode *dir, struct dentry *dentry)
 		goto out;
 
 	if (!inode->i_nlink) {
-		nilfs_msg(inode->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(inode), KERN_WARNING,
 			  "deleting nonexistent file (ino=%lu), %d",
 			  inode->i_ino, inode->i_nlink);
 		set_nlink(inode, 1);
@@ -304,7 +304,7 @@ static int nilfs_unlink(struct inode *dir, struct dentry *dentry)
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 0);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 0);
 	if (err)
 		return err;
 
@@ -313,9 +313,9 @@ static int nilfs_unlink(struct inode *dir, struct dentry *dentry)
 	if (!err) {
 		nilfs_mark_inode_dirty(dir);
 		nilfs_mark_inode_dirty(d_inode(dentry));
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	} else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 }
@@ -326,7 +326,7 @@ static int nilfs_rmdir(struct inode *dir, struct dentry *dentry)
 	struct nilfs_transaction_info ti;
 	int err;
 
-	err = nilfs_transaction_begin(dir->i_sb, &ti, 0);
+	err = nilfs_transaction_begin(inode_sb(dir), &ti, 0);
 	if (err)
 		return err;
 
@@ -342,9 +342,9 @@ static int nilfs_rmdir(struct inode *dir, struct dentry *dentry)
 		}
 	}
 	if (!err)
-		err = nilfs_transaction_commit(dir->i_sb);
+		err = nilfs_transaction_commit(inode_sb(dir));
 	else
-		nilfs_transaction_abort(dir->i_sb);
+		nilfs_transaction_abort(inode_sb(dir));
 
 	return err;
 }
@@ -365,7 +365,7 @@ static int nilfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
 
-	err = nilfs_transaction_begin(old_dir->i_sb, &ti, 1);
+	err = nilfs_transaction_begin(inode_sb(old_dir), &ti, 1);
 	if (unlikely(err))
 		return err;
 
@@ -425,7 +425,7 @@ static int nilfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	nilfs_mark_inode_dirty(old_dir);
 	nilfs_mark_inode_dirty(old_inode);
 
-	err = nilfs_transaction_commit(old_dir->i_sb);
+	err = nilfs_transaction_commit(inode_sb(old_dir));
 	return err;
 
 out_dir:
@@ -437,7 +437,7 @@ out_old:
 	kunmap(old_page);
 	put_page(old_page);
 out:
-	nilfs_transaction_abort(old_dir->i_sb);
+	nilfs_transaction_abort(inode_sb(old_dir));
 	return err;
 }
 

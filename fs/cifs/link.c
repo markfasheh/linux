@@ -535,7 +535,7 @@ cifs_hardlink(struct dentry *old_file, struct inode *inode,
 	unsigned int xid;
 	char *from_name = NULL;
 	char *to_name = NULL;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink;
 	struct cifs_tcon *tcon;
 	struct TCP_Server_Info *server;
@@ -625,7 +625,7 @@ cifs_get_link(struct dentry *direntry, struct inode *inode,
 	unsigned int xid;
 	char *full_path = NULL;
 	char *target_path = NULL;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink = NULL;
 	struct cifs_tcon *tcon;
 	struct TCP_Server_Info *server;
@@ -681,7 +681,7 @@ cifs_symlink(struct inode *inode, struct dentry *direntry, const char *symname)
 {
 	int rc = -EOPNOTSUPP;
 	unsigned int xid;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink;
 	struct cifs_tcon *pTcon;
 	char *full_path = NULL;
@@ -719,10 +719,10 @@ cifs_symlink(struct inode *inode, struct dentry *direntry, const char *symname)
 	if (rc == 0) {
 		if (pTcon->unix_ext)
 			rc = cifs_get_inode_info_unix(&newinode, full_path,
-						      inode->i_sb, xid);
+						      inode_sb(inode), xid);
 		else
 			rc = cifs_get_inode_info(&newinode, full_path, NULL,
-						 inode->i_sb, xid, NULL);
+						 inode_sb(inode), xid, NULL);
 
 		if (rc != 0) {
 			cifs_dbg(FYI, "Create symlink ok, getinodeinfo fail rc = %d\n",

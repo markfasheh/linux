@@ -325,13 +325,13 @@ static inline int block_group_used(struct super_block *s, u32 id)
 __le32 reiserfs_choose_packing(struct inode * dir)
 {
 	__le32 packing;
-	if (TEST_OPTION(packing_groups, dir->i_sb)) {
+	if (TEST_OPTION(packing_groups, inode_sb(dir))) {
 		u32 parent_dir = le32_to_cpu(INODE_PKEY(dir)->k_dir_id);
 		/*
 		 * some versions of reiserfsck expect packing locality 1 to be
 		 * special
 		 */
-		if (parent_dir == 1 || block_group_used(dir->i_sb, parent_dir))
+		if (parent_dir == 1 || block_group_used(inode_sb(dir), parent_dir))
 			packing = INODE_PKEY(dir)->k_objectid;
 		else
 			packing = INODE_PKEY(dir)->k_dir_id;
@@ -837,11 +837,11 @@ static void oid_groups(reiserfs_blocknr_hint_t * hint)
 		 * the start of the disk
 		 */
 		if (dirid <= 2)
-			hash = (hint->inode->i_sb->s_blocksize << 3);
+			hash = (inode_sb(hint->inode)->s_blocksize << 3);
 		else {
 			oid = le32_to_cpu(INODE_PKEY(hint->inode)->k_objectid);
-			bm = bmap_hash_id(hint->inode->i_sb, oid);
-			hash = bm * (hint->inode->i_sb->s_blocksize << 3);
+			bm = bmap_hash_id(inode_sb(hint->inode), oid);
+			hash = bm * (inode_sb(hint->inode)->s_blocksize << 3);
 		}
 		hint->search_start = hash;
 	}
@@ -1139,7 +1139,7 @@ static int determine_prealloc_size(reiserfs_blocknr_hint_t * hint)
 		if (S_ISREG(hint->inode->i_mode) && !IS_PRIVATE(hint->inode)
 		    && hint->inode->i_size >=
 		    REISERFS_SB(hint->th->t_super)->s_alloc_options.
-		    preallocmin * hint->inode->i_sb->s_blocksize)
+		    preallocmin * inode_sb(hint->inode)->s_blocksize)
 			hint->prealloc_size =
 			    REISERFS_SB(hint->th->t_super)->s_alloc_options.
 			    preallocsize - 1;

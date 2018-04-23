@@ -158,8 +158,8 @@ static int ext4_end_io(ext4_io_end_t *io)
 
 	io->handle = NULL;	/* Following call will use up the handle */
 	ret = ext4_convert_unwritten_extents(handle, inode, offset, size);
-	if (ret < 0 && !ext4_forced_shutdown(EXT4_SB(inode->i_sb))) {
-		ext4_msg(inode->i_sb, KERN_EMERG,
+	if (ret < 0 && !ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))) {
+		ext4_msg(inode_sb(inode), KERN_EMERG,
 			 "failed to convert unwritten extents to written "
 			 "extents -- potential data loss!  "
 			 "(inode %lu, offset %llu, size %zd, error %d)",
@@ -197,7 +197,7 @@ static void dump_completed_IO(struct inode *inode, struct list_head *head)
 static void ext4_add_complete_io(ext4_io_end_t *io_end)
 {
 	struct ext4_inode_info *ei = EXT4_I(io_end->inode);
-	struct ext4_sb_info *sbi = EXT4_SB(io_end->inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(io_end->inode));
 	struct workqueue_struct *wq;
 	unsigned long flags;
 
@@ -314,7 +314,8 @@ static void ext4_end_bio(struct bio *bio)
 	if (bio->bi_status) {
 		struct inode *inode = io_end->inode;
 
-		ext4_warning(inode->i_sb, "I/O error %d writing to inode %lu "
+		ext4_warning(inode_sb(inode),
+			     "I/O error %d writing to inode %lu "
 			     "(offset %llu size %ld starting block %llu)",
 			     bio->bi_status, inode->i_ino,
 			     (unsigned long long) io_end->offset,

@@ -75,7 +75,7 @@ ino_t ufs_inode_by_name(struct inode *dir, const struct qstr *qstr)
 	
 	de = ufs_find_entry(dir, qstr, &page);
 	if (de) {
-		res = fs32_to_cpu(dir->i_sb, de->d_ino);
+		res = fs32_to_cpu(inode_sb(dir), de->d_ino);
 		ufs_put_page(page);
 	}
 	return res;
@@ -89,15 +89,15 @@ void ufs_set_link(struct inode *dir, struct ufs_dir_entry *de,
 {
 	loff_t pos = page_offset(page) +
 			(char *) de - (char *) page_address(page);
-	unsigned len = fs16_to_cpu(dir->i_sb, de->d_reclen);
+	unsigned len = fs16_to_cpu(inode_sb(dir), de->d_reclen);
 	int err;
 
 	lock_page(page);
 	err = ufs_prepare_chunk(page, pos, len);
 	BUG_ON(err);
 
-	de->d_ino = cpu_to_fs32(dir->i_sb, inode->i_ino);
-	ufs_set_de_type(dir->i_sb, de, inode->i_mode);
+	de->d_ino = cpu_to_fs32(inode_sb(dir), inode->i_ino);
+	ufs_set_de_type(inode_sb(dir), de, inode->i_mode);
 
 	err = ufs_commit_chunk(page, pos, len);
 	ufs_put_page(page);
@@ -110,7 +110,7 @@ void ufs_set_link(struct inode *dir, struct ufs_dir_entry *de,
 static bool ufs_check_page(struct page *page)
 {
 	struct inode *dir = page->mapping->host;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	char *kaddr = page_address(page);
 	unsigned offs, rec_len;
 	unsigned limit = PAGE_SIZE;
@@ -232,7 +232,7 @@ struct ufs_dir_entry *ufs_dotdot(struct inode *dir, struct page **p)
 	struct ufs_dir_entry *de = NULL;
 
 	if (!IS_ERR(page)) {
-		de = ufs_next_entry(dir->i_sb,
+		de = ufs_next_entry(inode_sb(dir),
 				    (struct ufs_dir_entry *)page_address(page));
 		*p = page;
 	}
@@ -250,7 +250,7 @@ struct ufs_dir_entry *ufs_dotdot(struct inode *dir, struct page **p)
 struct ufs_dir_entry *ufs_find_entry(struct inode *dir, const struct qstr *qstr,
 				     struct page **res_page)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	const unsigned char *name = qstr->name;
 	int namelen = qstr->len;
 	unsigned reclen = UFS_DIR_REC_LEN(namelen);
@@ -307,7 +307,7 @@ int ufs_add_link(struct dentry *dentry, struct inode *inode)
 	struct inode *dir = d_inode(dentry->d_parent);
 	const unsigned char *name = dentry->d_name.name;
 	int namelen = dentry->d_name.len;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	unsigned reclen = UFS_DIR_REC_LEN(namelen);
 	const unsigned int chunk_size = UFS_SB(sb)->s_uspi->s_dirblksize;
 	unsigned short rec_len, name_len;
@@ -348,7 +348,7 @@ int ufs_add_link(struct dentry *dentry, struct inode *inode)
 				goto got_it;
 			}
 			if (de->d_reclen == 0) {
-				ufs_error(dir->i_sb, __func__,
+				ufs_error(inode_sb(dir), __func__,
 					  "zero-length directory entry");
 				err = -EIO;
 				goto out_unlock;
@@ -424,7 +424,7 @@ ufs_readdir(struct file *file, struct dir_context *ctx)
 {
 	loff_t pos = ctx->pos;
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned int offset = pos & ~PAGE_MASK;
 	unsigned long n = pos >> PAGE_SHIFT;
 	unsigned long npages = dir_pages(inode);
@@ -495,7 +495,7 @@ ufs_readdir(struct file *file, struct dir_context *ctx)
 int ufs_delete_entry(struct inode *inode, struct ufs_dir_entry *dir,
 		     struct page * page)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	char *kaddr = page_address(page);
 	unsigned from = ((char*)dir - kaddr) & ~(UFS_SB(sb)->s_uspi->s_dirblksize - 1);
 	unsigned to = ((char*)dir - kaddr) + fs16_to_cpu(sb, dir->d_reclen);
@@ -513,7 +513,7 @@ int ufs_delete_entry(struct inode *inode, struct ufs_dir_entry *dir,
 
 	while ((char*)de < (char*)dir) {
 		if (de->d_reclen == 0) {
-			ufs_error(inode->i_sb, __func__,
+			ufs_error(inode_sb(inode), __func__,
 				  "zero-length directory entry");
 			err = -EIO;
 			goto out;
@@ -542,7 +542,7 @@ out:
 
 int ufs_make_empty(struct inode * inode, struct inode *dir)
 {
-	struct super_block * sb = dir->i_sb;
+	struct super_block * sb = inode_sb(dir);
 	struct address_space *mapping = inode->i_mapping;
 	struct page *page = grab_cache_page(mapping, 0);
 	const unsigned int chunk_size = UFS_SB(sb)->s_uspi->s_dirblksize;
@@ -590,7 +590,7 @@ fail:
  */
 int ufs_empty_dir(struct inode * inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct page *page = NULL;
 	unsigned long i, npages = dir_pages(inode);
 
@@ -608,9 +608,9 @@ int ufs_empty_dir(struct inode * inode)
 
 		while ((char *)de <= kaddr) {
 			if (de->d_reclen == 0) {
-				ufs_error(inode->i_sb, __func__,
-					"zero-length directory entry: "
-					"kaddr=%p, de=%p\n", kaddr, de);
+				ufs_error(inode_sb(inode), __func__,
+					  "zero-length directory entry: "
+					  "kaddr=%p, de=%p\n", kaddr, de);
 				goto not_empty;
 			}
 			if (de->d_ino) {

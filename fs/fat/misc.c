@@ -98,7 +98,7 @@ int fat_clusters_flush(struct super_block *sb)
  */
 int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	int ret, new_fclus, last;
 

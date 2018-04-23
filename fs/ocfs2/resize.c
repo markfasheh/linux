@@ -63,8 +63,8 @@ static u16 ocfs2_calc_new_backup_super(struct inode *inode,
 	u64 blkno, gd_blkno, lgd_blkno = le64_to_cpu(gd->bg_blkno);
 
 	for (i = 0; i < OCFS2_MAX_BACKUP_SUPERBLOCKS; i++) {
-		blkno = ocfs2_backup_super_blkno(inode->i_sb, i);
-		cluster = ocfs2_blocks_to_clusters(inode->i_sb, blkno);
+		blkno = ocfs2_backup_super_blkno(inode_sb(inode), i);
+		cluster = ocfs2_blocks_to_clusters(inode_sb(inode), blkno);
 
 		gd_blkno = ocfs2_which_cluster_group(inode, cluster);
 		if (gd_blkno < lgd_blkno)
@@ -73,7 +73,8 @@ static u16 ocfs2_calc_new_backup_super(struct inode *inode,
 			break;
 
 		/* check if already done backup super */
-		lgd_cluster = ocfs2_blocks_to_clusters(inode->i_sb, lgd_blkno);
+		lgd_cluster = ocfs2_blocks_to_clusters(inode_sb(inode),
+						       lgd_blkno);
 		lgd_cluster += old_bg_clusters;
 		if (lgd_cluster >= cluster)
 			continue;
@@ -98,7 +99,7 @@ static int ocfs2_update_last_group_and_inode(handle_t *handle,
 					     int new_clusters)
 {
 	int ret = 0;
-	struct ocfs2_super *osb = OCFS2_SB(bm_inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(bm_inode));
 	struct ocfs2_dinode *fe = (struct ocfs2_dinode *) bm_bh->b_data;
 	struct ocfs2_chain_list *cl = &fe->id2.i_chain;
 	struct ocfs2_chain_rec *cr;
@@ -190,12 +191,12 @@ static int update_backups(struct inode * inode, u32 clusters, char *data)
 	u64 blkno;
 	struct buffer_head *backup = NULL;
 	struct ocfs2_dinode *backup_di = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	/* calculate the real backups we need to update. */
 	for (i = 0; i < OCFS2_MAX_BACKUP_SUPERBLOCKS; i++) {
-		blkno = ocfs2_backup_super_blkno(inode->i_sb, i);
-		cluster = ocfs2_blocks_to_clusters(inode->i_sb, blkno);
+		blkno = ocfs2_backup_super_blkno(inode_sb(inode), i);
+		cluster = ocfs2_blocks_to_clusters(inode_sb(inode), blkno);
 		if (cluster >= clusters)
 			break;
 
@@ -205,7 +206,7 @@ static int update_backups(struct inode * inode, u32 clusters, char *data)
 			break;
 		}
 
-		memcpy(backup->b_data, data, inode->i_sb->s_blocksize);
+		memcpy(backup->b_data, data, inode_sb(inode)->s_blocksize);
 
 		backup_di = (struct ocfs2_dinode *)backup->b_data;
 		backup_di->i_blkno = cpu_to_le64(blkno);
@@ -229,7 +230,7 @@ static void ocfs2_update_super_and_backups(struct inode *inode,
 	u32 clusters = 0;
 	struct buffer_head *super_bh = NULL;
 	struct ocfs2_dinode *super_di = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	/*
 	 * update the superblock last.
@@ -279,7 +280,7 @@ int ocfs2_group_extend(struct inode * inode, int new_clusters)
 	struct inode *main_bm_inode = NULL;
 	struct ocfs2_dinode *fe = NULL;
 	struct ocfs2_group_desc *group = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	u16 cl_bpc;
 	u32 first_new_cluster;
 	u64 lgd_blkno;
@@ -392,7 +393,7 @@ static int ocfs2_check_new_group(struct inode *inode,
 		(struct ocfs2_group_desc *)group_bh->b_data;
 	u16 cl_bpc = le16_to_cpu(di->id2.i_chain.cl_bpc);
 
-	ret = ocfs2_check_group_descriptor(inode->i_sb, di, group_bh);
+	ret = ocfs2_check_group_descriptor(inode_sb(inode), di, group_bh);
 	if (ret)
 		goto out;
 
@@ -428,7 +429,7 @@ static int ocfs2_verify_group_and_input(struct inode *inode,
 	u16 cl_count = le16_to_cpu(di->id2.i_chain.cl_count);
 	u16 cl_cpg = le16_to_cpu(di->id2.i_chain.cl_cpg);
 	u16 next_free = le16_to_cpu(di->id2.i_chain.cl_next_free_rec);
-	u32 cluster = ocfs2_blocks_to_clusters(inode->i_sb, input->group);
+	u32 cluster = ocfs2_blocks_to_clusters(inode_sb(inode), input->group);
 	u32 total_clusters = le32_to_cpu(di->i_clusters);
 	int ret = -EINVAL;
 
@@ -466,7 +467,7 @@ int ocfs2_group_add(struct inode *inode, struct ocfs2_new_group_input *input)
 	struct buffer_head *main_bm_bh = NULL;
 	struct inode *main_bm_inode = NULL;
 	struct ocfs2_dinode *fe = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct buffer_head *group_bh = NULL;
 	struct ocfs2_group_desc *group = NULL;
 	struct ocfs2_chain_list *cl;

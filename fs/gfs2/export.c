@@ -32,7 +32,7 @@ static int gfs2_encode_fh(struct inode *inode, __u32 *p, int *len,
 			  struct inode *parent)
 {
 	__be32 *fh = (__force __be32 *)p;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct gfs2_inode *ip = GFS2_I(inode);
 
 	if (parent && (*len < GFS2_LARGE_FH_SIZE)) {

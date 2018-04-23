@@ -30,7 +30,7 @@
 
 struct inode *nilfs_bmap_get_dat(const struct nilfs_bmap *bmap)
 {
-	struct the_nilfs *nilfs = bmap->b_inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(bmap->b_inode)->s_fs_info;
 
 	return nilfs->ns_dat;
 }
@@ -41,7 +41,7 @@ static int nilfs_bmap_convert_error(struct nilfs_bmap *bmap,
 	struct inode *inode = bmap->b_inode;
 
 	if (err == -EINVAL) {
-		__nilfs_error(inode->i_sb, fname,
+		__nilfs_error(inode_sb(inode), fname,
 			      "broken bmap (inode number=%lu)", inode->i_ino);
 		err = -EIO;
 	}

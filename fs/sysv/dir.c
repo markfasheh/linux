@@ -65,7 +65,7 @@ static int sysv_readdir(struct file *file, struct dir_context *ctx)
 {
 	unsigned long pos = ctx->pos;
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned long npages = dir_pages(inode);
 	unsigned offset;
 	unsigned long n;
@@ -214,7 +214,7 @@ got_it:
 		goto out_unlock;
 	memcpy (de->name, name, namelen);
 	memset (de->name + namelen, 0, SYSV_DIRSIZE - namelen - 2);
-	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), inode->i_ino);
+	de->inode = cpu_to_fs16(SYSV_SB(inode_sb(inode)), inode->i_ino);
 	err = dir_commit_chunk(page, pos, SYSV_DIRSIZE);
 	dir->i_mtime = dir->i_ctime = current_time(dir);
 	mark_inode_dirty(dir);
@@ -265,10 +265,10 @@ int sysv_make_empty(struct inode *inode, struct inode *dir)
 	memset(base, 0, PAGE_SIZE);
 
 	de = (struct sysv_dir_entry *) base;
-	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), inode->i_ino);
+	de->inode = cpu_to_fs16(SYSV_SB(inode_sb(inode)), inode->i_ino);
 	strcpy(de->name,".");
 	de++;
-	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), dir->i_ino);
+	de->inode = cpu_to_fs16(SYSV_SB(inode_sb(inode)), dir->i_ino);
 	strcpy(de->name,"..");
 
 	kunmap(page);
@@ -283,7 +283,7 @@ fail:
  */
 int sysv_empty_dir(struct inode * inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct page *page = NULL;
 	unsigned long i, npages = dir_pages(inode);
 
@@ -335,7 +335,7 @@ void sysv_set_link(struct sysv_dir_entry *de, struct page *page,
 	lock_page(page);
 	err = sysv_prepare_chunk(page, pos, SYSV_DIRSIZE);
 	BUG_ON(err);
-	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), inode->i_ino);
+	de->inode = cpu_to_fs16(SYSV_SB(inode_sb(inode)), inode->i_ino);
 	err = dir_commit_chunk(page, pos, SYSV_DIRSIZE);
 	dir_put_page(page);
 	dir->i_mtime = dir->i_ctime = current_time(dir);

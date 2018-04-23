@@ -48,7 +48,7 @@ static inline struct gfs2_sbd *gfs2_mapping2sbd(struct address_space *mapping)
 	else if (mapping->a_ops == &gfs2_rgrp_aops)
 		return container_of(mapping, struct gfs2_sbd, sd_aspace);
 	else
-		return inode->i_sb->s_fs_info;
+		return inode_sb(inode)->s_fs_info;
 }
 
 extern struct buffer_head *gfs2_meta_new(struct gfs2_glock *gl, u64 blkno);

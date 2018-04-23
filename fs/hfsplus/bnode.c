@@ -656,7 +656,7 @@ void hfs_bnode_put(struct hfs_bnode *node)
  */
 bool hfs_bnode_need_zeroout(struct hfs_btree *tree)
 {
-	struct super_block *sb = tree->inode->i_sb;
+	struct super_block *sb = inode_sb(tree->inode);
 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
 	const u32 volume_attr = be32_to_cpu(sbi->s_vhdr->attributes);
 

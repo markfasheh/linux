@@ -357,7 +357,8 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
 	bool outarg_valid = true;
 
 	fuse_lock_inode(dir);
-	err = fuse_lookup_name(dir->i_sb, get_node_id(dir), &entry->d_name,
+	err = fuse_lookup_name(inode_sb(dir), get_node_id(dir),
+			       &entry->d_name,
 			       &outarg, &inode);
 	fuse_unlock_inode(dir);
 	if (err == -ENOENT) {
@@ -456,7 +457,7 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
 	ff->fh = outopen.fh;
 	ff->nodeid = outentry.nodeid;
 	ff->open_flags = outopen.open_flags;
-	inode = fuse_iget(dir->i_sb, outentry.nodeid, outentry.generation,
+	inode = fuse_iget(inode_sb(dir), outentry.nodeid, outentry.generation,
 			  &outentry.attr, entry_attr_timeout(&outentry), 0);
 	if (!inode) {
 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
@@ -562,7 +563,7 @@ static int create_new_entry(struct fuse_conn *fc, struct fuse_args *args,
 	if ((outarg.attr.mode ^ mode) & S_IFMT)
 		goto out_put_forget_req;
 
-	inode = fuse_iget(dir->i_sb, outarg.nodeid, outarg.generation,
+	inode = fuse_iget(inode_sb(dir), outarg.nodeid, outarg.generation,
 			  &outarg.attr, entry_attr_timeout(&outarg), 0);
 	if (!inode) {
 		fuse_queue_forget(fc, forget, outarg.nodeid, 1);
@@ -854,7 +855,7 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
 		attr->ctimensec = inode->i_ctime.tv_nsec;
 	}
 
-	stat->dev = inode->i_sb->s_dev;
+	stat->dev = inode_sb(inode)->s_dev;
 	stat->ino = attr->ino;
 	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
 	stat->nlink = attr->nlink;
@@ -873,7 +874,7 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
 	if (attr->blksize != 0)
 		blkbits = ilog2(attr->blksize);
 	else
-		blkbits = inode->i_sb->s_blocksize_bits;
+		blkbits = inode_sb(inode)->s_blocksize_bits;
 
 	stat->blksize = 1 << blkbits;
 }
@@ -1255,7 +1256,7 @@ retry:
 		 * which bumps nlookup inside
 		 */
 	} else {
-		inode = fuse_iget(dir->i_sb, o->nodeid, o->generation,
+		inode = fuse_iget(inode_sb(dir), o->nodeid, o->generation,
 				  &o->attr, entry_attr_timeout(o),
 				  attr_version);
 		if (!inode)

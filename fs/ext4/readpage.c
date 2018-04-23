@@ -112,7 +112,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 	sector_t last_block_in_file;
 	sector_t blocks[MAX_BUF_PER_PAGE];
 	unsigned page_block;
-	struct block_device *bdev = inode->i_sb->s_bdev;
+	struct block_device *bdev = inode_sb(inode)->s_bdev;
 	int length;
 	unsigned relative_block = 0;
 	struct ext4_map_blocks map;

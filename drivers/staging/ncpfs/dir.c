@@ -160,7 +160,8 @@ ncp_compare_dentry(const struct dentry *dentry,
 	if (ncp_case_sensitive(pinode))
 		return strncmp(str, name->name, len);
 
-	return ncp_strnicmp(NCP_IO_TABLE(pinode->i_sb), str, name->name, len);
+	return ncp_strnicmp(NCP_IO_TABLE(inode_sb(pinode)), str, name->name,
+			    len);
 }
 
 /*
@@ -616,8 +617,8 @@ ncp_fill_cache(struct file *file, struct dir_context *ctx,
 		struct inode *inode;
 
 		entry->opened = 0;
-		entry->ino = iunique(dir->i_sb, 2);
-		inode = ncp_iget(dir->i_sb, entry);
+		entry->ino = iunique(inode_sb(dir), 2);
+		inode = ncp_iget(inode_sb(dir), entry);
 		if (inode) {
 			d_instantiate(newdent, inode);
 			if (!hashed)
@@ -664,7 +665,7 @@ end_advance:
 		ctl.valid = 0;
 	if (!ctl.filled && (ctl.fpos == ctx->pos)) {
 		if (!ino)
-			ino = iunique(dir->i_sb, 2);
+			ino = iunique(inode_sb(dir), 2);
 		ctl.filled = !dir_emit(ctx, qname.name, qname.len,
 				     ino, DT_UNKNOWN);
 		if (!ctl.filled)
@@ -857,10 +858,10 @@ static struct dentry *ncp_lookup(struct inode *dir, struct dentry *dentry, unsig
 	 * Create an inode for the entry.
 	 */
 	finfo.opened = 0;
-	finfo.ino = iunique(dir->i_sb, 2);
+	finfo.ino = iunique(inode_sb(dir), 2);
 	finfo.volume = finfo.i.volNumber;
 	error = -EACCES;
-	inode = ncp_iget(dir->i_sb, &finfo);
+	inode = ncp_iget(inode_sb(dir), &finfo);
 
 	if (inode) {
 		ncp_new_dentry(dentry);
@@ -883,8 +884,8 @@ static int ncp_instantiate(struct inode *dir, struct dentry *dentry,
 	struct inode *inode;
 	int error = -EINVAL;
 
-	finfo->ino = iunique(dir->i_sb, 2);
-	inode = ncp_iget(dir->i_sb, finfo);
+	finfo->ino = iunique(inode_sb(dir), 2);
+	inode = ncp_iget(inode_sb(dir), finfo);
 	if (!inode)
 		goto out_close;
 	d_instantiate(dentry,inode);

@@ -185,7 +185,7 @@ void nfs_fscache_init_inode(struct inode *inode)
 	nfsi->fscache = NULL;
 	if (!S_ISREG(inode->i_mode))
 		return;
-	nfsi->fscache = fscache_acquire_cookie(NFS_SB(inode->i_sb)->fscache,
+	nfsi->fscache = fscache_acquire_cookie(NFS_SB(inode_sb(inode))->fscache,
 					       &nfs_fscache_inode_object_def,
 					       nfsi, false);
 }

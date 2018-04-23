@@ -964,17 +964,17 @@ static inline struct client_obd *sbi2mdc(struct ll_sb_info *sbi)
 /* FIXME: replace the name of this with LL_SB to conform to kernel stuff */
 static inline struct ll_sb_info *ll_i2sbi(struct inode *inode)
 {
-	return ll_s2sbi(inode->i_sb);
+	return ll_s2sbi(inode_sb(inode));
 }
 
 static inline struct obd_export *ll_i2dtexp(struct inode *inode)
 {
-	return ll_s2dtexp(inode->i_sb);
+	return ll_s2dtexp(inode_sb(inode));
 }
 
 static inline struct obd_export *ll_i2mdexp(struct inode *inode)
 {
-	return ll_s2mdexp(inode->i_sb);
+	return ll_s2mdexp(inode_sb(inode));
 }
 
 static inline struct lu_fid *ll_inode2fid(struct inode *inode)

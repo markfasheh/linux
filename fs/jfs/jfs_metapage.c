@@ -250,7 +250,7 @@ static sector_t metapage_get_blocks(struct inode *inode, sector_t lblock,
 	int rc = 0;
 	int xflag;
 	s64 xaddr;
-	sector_t file_blocks = (inode->i_size + inode->i_sb->s_blocksize - 1) >>
+	sector_t file_blocks = (inode->i_size + inode_sb(inode)->s_blocksize - 1) >>
 			       inode->i_blkbits;
 
 	if (lblock >= file_blocks)
@@ -350,7 +350,7 @@ static int metapage_writepage(struct page *page, struct writeback_control *wbc)
 	struct bio *bio = NULL;
 	int block_offset;	/* block offset of mp within page */
 	struct inode *inode = page->mapping->host;
-	int blocks_per_mp = JFS_SBI(inode->i_sb)->nbperpage;
+	int blocks_per_mp = JFS_SBI(inode_sb(inode))->nbperpage;
 	int len;
 	int xlen;
 	struct metapage *mp;
@@ -427,10 +427,10 @@ static int metapage_writepage(struct page *page, struct writeback_control *wbc)
 			bad_blocks++;
 			continue;
 		}
-		len = min(xlen, (int)JFS_SBI(inode->i_sb)->nbperpage);
+		len = min(xlen, (int)JFS_SBI(inode_sb(inode))->nbperpage);
 
 		bio = bio_alloc(GFP_NOFS, 1);
-		bio_set_dev(bio, inode->i_sb->s_bdev);
+		bio_set_dev(bio, inode_sb(inode)->s_bdev);
 		bio->bi_iter.bi_sector = pblock << (inode->i_blkbits - 9);
 		bio->bi_end_io = metapage_write_end_io;
 		bio->bi_private = page;
@@ -510,7 +510,7 @@ static int metapage_readpage(struct file *fp, struct page *page)
 				submit_bio(bio);
 
 			bio = bio_alloc(GFP_NOFS, 1);
-			bio_set_dev(bio, inode->i_sb->s_bdev);
+			bio_set_dev(bio, inode_sb(inode)->s_bdev);
 			bio->bi_iter.bi_sector =
 				pblock << (inode->i_blkbits - 9);
 			bio->bi_end_io = metapage_read_end_io;
@@ -611,7 +611,7 @@ struct metapage *__get_metapage(struct inode *inode, unsigned long lblock,
 		return NULL;
 	}
 	if (absolute)
-		mapping = JFS_SBI(inode->i_sb)->direct_inode->i_mapping;
+		mapping = JFS_SBI(inode_sb(inode))->direct_inode->i_mapping;
 	else {
 		/*
 		 * If an nfs client tries to read an inode that is larger
@@ -642,7 +642,7 @@ struct metapage *__get_metapage(struct inode *inode, unsigned long lblock,
 	mp = page_to_mp(page, page_offset);
 	if (mp) {
 		if (mp->logical_size != size) {
-			jfs_error(inode->i_sb,
+			jfs_error(inode_sb(inode),
 				  "get_mp->logical_size != size\n");
 			jfs_err("logical_size = %d, size = %d",
 				mp->logical_size, size);
@@ -653,7 +653,7 @@ struct metapage *__get_metapage(struct inode *inode, unsigned long lblock,
 		lock_metapage(mp);
 		if (test_bit(META_discard, &mp->flag)) {
 			if (!new) {
-				jfs_error(inode->i_sb,
+				jfs_error(inode_sb(inode),
 					  "using a discarded metapage\n");
 				discard_metapage(mp);
 				goto unlock;
@@ -666,7 +666,7 @@ struct metapage *__get_metapage(struct inode *inode, unsigned long lblock,
 		if (!mp)
 			goto unlock;
 		mp->page = page;
-		mp->sb = inode->i_sb;
+		mp->sb = inode_sb(inode);
 		mp->flag = 0;
 		mp->xflag = COMMIT_PAGE;
 		mp->count = 1;
@@ -781,7 +781,7 @@ void __invalidate_metapages(struct inode *ip, s64 addr, int len)
 	int BlocksPerPage = 1 << l2BlocksPerPage;
 	/* All callers are interested in block device's mapping */
 	struct address_space *mapping =
-		JFS_SBI(ip->i_sb)->direct_inode->i_mapping;
+		JFS_SBI(inode_sb(ip))->direct_inode->i_mapping;
 	struct metapage *mp;
 	struct page *page;
 	unsigned int offset;

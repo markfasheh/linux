@@ -48,7 +48,7 @@ static inline loff_t fat_make_i_pos(struct super_block *sb,
 static inline void fat_dir_readahead(struct inode *dir, sector_t iblock,
 				     sector_t phys)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bh;
 	int sec;
@@ -81,7 +81,7 @@ static inline void fat_dir_readahead(struct inode *dir, sector_t iblock,
 static int fat__get_entry(struct inode *dir, loff_t *pos,
 			  struct buffer_head **bh, struct msdos_dir_entry **de)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	sector_t phys, iblock;
 	unsigned long mapped_blocks;
 	int err, offset;
@@ -121,7 +121,7 @@ static inline int fat_get_entry(struct inode *dir, loff_t *pos,
 	/* Fast stuff first */
 	if (*bh && *de &&
 	   (*de - (struct msdos_dir_entry *)(*bh)->b_data) <
-				MSDOS_SB(dir->i_sb)->dir_per_block - 1) {
+				MSDOS_SB(inode_sb(dir))->dir_per_block - 1) {
 		*pos += sizeof(struct msdos_dir_entry);
 		(*de)++;
 		return 0;
@@ -462,7 +462,7 @@ static int fat_parse_short(struct super_block *sb,
 int fat_search_long(struct inode *inode, const unsigned char *name,
 		    int name_len, struct fat_slot_info *sinfo)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bh = NULL;
 	struct msdos_dir_entry *de;
@@ -553,7 +553,7 @@ static int __fat_readdir(struct inode *inode, struct file *file,
 			 struct dir_context *ctx, int short_only,
 			 struct fat_ioctl_filldir_callback *both)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bh;
 	struct msdos_dir_entry *de;
@@ -954,7 +954,7 @@ int fat_subdirs(struct inode *dir)
 int fat_scan(struct inode *dir, const unsigned char *name,
 	     struct fat_slot_info *sinfo)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 
 	sinfo->slot_off = 0;
 	sinfo->bh = NULL;
@@ -978,7 +978,7 @@ EXPORT_SYMBOL_GPL(fat_scan);
 int fat_scan_logstart(struct inode *dir, int i_logstart,
 		      struct fat_slot_info *sinfo)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 
 	sinfo->slot_off = 0;
 	sinfo->bh = NULL;
@@ -996,7 +996,7 @@ int fat_scan_logstart(struct inode *dir, int i_logstart,
 
 static int __fat_remove_entries(struct inode *dir, loff_t pos, int nr_slots)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct buffer_head *bh;
 	struct msdos_dir_entry *de, *endp;
 	int err = 0, orig_slots;
@@ -1031,7 +1031,7 @@ static int __fat_remove_entries(struct inode *dir, loff_t pos, int nr_slots)
 
 int fat_remove_entries(struct inode *dir, struct fat_slot_info *sinfo)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct msdos_dir_entry *de;
 	struct buffer_head *bh;
 	int err = 0, nr_slots;
@@ -1084,7 +1084,7 @@ EXPORT_SYMBOL_GPL(fat_remove_entries);
 static int fat_zeroed_cluster(struct inode *dir, sector_t blknr, int nr_used,
 			      struct buffer_head **bhs, int nr_bhs)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	sector_t last_blknr = blknr + MSDOS_SB(sb)->sec_per_clus;
 	int err, i, n;
 
@@ -1132,7 +1132,7 @@ error:
 
 int fat_alloc_new_dir(struct inode *dir, struct timespec *ts)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
 	struct msdos_dir_entry *de;
@@ -1196,7 +1196,7 @@ static int fat_add_new_entries(struct inode *dir, void *slots, int nr_slots,
 			       int *nr_cluster, struct msdos_dir_entry **de,
 			       struct buffer_head **bh, loff_t *i_pos)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
 	sector_t blknr, start_blknr, last_blknr;
@@ -1275,7 +1275,7 @@ error:
 int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
 		    struct fat_slot_info *sinfo)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bh, *prev, *bhs[3]; /* 32*slots (672bytes) */
 	struct msdos_dir_entry *uninitialized_var(de);

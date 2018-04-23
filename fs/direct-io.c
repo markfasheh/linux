@@ -378,7 +378,7 @@ static void dio_bio_end_aio(struct bio *bio)
 					    dio->inode->i_mapping->nrpages);
 		if (defer_completion) {
 			INIT_WORK(&dio->complete_work, dio_aio_complete_work);
-			queue_work(dio->inode->i_sb->s_dio_done_wq,
+			queue_work(inode_sb(dio->inode)->s_dio_done_wq,
 				   &dio->complete_work);
 		} else {
 			dio_complete(dio, 0, DIO_COMPLETE_ASYNC);
@@ -638,7 +638,7 @@ int sb_init_dio_done_wq(struct super_block *sb)
 
 static int dio_set_defer_completion(struct dio *dio)
 {
-	struct super_block *sb = dio->inode->i_sb;
+	struct super_block *sb = inode_sb(dio->inode);
 
 	if (dio->defer_completion)
 		return 0;
@@ -1276,13 +1276,13 @@ do_blockdev_direct_IO(struct kiocb *iocb, struct inode *inode,
 		retval = 0;
 		if (iocb->ki_flags & IOCB_DSYNC)
 			retval = dio_set_defer_completion(dio);
-		else if (!dio->inode->i_sb->s_dio_done_wq) {
+		else if (!inode_sb(dio->inode)->s_dio_done_wq) {
 			/*
 			 * In case of AIO write racing with buffered read we
 			 * need to defer completion. We can't decide this now,
 			 * however the workqueue needs to be initialized here.
 			 */
-			retval = sb_init_dio_done_wq(dio->inode->i_sb);
+			retval = sb_init_dio_done_wq(inode_sb(dio->inode));
 		}
 		if (retval) {
 			/*

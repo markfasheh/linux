@@ -128,7 +128,7 @@ static int hypfs_open(struct inode *inode, struct file *filp)
 			return -EACCES;
 	}
 
-	fs_info = inode->i_sb->s_fs_info;
+	fs_info = inode_sb(inode)->s_fs_info;
 	if(data) {
 		mutex_lock(&fs_info->lock);
 		filp->private_data = kstrdup(data, GFP_KERNEL);
@@ -164,7 +164,7 @@ static ssize_t hypfs_read_iter(struct kiocb *iocb, struct iov_iter *to)
 static ssize_t hypfs_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	int rc;
-	struct super_block *sb = file_inode(iocb->ki_filp)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(iocb->ki_filp));
 	struct hypfs_sb_info *fs_info = sb->s_fs_info;
 	size_t count = iov_iter_count(from);
 

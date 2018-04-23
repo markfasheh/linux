@@ -60,7 +60,7 @@ static int qnx4_get_block( struct inode *inode, sector_t iblock, struct buffer_h
 	phys = qnx4_block_map( inode, iblock );
 	if ( phys ) {
 		// logical block is before EOF
-		map_bh(bh, inode->i_sb, phys);
+		map_bh(bh, inode_sb(inode), phys);
 	}
 	return 0;
 }
@@ -94,7 +94,7 @@ unsigned long qnx4_block_map( struct inode *inode, long iblock )
 		while ( --nxtnt > 0 ) {
 			if ( ix == 0 ) {
 				// read next xtnt block.
-				bh = sb_bread(inode->i_sb, i_xblk - 1);
+				bh = sb_bread(inode_sb(inode), i_xblk - 1);
 				if ( !bh ) {
 					QNX4DEBUG((KERN_ERR "qnx4: I/O error reading xtnt block [%ld])\n", i_xblk - 1));
 					return -EIO;

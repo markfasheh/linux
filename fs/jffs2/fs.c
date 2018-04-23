@@ -32,7 +32,7 @@ int jffs2_do_setattr (struct inode *inode, struct iattr *iattr)
 {
 	struct jffs2_full_dnode *old_metadata, *new_metadata;
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_raw_inode *ri;
 	union jffs2_device_node dev;
 	unsigned char *mdata = NULL;
@@ -238,7 +238,7 @@ void jffs2_evict_inode (struct inode *inode)
 	/* We can forget about this inode for now - drop all
 	 *  the nodelists associated with it, etc.
 	 */
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
 
 	jffs2_dbg(1, "%s(): ino #%lu mode %o\n",
@@ -267,7 +267,7 @@ struct inode *jffs2_iget(struct super_block *sb, unsigned long ino)
 		return inode;
 
 	f = JFFS2_INODE_INFO(inode);
-	c = JFFS2_SB_INFO(inode->i_sb);
+	c = JFFS2_SB_INFO(inode_sb(inode));
 
 	jffs2_init_inode_info(f);
 	mutex_lock(&f->sem);
@@ -420,7 +420,7 @@ int jffs2_do_remount_fs(struct super_block *sb, int *flags, char *data)
 struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode, struct jffs2_raw_inode *ri)
 {
 	struct inode *inode;
-	struct super_block *sb = dir_i->i_sb;
+	struct super_block *sb = inode_sb(dir_i);
 	struct jffs2_sb_info *c;
 	struct jffs2_inode_info *f;
 	int ret;

@@ -94,7 +94,7 @@ static int ol_dqblk_chunk_off(struct super_block *sb, int c, loff_t off)
 static int ocfs2_modify_bh(struct inode *inode, struct buffer_head *bh,
 		void (*modify)(struct buffer_head *, void *), void *private)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	handle_t *handle;
 	int status;
 
@@ -137,8 +137,8 @@ static int ocfs2_read_quota_block(struct inode *inode, u64 v_block,
 	int rc = 0;
 	struct buffer_head *tmp = *bh;
 
-	if (i_size_read(inode) >> inode->i_sb->s_blocksize_bits <= v_block) {
-		ocfs2_error(inode->i_sb,
+	if (i_size_read(inode) >> inode_sb(inode)->s_blocksize_bits <= v_block) {
+		ocfs2_error(inode_sb(inode),
 			    "Quota file %llu is probably corrupted! Requested to read block %Lu but file has size only %Lu\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno,
 			    (unsigned long long)v_block,
@@ -264,7 +264,7 @@ static int ocfs2_load_local_quota_bitmaps(struct inode *inode,
 		newchunk->qc_num = i;
 		newchunk->qc_headerbh = NULL;
 		status = ocfs2_read_quota_block(inode,
-				ol_quota_chunk_block(inode->i_sb, i),
+				ol_quota_chunk_block(inode_sb(inode), i),
 				&newchunk->qc_headerbh);
 		if (status) {
 			mlog_errno(status);
@@ -341,7 +341,7 @@ static int ocfs2_recovery_load_quota(struct inode *lqinode,
 				     int type,
 				     struct list_head *head)
 {
-	struct super_block *sb = lqinode->i_sb;
+	struct super_block *sb = inode_sb(lqinode);
 	struct buffer_head *hbh;
 	struct ocfs2_local_disk_chunk *dchunk;
 	int i, chunks = le32_to_cpu(ldinfo->dqi_chunks);
@@ -460,7 +460,7 @@ static int ocfs2_recover_local_quota_file(struct inode *lqinode,
 					  int type,
 					  struct ocfs2_quota_recovery *rec)
 {
-	struct super_block *sb = lqinode->i_sb;
+	struct super_block *sb = inode_sb(lqinode);
 	struct ocfs2_mem_dqinfo *oinfo = sb_dqinfo(sb, type)->dqi_priv;
 	struct ocfs2_local_disk_chunk *dchunk;
 	struct ocfs2_local_disk_dqblk *dqblk;

@@ -114,9 +114,9 @@ ncp_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 
 	if (!iov_iter_count(to))
 		return 0;
-	if (pos > inode->i_sb->s_maxbytes)
+	if (pos > inode_sb(inode)->s_maxbytes)
 		return 0;
-	iov_iter_truncate(to, inode->i_sb->s_maxbytes - pos);
+	iov_iter_truncate(to, inode_sb(inode)->s_maxbytes - pos);
 
 	error = ncp_make_open(inode, O_RDONLY);
 	if (error) {

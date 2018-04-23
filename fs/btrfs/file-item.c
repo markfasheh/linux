@@ -163,7 +163,7 @@ static void btrfs_io_bio_endio_readpage(struct btrfs_io_bio *bio, int err)
 static blk_status_t __btrfs_lookup_bio_sums(struct inode *inode, struct bio *bio,
 				   u64 logical_offset, u32 *dst, int dio)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct bio_vec bvec;
 	struct bvec_iter iter;
 	struct btrfs_io_bio *btrfs_bio = btrfs_io_bio(bio);
@@ -185,7 +185,7 @@ static blk_status_t __btrfs_lookup_bio_sums(struct inode *inode, struct bio *bio
 	if (!path)
 		return BLK_STS_RESOURCE;
 
-	nblocks = bio->bi_iter.bi_size >> inode->i_sb->s_blocksize_bits;
+	nblocks = bio->bi_iter.bi_size >> inode_sb(inode)->s_blocksize_bits;
 	if (!dst) {
 		if (nblocks * csum_size > BTRFS_BIO_INLINE_CSUM_SIZE) {
 			btrfs_bio->csum_allocated = kmalloc_array(nblocks,
@@ -280,7 +280,7 @@ static blk_status_t __btrfs_lookup_bio_sums(struct inode *inode, struct bio *bio
 		diff = diff / fs_info->sectorsize;
 		diff = diff * csum_size;
 		count = min_t(int, nblocks, (item_last_offset - disk_bytenr) >>
-					    inode->i_sb->s_blocksize_bits);
+					    inode_sb(inode)->s_blocksize_bits);
 		read_extent_buffer(path->nodes[0], csum,
 				   ((unsigned long)item) + diff,
 				   csum_size * count);
@@ -435,7 +435,7 @@ fail:
 blk_status_t btrfs_csum_one_bio(struct inode *inode, struct bio *bio,
 		       u64 file_start, int contig)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_ordered_sum *sums;
 	struct btrfs_ordered_extent *ordered = NULL;
 	char *data;
@@ -935,7 +935,7 @@ void btrfs_extent_item_to_extent_map(struct btrfs_inode *inode,
 				     const bool new_inline,
 				     struct extent_map *em)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_root *root = inode->root;
 	struct extent_buffer *leaf = path->nodes[0];
 	const int slot = path->slots[0];

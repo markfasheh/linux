@@ -1978,10 +1978,10 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
  * (c) Daniel Phillips, 2001
  */
 
-#define is_dx(dir) (ext4_has_feature_dir_index((dir)->i_sb) && \
+#define is_dx(dir) (ext4_has_feature_dir_index(inode_sb((dir))) && \
 		    ext4_test_inode_flag((dir), EXT4_INODE_INDEX))
 #define EXT4_DIR_LINK_MAX(dir) unlikely((dir)->i_nlink >= EXT4_LINK_MAX && \
-		    !(ext4_has_feature_dir_nlink((dir)->i_sb) && is_dx(dir)))
+		    !(ext4_has_feature_dir_nlink(inode_sb((dir))) && is_dx(dir)))
 #define EXT4_DIR_LINK_EMPTY(dir) ((dir)->i_nlink == 2 || (dir)->i_nlink == 1)
 
 /* Legal values for the dx_root hash_version field: */
@@ -2341,7 +2341,7 @@ void ext4_insert_dentry(struct inode *inode,
 			struct ext4_filename *fname);
 static inline void ext4_update_dx_flag(struct inode *inode)
 {
-	if (!ext4_has_feature_dir_index(inode->i_sb))
+	if (!ext4_has_feature_dir_index(inode_sb(inode)))
 		ext4_clear_inode_flag(inode, EXT4_INODE_INDEX);
 }
 static const unsigned char ext4_filetype_table[] = {
@@ -2924,7 +2924,7 @@ static inline void ext4_unlock_group(struct super_block *sb,
 #define ext4_check_indirect_blockref(inode, bh)				\
 	ext4_check_blockref(__func__, __LINE__, inode,			\
 			    (__le32 *)(bh)->b_data,			\
-			    EXT4_ADDR_PER_BLOCK((inode)->i_sb))
+			    EXT4_ADDR_PER_BLOCK(inode_sb((inode))))
 
 #define ext4_ind_check_inode(inode)					\
 	ext4_check_blockref(__func__, __LINE__, inode,			\

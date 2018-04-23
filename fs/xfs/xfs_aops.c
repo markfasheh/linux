@@ -219,7 +219,7 @@ xfs_setfilesize_trans_alloc(
 	 * We may pass freeze protection with a transaction.  So tell lockdep
 	 * we released it.
 	 */
-	__sb_writers_release(ioend->io_inode->i_sb, SB_FREEZE_FS);
+	__sb_writers_release(inode_sb(ioend->io_inode), SB_FREEZE_FS);
 	/*
 	 * We hand off the transaction to the completion thread now, so
 	 * clear the flag here.
@@ -288,7 +288,7 @@ xfs_setfilesize_ioend(
 	 * Similarly for freeze protection.
 	 */
 	current_set_flags_nested(&tp->t_pflags, PF_MEMALLOC_NOFS);
-	__sb_writers_acquired(VFS_I(ip)->i_sb, SB_FREEZE_FS);
+	__sb_writers_acquired(inode_sb(VFS_I(ip)), SB_FREEZE_FS);
 
 	/* we abort the update if there was an IO error */
 	if (error) {

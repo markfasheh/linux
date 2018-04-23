@@ -66,7 +66,7 @@ struct page_collect {
 static void _pcol_init(struct page_collect *pcol, unsigned expected_pages,
 		       struct inode *inode)
 {
-	struct exofs_sb_info *sbi = inode->i_sb->s_fs_info;
+	struct exofs_sb_info *sbi = inode_sb(inode)->s_fs_info;
 
 	pcol->sbi = sbi;
 	pcol->inode = inode;
@@ -996,7 +996,7 @@ static inline int exofs_inode_is_fast_symlink(struct inode *inode)
 static int _do_truncate(struct inode *inode, loff_t newsize)
 {
 	struct exofs_i_info *oi = exofs_i(inode);
-	struct exofs_sb_info *sbi = inode->i_sb->s_fs_info;
+	struct exofs_sb_info *sbi = inode_sb(inode)->s_fs_info;
 	int ret;
 
 	inode->i_mtime = inode->i_ctime = current_time(inode);
@@ -1256,7 +1256,7 @@ static void create_done(struct ore_io_state *ios, void *p)
 {
 	struct inode *inode = p;
 	struct exofs_i_info *oi = exofs_i(inode);
-	struct exofs_sb_info *sbi = inode->i_sb->s_fs_info;
+	struct exofs_sb_info *sbi = inode_sb(inode)->s_fs_info;
 	int ret;
 
 	ret = ore_check_io(ios, NULL);
@@ -1286,7 +1286,7 @@ static void create_done(struct ore_io_state *ios, void *p)
  */
 struct inode *exofs_new_inode(struct inode *dir, umode_t mode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct exofs_sb_info *sbi = sb->s_fs_info;
 	struct inode *inode;
 	struct exofs_i_info *oi;
@@ -1366,7 +1366,7 @@ static void updatei_done(struct ore_io_state *ios, void *p)
 static int exofs_update_inode(struct inode *inode, int do_sync)
 {
 	struct exofs_i_info *oi = exofs_i(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct exofs_sb_info *sbi = sb->s_fs_info;
 	struct ore_io_state *ios;
 	struct osd_attr attr;
@@ -1468,7 +1468,7 @@ static void delete_done(struct ore_io_state *ios, void *p)
 void exofs_evict_inode(struct inode *inode)
 {
 	struct exofs_i_info *oi = exofs_i(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct exofs_sb_info *sbi = sb->s_fs_info;
 	struct ore_io_state *ios;
 	int ret;

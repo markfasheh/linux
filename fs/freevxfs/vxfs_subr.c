@@ -105,7 +105,7 @@ vxfs_bread(struct inode *ip, int block)
 	daddr_t			pblock;
 
 	pblock = vxfs_bmap1(ip, block);
-	bp = sb_bread(ip->i_sb, pblock);
+	bp = sb_bread(inode_sb(ip), pblock);
 
 	return (bp);
 }
@@ -133,7 +133,7 @@ vxfs_getblk(struct inode *ip, sector_t iblock,
 
 	pblock = vxfs_bmap1(ip, iblock);
 	if (pblock != 0) {
-		map_bh(bp, ip->i_sb, pblock);
+		map_bh(bp, inode_sb(ip), pblock);
 		return 0;
 	}
 

@@ -776,7 +776,7 @@ static int verify_reserved_gdb(struct super_block *sb,
 static int add_new_gdb(handle_t *handle, struct inode *inode,
 		       ext4_group_t group)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
 	unsigned long gdb_num = group / EXT4_DESC_PER_BLOCK(sb);
 	ext4_fsblk_t gdblock = EXT4_SB(sb)->s_sbh->b_blocknr + 1 + gdb_num;
@@ -957,7 +957,7 @@ static int add_new_gdb_meta_bg(struct super_block *sb,
 static int reserve_backup_gdb(handle_t *handle, struct inode *inode,
 			      ext4_group_t group)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int reserved_gdb =le16_to_cpu(EXT4_SB(sb)->s_es->s_reserved_gdt_blocks);
 	int cluster_bits = EXT4_SB(sb)->s_cluster_bits;
 	struct buffer_head **primary;

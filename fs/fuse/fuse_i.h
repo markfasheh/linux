@@ -674,7 +674,7 @@ static inline struct fuse_conn *get_fuse_conn_super(struct super_block *sb)
 
 static inline struct fuse_conn *get_fuse_conn(struct inode *inode)
 {
-	return get_fuse_conn_super(inode->i_sb);
+	return get_fuse_conn_super(inode_sb(inode));
 }
 
 static inline struct fuse_inode *get_fuse_inode(struct inode *inode)

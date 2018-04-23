@@ -174,7 +174,7 @@ proc_fd_instantiate(struct inode *dir, struct dentry *dentry,
 	struct proc_inode *ei;
 	struct inode *inode;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFLNK);
+	inode = proc_pid_make_inode(inode_sb(dir), task, S_IFLNK);
 	if (!inode)
 		goto out;
 
@@ -312,7 +312,7 @@ proc_fdinfo_instantiate(struct inode *dir, struct dentry *dentry,
 	struct proc_inode *ei;
 	struct inode *inode;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFREG | S_IRUSR);
+	inode = proc_pid_make_inode(inode_sb(dir), task, S_IFREG | S_IRUSR);
 	if (!inode)
 		goto out;
 

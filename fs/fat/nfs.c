@@ -39,7 +39,7 @@ static struct inode *fat_dget(struct super_block *sb, int i_logstart)
 	head = sbi->dir_hashtable + fat_dir_hash(i_logstart);
 	spin_lock(&sbi->dir_hash_lock);
 	hlist_for_each_entry(i, head, i_dir_hash) {
-		BUG_ON(i->vfs_inode.i_sb != sb);
+		BUG_ON(inode_sb(&i->vfs_inode) != sb);
 		if (i->i_logstart != i_logstart)
 			continue;
 		inode = igrab(&i->vfs_inode);
@@ -110,7 +110,7 @@ fat_encode_fh_nostale(struct inode *inode, __u32 *fh, int *lenp,
 		      struct inode *parent)
 {
 	int len = *lenp;
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	struct fat_fid *fid = (struct fat_fid *) fh;
 	loff_t i_pos;
 	int type = FILEID_FAT_WITHOUT_PARENT;

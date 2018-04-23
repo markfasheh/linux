@@ -246,10 +246,12 @@ cifs_nt_open(char *full_path, struct inode *inode, struct cifs_sb_info *cifs_sb,
 		goto out;
 
 	if (tcon->unix_ext)
-		rc = cifs_get_inode_info_unix(&inode, full_path, inode->i_sb,
+		rc = cifs_get_inode_info_unix(&inode, full_path,
+					      inode_sb(inode),
 					      xid);
 	else
-		rc = cifs_get_inode_info(&inode, full_path, buf, inode->i_sb,
+		rc = cifs_get_inode_info(&inode, full_path, buf,
+					 inode_sb(inode),
 					 xid, fid);
 
 out:
@@ -314,7 +316,7 @@ cifs_new_fileinfo(struct cifs_fid *fid, struct file *file,
 	mutex_init(&cfile->fh_mutex);
 	spin_lock_init(&cfile->file_info_lock);
 
-	cifs_sb_active(inode->i_sb);
+	cifs_sb_active(inode_sb(inode));
 
 	/*
 	 * If the server returned a read oplock and we have mandatory brlocks,
@@ -369,7 +371,7 @@ void cifsFileInfo_put(struct cifsFileInfo *cifs_file)
 	struct cifs_tcon *tcon = tlink_tcon(cifs_file->tlink);
 	struct TCP_Server_Info *server = tcon->ses->server;
 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
 	struct cifsLockInfo *li, *tmp;
 	struct cifs_fid fid;
@@ -466,7 +468,7 @@ int cifs_open(struct inode *inode, struct file *file)
 
 	xid = get_xid();
 
-	cifs_sb = CIFS_SB(inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(inode));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink)) {
 		free_xid(xid);
@@ -501,9 +503,9 @@ int cifs_open(struct inode *inode, struct file *file)
 	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
 		/* can not refresh inode info since size could be stale */
-		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-				cifs_sb->mnt_file_mode /* ignored */,
-				file->f_flags, &oplock, &fid.netfid, xid);
+		rc = cifs_posix_open(full_path, &inode, inode_sb(inode),
+				     cifs_sb->mnt_file_mode /* ignored */,
+				     file->f_flags, &oplock, &fid.netfid, xid);
 		if (rc == 0) {
 			cifs_dbg(FYI, "posix open succeeded\n");
 			posix_open_ok = true;
@@ -634,7 +636,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
 	}
 
 	inode = d_inode(cfile->dentry);
-	cifs_sb = CIFS_SB(inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(inode));
 	tcon = tlink_tcon(cfile->tlink);
 	server = tcon->ses->server;
 
@@ -670,7 +672,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
 		unsigned int oflags = cfile->f_flags &
 						~(O_CREAT | O_EXCL | O_TRUNC);
 
-		rc = cifs_posix_open(full_path, NULL, inode->i_sb,
+		rc = cifs_posix_open(full_path, NULL, inode_sb(inode),
 				     cifs_sb->mnt_file_mode /* ignored */,
 				     oflags, &oplock, &cfile->fid.netfid, xid);
 		if (rc == 0) {
@@ -734,10 +736,10 @@ reopen_success:
 
 		if (tcon->unix_ext)
 			rc = cifs_get_inode_info_unix(&inode, full_path,
-						      inode->i_sb, xid);
+						      inode_sb(inode), xid);
 		else
 			rc = cifs_get_inode_info(&inode, full_path, NULL,
-						 inode->i_sb, xid, NULL);
+						 inode_sb(inode), xid, NULL);
 	}
 	/*
 	 * Else we are writing out data to server already and could deadlock if
@@ -1790,7 +1792,7 @@ struct cifsFileInfo *find_readable_file(struct cifsInodeInfo *cifs_inode,
 					bool fsuid_only)
 {
 	struct cifsFileInfo *open_file = NULL;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(cifs_inode->vfs_inode.i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(&cifs_inode->vfs_inode));
 	struct cifs_tcon *tcon = cifs_sb_master_tcon(cifs_sb);
 
 	/* only filter by fsuid on multiuser mounts */
@@ -1841,7 +1843,7 @@ struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *cifs_inode,
 		return NULL;
 	}
 
-	cifs_sb = CIFS_SB(cifs_inode->vfs_inode.i_sb);
+	cifs_sb = CIFS_SB(inode_sb(&cifs_inode->vfs_inode));
 	tcon = cifs_sb_master_tcon(cifs_sb);
 
 	/* only filter by fsuid on multiuser mounts */
@@ -2093,7 +2095,7 @@ wdata_send_pages(struct cifs_writedata *wdata, unsigned int nr_pages,
 static int cifs_writepages(struct address_space *mapping,
 			   struct writeback_control *wbc)
 {
-	struct cifs_sb_info *cifs_sb = CIFS_SB(mapping->host->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(mapping->host));
 	struct TCP_Server_Info *server;
 	bool done = false, scanned = false, range_whole = false;
 	pgoff_t end, index;
@@ -2321,7 +2323,7 @@ int cifs_strict_fsync(struct file *file, loff_t start, loff_t end,
 	struct TCP_Server_Info *server;
 	struct cifsFileInfo *smbfile = file->private_data;
 	struct inode *inode = file_inode(file);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 
 	rc = file_write_and_wait_range(file, start, end);
 	if (rc)
@@ -2837,7 +2839,7 @@ cifs_strict_writev(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
 	struct cifsInodeInfo *cinode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifsFileInfo *cfile = (struct cifsFileInfo *)
 						iocb->ki_filp->private_data;
 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
@@ -3333,7 +3335,7 @@ cifs_strict_readv(struct kiocb *iocb, struct iov_iter *to)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
 	struct cifsInodeInfo *cinode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifsFileInfo *cfile = (struct cifsFileInfo *)
 						iocb->ki_filp->private_data;
 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
@@ -3900,7 +3902,7 @@ static int is_inode_writable(struct cifsInodeInfo *cifs_inode)
 {
 	struct cifsFileInfo *open_file;
 	struct cifs_tcon *tcon =
-		cifs_sb_master_tcon(CIFS_SB(cifs_inode->vfs_inode.i_sb));
+		cifs_sb_master_tcon(CIFS_SB(inode_sb(&cifs_inode->vfs_inode)));
 
 	spin_lock(&tcon->open_file_lock);
 	list_for_each_entry(open_file, &cifs_inode->openFileList, flist) {
@@ -3928,7 +3930,7 @@ bool is_size_safe_to_change(struct cifsInodeInfo *cifsInode, __u64 end_of_file)
 		/* This inode is open for write at least once */
 		struct cifs_sb_info *cifs_sb;
 
-		cifs_sb = CIFS_SB(cifsInode->vfs_inode.i_sb);
+		cifs_sb = CIFS_SB(inode_sb(&cifsInode->vfs_inode));
 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_DIRECT_IO) {
 			/* since no page cache to corrupt on directio
 			we can change size safely */

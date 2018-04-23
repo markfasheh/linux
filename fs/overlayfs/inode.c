@@ -199,7 +199,7 @@ int ovl_permission(struct inode *inode, int mask)
 	if (err)
 		return err;
 
-	old_cred = ovl_override_creds(inode->i_sb);
+	old_cred = ovl_override_creds(inode_sb(inode));
 	if (!upperinode &&
 	    !special_file(realinode->i_mode) && mask & MAY_WRITE) {
 		mask &= ~(MAY_WRITE | MAY_APPEND);
@@ -342,7 +342,7 @@ struct posix_acl *ovl_get_acl(struct inode *inode, int type)
 	if (!IS_ENABLED(CONFIG_FS_POSIX_ACL) || !IS_POSIXACL(realinode))
 		return NULL;
 
-	old_cred = ovl_override_creds(inode->i_sb);
+	old_cred = ovl_override_creds(inode_sb(inode));
 	acl = get_acl(realinode, type);
 	revert_creds(old_cred);
 
@@ -445,7 +445,7 @@ static inline void ovl_lockdep_annotate_inode_mutex_key(struct inode *inode)
 	static struct lock_class_key ovl_i_mutex_dir_key[OVL_MAX_NESTING];
 	static struct lock_class_key ovl_i_lock_key[OVL_MAX_NESTING];
 
-	int depth = inode->i_sb->s_stack_depth - 1;
+	int depth = inode_sb(inode)->s_stack_depth - 1;
 
 	if (WARN_ON_ONCE(depth < 0 || depth >= OVL_MAX_NESTING))
 		depth = 0;

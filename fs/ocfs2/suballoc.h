@@ -178,7 +178,7 @@ static inline u32 ocfs2_cluster_from_desc(struct ocfs2_super *osb,
 
 static inline int ocfs2_is_cluster_bitmap(struct inode *inode)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	return osb->bitmap_blkno == OCFS2_I(inode)->ip_blkno;
 }
 

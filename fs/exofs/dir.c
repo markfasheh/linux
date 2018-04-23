@@ -36,7 +36,7 @@
 
 static inline unsigned exofs_chunk_size(struct inode *inode)
 {
-	return inode->i_sb->s_blocksize;
+	return inode_sb(inode)->s_blocksize;
 }
 
 static inline void exofs_put_page(struct page *page)
@@ -430,7 +430,7 @@ int exofs_add_link(struct dentry *dentry, struct inode *inode)
 	unsigned reclen = EXOFS_DIR_REC_LEN(namelen);
 	unsigned short rec_len, name_len;
 	struct page *page = NULL;
-	struct exofs_sb_info *sbi = inode->i_sb->s_fs_info;
+	struct exofs_sb_info *sbi = inode_sb(inode)->s_fs_info;
 	struct exofs_dir_entry *de;
 	unsigned long npages = dir_pages(dir);
 	unsigned long n;
@@ -520,7 +520,7 @@ int exofs_delete_entry(struct exofs_dir_entry *dir, struct page *page)
 {
 	struct address_space *mapping = page->mapping;
 	struct inode *inode = mapping->host;
-	struct exofs_sb_info *sbi = inode->i_sb->s_fs_info;
+	struct exofs_sb_info *sbi = inode_sb(inode)->s_fs_info;
 	char *kaddr = page_address(page);
 	unsigned from = ((char *)dir - kaddr) & ~(exofs_chunk_size(inode)-1);
 	unsigned to = ((char *)dir - kaddr) + le16_to_cpu(dir->rec_len);

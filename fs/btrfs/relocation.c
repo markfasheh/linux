@@ -3145,7 +3145,7 @@ static noinline_for_stack
 int setup_extent_mapping(struct inode *inode, u64 start, u64 end,
 			 u64 block_start)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct extent_map_tree *em_tree = &BTRFS_I(inode)->extent_tree;
 	struct extent_map *em;
 	int ret = 0;
@@ -3179,7 +3179,7 @@ int setup_extent_mapping(struct inode *inode, u64 start, u64 end,
 static int relocate_file_extent_cluster(struct inode *inode,
 					struct file_extent_cluster *cluster)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	u64 page_start;
 	u64 page_end;
 	u64 offset = BTRFS_I(inode)->index_cnt;
@@ -4643,7 +4643,7 @@ out:
  */
 int btrfs_reloc_clone_csums(struct inode *inode, u64 file_pos, u64 len)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_ordered_sum *sums;
 	struct btrfs_ordered_extent *ordered;
 	int ret;

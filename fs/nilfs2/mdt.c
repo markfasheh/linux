@@ -78,7 +78,7 @@ static int nilfs_mdt_create_block(struct inode *inode, unsigned long block,
 						     struct buffer_head *,
 						     void *))
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct nilfs_transaction_info ti;
 	struct buffer_head *bh;
 	int err;
@@ -153,7 +153,7 @@ nilfs_mdt_submit_block(struct inode *inode, unsigned long blkoff,
 		unlock_buffer(bh);
 		goto failed_bh;
 	}
-	map_bh(bh, inode->i_sb, (sector_t)blknum);
+	map_bh(bh, inode_sb(inode), (sector_t)blknum);
 
 	bh->b_end_io = end_buffer_read_sync;
 	get_bh(bh);
@@ -208,7 +208,7 @@ static int nilfs_mdt_read_block(struct inode *inode, unsigned long block,
  out_no_wait:
 	err = -EIO;
 	if (!buffer_uptodate(first_bh)) {
-		nilfs_msg(inode->i_sb, KERN_ERR,
+		nilfs_msg(inode_sb(inode), KERN_ERR,
 			  "I/O error reading meta-data file (ino=%lu, block-offset=%lu)",
 			  inode->i_ino, block);
 		goto failed_bh;
@@ -413,7 +413,7 @@ nilfs_mdt_write_page(struct page *page, struct writeback_control *wbc)
 	struct super_block *sb;
 	int err = 0;
 
-	if (inode && sb_rdonly(inode->i_sb)) {
+	if (inode && sb_rdonly(inode_sb(inode))) {
 		/*
 		 * It means that filesystem was remounted in read-only
 		 * mode because of error or metadata corruption. But we
@@ -431,7 +431,7 @@ nilfs_mdt_write_page(struct page *page, struct writeback_control *wbc)
 	if (!inode)
 		return 0;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 
 	if (wbc->sync_mode == WB_SYNC_ALL)
 		err = nilfs_construct_segment(sb);

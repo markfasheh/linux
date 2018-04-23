@@ -973,7 +973,7 @@ void bd_forget(struct inode *inode)
 	struct block_device *bdev = NULL;
 
 	spin_lock(&bdev_lock);
-	if (!sb_is_blkdev_sb(inode->i_sb))
+	if (!sb_is_blkdev_sb(inode_sb(inode)))
 		bdev = inode->i_bdev;
 	inode->i_bdev = NULL;
 	inode->i_mapping = &inode->i_data;

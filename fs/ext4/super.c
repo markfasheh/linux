@@ -467,31 +467,33 @@ void __ext4_error_inode(struct inode *inode, const char *function,
 {
 	va_list args;
 	struct va_format vaf;
-	struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
+	struct ext4_super_block *es = EXT4_SB(inode_sb(inode))->s_es;
 
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))))
 		return;
 
 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
 	es->s_last_error_block = cpu_to_le64(block);
-	if (ext4_error_ratelimit(inode->i_sb)) {
+	if (ext4_error_ratelimit(inode_sb(inode))) {
 		va_start(args, fmt);
 		vaf.fmt = fmt;
 		vaf.va = &args;
 		if (block)
 			printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: "
 			       "inode #%lu: block %llu: comm %s: %pV\n",
-			       inode->i_sb->s_id, function, line, inode->i_ino,
+			       inode_sb(inode)->s_id, function, line,
+			       inode->i_ino,
 			       block, current->comm, &vaf);
 		else
 			printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: "
 			       "inode #%lu: comm %s: %pV\n",
-			       inode->i_sb->s_id, function, line, inode->i_ino,
+			       inode_sb(inode)->s_id, function, line,
+			       inode->i_ino,
 			       current->comm, &vaf);
 		va_end(args);
 	}
-	save_error_info(inode->i_sb, function, line);
-	ext4_handle_error(inode->i_sb);
+	save_error_info(inode_sb(inode), function, line);
+	ext4_handle_error(inode_sb(inode));
 }
 
 void __ext4_error_file(struct file *file, const char *function,
@@ -504,12 +506,12 @@ void __ext4_error_file(struct file *file, const char *function,
 	struct inode *inode = file_inode(file);
 	char pathname[80], *path;
 
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))))
 		return;
 
-	es = EXT4_SB(inode->i_sb)->s_es;
+	es = EXT4_SB(inode_sb(inode))->s_es;
 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
-	if (ext4_error_ratelimit(inode->i_sb)) {
+	if (ext4_error_ratelimit(inode_sb(inode))) {
 		path = file_path(file, pathname, sizeof(pathname));
 		if (IS_ERR(path))
 			path = "(unknown)";
@@ -520,18 +522,20 @@ void __ext4_error_file(struct file *file, const char *function,
 			printk(KERN_CRIT
 			       "EXT4-fs error (device %s): %s:%d: inode #%lu: "
 			       "block %llu: comm %s: path %s: %pV\n",
-			       inode->i_sb->s_id, function, line, inode->i_ino,
+			       inode_sb(inode)->s_id, function, line,
+			       inode->i_ino,
 			       block, current->comm, path, &vaf);
 		else
 			printk(KERN_CRIT
 			       "EXT4-fs error (device %s): %s:%d: inode #%lu: "
 			       "comm %s: path %s: %pV\n",
-			       inode->i_sb->s_id, function, line, inode->i_ino,
+			       inode_sb(inode)->s_id, function, line,
+			       inode->i_ino,
 			       current->comm, path, &vaf);
 		va_end(args);
 	}
-	save_error_info(inode->i_sb, function, line);
-	ext4_handle_error(inode->i_sb);
+	save_error_info(inode_sb(inode), function, line);
+	ext4_handle_error(inode_sb(inode));
 }
 
 const char *ext4_decode_error(struct super_block *sb, int errno,
@@ -693,14 +697,14 @@ void __ext4_warning_inode(const struct inode *inode, const char *function,
 	struct va_format vaf;
 	va_list args;
 
-	if (!ext4_warning_ratelimit(inode->i_sb))
+	if (!ext4_warning_ratelimit(inode_sb(inode)))
 		return;
 
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
 	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: "
-	       "inode #%lu: comm %s: %pV\n", inode->i_sb->s_id,
+	       "inode #%lu: comm %s: %pV\n", inode_sb(inode)->s_id,
 	       function, line, inode->i_ino, current->comm, &vaf);
 	va_end(args);
 }
@@ -840,7 +844,7 @@ static void dump_orphan_list(struct super_block *sb, struct ext4_sb_info *sbi)
 		struct inode *inode = orphan_list_entry(l);
 		printk(KERN_ERR "  "
 		       "inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
-		       inode->i_sb->s_id, inode->i_ino, inode,
+		       inode_sb(inode)->s_id, inode->i_ino, inode,
 		       inode->i_mode, inode->i_nlink,
 		       NEXT_ORPHAN(inode));
 	}
@@ -1014,7 +1018,7 @@ static void ext4_i_callback(struct rcu_head *head)
 static void ext4_destroy_inode(struct inode *inode)
 {
 	if (!list_empty(&(EXT4_I(inode)->i_orphan))) {
-		ext4_msg(inode->i_sb, KERN_ERR,
+		ext4_msg(inode_sb(inode), KERN_ERR,
 			 "Inode %lu (%p): orphan list check failed!",
 			 inode->i_ino, EXT4_I(inode));
 		print_hex_dump(KERN_INFO, "", DUMP_PREFIX_ADDRESS, 16, 4,
@@ -1223,7 +1227,7 @@ retry:
 	}
 	res2 = ext4_journal_stop(handle);
 
-	if (res == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
+	if (res == -ENOSPC && ext4_should_retry_alloc(inode_sb(inode), &retries))
 		goto retry;
 	if (!res)
 		res = res2;
@@ -1232,13 +1236,13 @@ retry:
 
 static bool ext4_dummy_context(struct inode *inode)
 {
-	return DUMMY_ENCRYPTION_ENABLED(EXT4_SB(inode->i_sb));
+	return DUMMY_ENCRYPTION_ENABLED(EXT4_SB(inode_sb(inode)));
 }
 
 static unsigned ext4_max_namelen(struct inode *inode)
 {
-	return S_ISLNK(inode->i_mode) ? inode->i_sb->s_blocksize :
-		EXT4_NAME_LEN;
+	return S_ISLNK(inode->i_mode) ? inode_sb(inode)->s_blocksize :
+			EXT4_NAME_LEN;
 }
 
 static const struct fscrypt_operations ext4_cryptops = {
@@ -2509,7 +2513,7 @@ static void ext4_orphan_cleanup(struct super_block *sb,
 			truncate_inode_pages(inode->i_mapping, inode->i_size);
 			ret = ext4_truncate(inode);
 			if (ret)
-				ext4_std_error(inode->i_sb, ret);
+				ext4_std_error(inode_sb(inode), ret);
 			inode_unlock(inode);
 			nr_truncates++;
 		} else {
@@ -5674,7 +5678,7 @@ static ssize_t ext4_quota_write(struct super_block *sb, int type,
 				EXT4_GET_BLOCKS_CREATE |
 				EXT4_GET_BLOCKS_METADATA_NOFAIL);
 	} while (IS_ERR(bh) && (PTR_ERR(bh) == -ENOSPC) &&
-		 ext4_should_retry_alloc(inode->i_sb, &retries));
+		 ext4_should_retry_alloc(inode_sb(inode), &retries));
 	if (IS_ERR(bh))
 		return PTR_ERR(bh);
 	if (!bh)

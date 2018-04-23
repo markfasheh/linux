@@ -130,7 +130,7 @@ static int ll_close_inode_openhandle(struct inode *inode,
 
 	if (!class_exp2obd(md_exp)) {
 		CERROR("%s: invalid MDC connection handle closing " DFID "\n",
-		       ll_get_fsname(inode->i_sb, NULL, 0),
+		       ll_get_fsname(inode_sb(inode), NULL, 0),
 		       PFID(&lli->lli_fid));
 		rc = 0;
 		goto out;
@@ -837,7 +837,7 @@ out_close:
 	rc2 = ll_close_inode_openhandle(inode, och, 0, NULL);
 	if (rc2 < 0)
 		CERROR("%s: error closing file " DFID ": %d\n",
-		       ll_get_fsname(inode->i_sb, NULL, 0),
+		       ll_get_fsname(inode_sb(inode), NULL, 0),
 		       PFID(&ll_i2info(inode)->lli_fid), rc2);
 	och = NULL; /* och has been freed in ll_close_inode_openhandle() */
 out_release_it:
@@ -866,7 +866,7 @@ static int ll_check_swap_layouts_validity(struct inode *inode1,
 	    inode_permission(inode2, MAY_WRITE))
 		return -EPERM;
 
-	if (inode1->i_sb != inode2->i_sb)
+	if (inode_sb(inode1) != inode_sb(inode2))
 		return -EXDEV;
 
 	return 0;
@@ -880,7 +880,7 @@ static int ll_swap_layouts_close(struct obd_client_handle *och,
 	int rc;
 
 	CDEBUG(D_INODE, "%s: biased close of file " DFID "\n",
-	       ll_get_fsname(inode->i_sb, NULL, 0), PFID(fid1));
+	       ll_get_fsname(inode_sb(inode), NULL, 0), PFID(fid1));
 
 	rc = ll_check_swap_layouts_validity(inode, inode2);
 	if (rc < 0)
@@ -1016,7 +1016,7 @@ static bool file_is_noatime(const struct file *file)
 	if ((mnt->mnt_flags & MNT_NODIRATIME) && S_ISDIR(inode->i_mode))
 		return true;
 
-	if ((inode->i_sb->s_flags & SB_NODIRATIME) && S_ISDIR(inode->i_mode))
+	if ((inode_sb(inode)->s_flags & SB_NODIRATIME) && S_ISDIR(inode->i_mode))
 		return true;
 
 	return false;
@@ -1669,7 +1669,7 @@ int ll_hsm_release(struct inode *inode)
 	u16 refcheck;
 
 	CDEBUG(D_INODE, "%s: Releasing file " DFID ".\n",
-	       ll_get_fsname(inode->i_sb, NULL, 0),
+	       ll_get_fsname(inode_sb(inode), NULL, 0),
 	       PFID(&ll_i2info(inode)->lli_fid));
 
 	och = ll_lease_open(inode, NULL, FMODE_WRITE, MDS_OPEN_RELEASE);
@@ -2566,7 +2566,7 @@ int ll_get_fid_by_name(struct inode *parent, const char *name,
 		*fid = body->mbo_fid1;
 
 	if (inode)
-		rc = ll_prep_inode(inode, req, parent->i_sb, NULL);
+		rc = ll_prep_inode(inode, req, inode_sb(parent), NULL);
 out_req:
 	ptlrpc_req_finished(req);
 	return rc;
@@ -2621,7 +2621,7 @@ int ll_migrate(struct inode *parent, struct file *file, int mdtidx,
 	op_data->op_fid3 = *ll_inode2fid(child_inode);
 	if (!fid_is_sane(&op_data->op_fid3)) {
 		CERROR("%s: migrate %s, but fid " DFID " is insane\n",
-		       ll_get_fsname(parent->i_sb, NULL, 0), name,
+		       ll_get_fsname(inode_sb(parent), NULL, 0), name,
 		       PFID(&op_data->op_fid3));
 		rc = -EINVAL;
 		goto out_unlock;
@@ -2796,7 +2796,7 @@ static int ll_inode_revalidate_fini(struct inode *inode, int rc)
 	} else if (rc != 0) {
 		CDEBUG_LIMIT((rc == -EACCES || rc == -EIDRM) ? D_INFO : D_ERROR,
 			     "%s: revalidate FID " DFID " error: rc = %d\n",
-			     ll_get_fsname(inode->i_sb, NULL, 0),
+			     ll_get_fsname(inode_sb(inode), NULL, 0),
 			     PFID(ll_inode2fid(inode)), rc);
 	}
 
@@ -2967,7 +2967,7 @@ int ll_getattr(const struct path *path, struct kstat *stat,
 
 	OBD_FAIL_TIMEOUT(OBD_FAIL_GETATTR_DELAY, 30);
 
-	stat->dev = inode->i_sb->s_dev;
+	stat->dev = inode_sb(inode)->s_dev;
 	if (ll_need_32bit_api(sbi))
 		stat->ino = cl_fid_build_ino(&lli->lli_fid, 1);
 	else
@@ -3061,7 +3061,7 @@ int ll_inode_permission(struct inode *inode, int mask)
 	*/
 
 	if (is_root_inode(inode)) {
-		rc = __ll_inode_revalidate(inode->i_sb->s_root,
+		rc = __ll_inode_revalidate(inode_sb(inode)->s_root,
 					   MDS_INODELOCK_LOOKUP);
 		if (rc)
 			return rc;
@@ -3448,7 +3448,7 @@ out:
 	/* wait for IO to complete if it's still being used. */
 	if (wait_layout) {
 		CDEBUG(D_INODE, "%s: " DFID "(%p) wait for layout reconf\n",
-		       ll_get_fsname(inode->i_sb, NULL, 0),
+		       ll_get_fsname(inode_sb(inode), NULL, 0),
 		       PFID(&lli->lli_fid), inode);
 
 		memset(&conf, 0, sizeof(conf));
@@ -3460,7 +3460,7 @@ out:
 
 		CDEBUG(D_INODE,
 		       "%s: file=" DFID " waiting layout return: %d.\n",
-		       ll_get_fsname(inode->i_sb, NULL, 0),
+		       ll_get_fsname(inode_sb(inode), NULL, 0),
 		       PFID(&lli->lli_fid), rc);
 	}
 	return rc;
@@ -3506,7 +3506,7 @@ again:
 	lockh.cookie = 0ULL;
 
 	LDLM_DEBUG_NOLOCK("%s: requeue layout lock for file " DFID "(%p)",
-			  ll_get_fsname(inode->i_sb, NULL, 0),
+			  ll_get_fsname(inode_sb(inode), NULL, 0),
 			  PFID(&lli->lli_fid), inode);
 
 	rc = md_enqueue(sbi->ll_md_exp, &einfo, NULL, &it, op_data, &lockh, 0);

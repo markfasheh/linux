@@ -325,11 +325,11 @@ static inline int is_root_handle(struct inode *inode)
 	gossip_debug(GOSSIP_DCACHE_DEBUG,
 		     "%s: root handle: %pU, this handle: %pU:\n",
 		     __func__,
-		     &ORANGEFS_SB(inode->i_sb)->root_khandle,
+		     &ORANGEFS_SB(inode_sb(inode))->root_khandle,
 		     get_khandle_from_ino(inode));
 
-	if (ORANGEFS_khandle_cmp(&(ORANGEFS_SB(inode->i_sb)->root_khandle),
-			     get_khandle_from_ino(inode)))
+	if (ORANGEFS_khandle_cmp(&(ORANGEFS_SB(inode_sb(inode))->root_khandle),
+				 get_khandle_from_ino(inode)))
 		return 0;
 	else
 		return 1;
@@ -513,7 +513,7 @@ int service_operation(struct orangefs_kernel_op_s *op,
 		      int flags);
 
 #define get_interruptible_flag(inode) \
-	((ORANGEFS_SB(inode->i_sb)->flags & ORANGEFS_OPT_INTR) ? \
+	((ORANGEFS_SB(inode_sb(inode))->flags & ORANGEFS_OPT_INTR) ? \
 		ORANGEFS_OP_INTERRUPTIBLE : 0)
 
 #define fill_default_sys_attrs(sys_attr, type, mode)			\

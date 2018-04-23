@@ -118,7 +118,7 @@ static int msdos_format_name(const unsigned char *name, int len,
 static int msdos_find(struct inode *dir, const unsigned char *name, int len,
 		      struct fat_slot_info *sinfo)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(dir->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(dir));
 	unsigned char msdos_name[MSDOS_NAME];
 	int err;
 
@@ -200,7 +200,7 @@ static const struct dentry_operations msdos_dentry_operations = {
 static struct dentry *msdos_lookup(struct inode *dir, struct dentry *dentry,
 				   unsigned int flags)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct fat_slot_info sinfo;
 	struct inode *inode;
 	int err;
@@ -227,7 +227,7 @@ static int msdos_add_entry(struct inode *dir, const unsigned char *name,
 			   int is_dir, int is_hid, int cluster,
 			   struct timespec *ts, struct fat_slot_info *sinfo)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(dir->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(dir));
 	struct msdos_dir_entry de;
 	__le16 time, date;
 	int err;
@@ -263,7 +263,7 @@ static int msdos_add_entry(struct inode *dir, const unsigned char *name,
 static int msdos_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 			bool excl)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode *inode = NULL;
 	struct fat_slot_info sinfo;
 	struct timespec ts;
@@ -308,7 +308,7 @@ out:
 /***** Remove a directory */
 static int msdos_rmdir(struct inode *dir, struct dentry *dentry)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode *inode = d_inode(dentry);
 	struct fat_slot_info sinfo;
 	int err;
@@ -344,7 +344,7 @@ out:
 /***** Make a directory */
 static int msdos_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct fat_slot_info sinfo;
 	struct inode *inode;
 	unsigned char msdos_name[MSDOS_NAME];
@@ -404,7 +404,7 @@ out:
 static int msdos_unlink(struct inode *dir, struct dentry *dentry)
 {
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct fat_slot_info sinfo;
 	int err;
 
@@ -588,7 +588,7 @@ error_inode:
 		sinfo.bh = NULL;
 	}
 	if (corrupt < 0) {
-		fat_fs_error(new_dir->i_sb,
+		fat_fs_error(inode_sb(new_dir),
 			     "%s: Filesystem corrupted (i_pos %lld)",
 			     __func__, sinfo.i_pos);
 	}
@@ -600,7 +600,7 @@ static int msdos_rename(struct inode *old_dir, struct dentry *old_dentry,
 			struct inode *new_dir, struct dentry *new_dentry,
 			unsigned int flags)
 {
-	struct super_block *sb = old_dir->i_sb;
+	struct super_block *sb = inode_sb(old_dir);
 	unsigned char old_msdos_name[MSDOS_NAME], new_msdos_name[MSDOS_NAME];
 	int err, is_hid;
 
@@ -611,12 +611,12 @@ static int msdos_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	err = msdos_format_name(old_dentry->d_name.name,
 				old_dentry->d_name.len, old_msdos_name,
-				&MSDOS_SB(old_dir->i_sb)->options);
+				&MSDOS_SB(inode_sb(old_dir))->options);
 	if (err)
 		goto out;
 	err = msdos_format_name(new_dentry->d_name.name,
 				new_dentry->d_name.len, new_msdos_name,
-				&MSDOS_SB(new_dir->i_sb)->options);
+				&MSDOS_SB(inode_sb(new_dir))->options);
 	if (err)
 		goto out;
 

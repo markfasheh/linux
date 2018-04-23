@@ -46,7 +46,7 @@
 static int squashfs_symlink_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int index = page->index << PAGE_SHIFT;
 	u64 block = squashfs_i(inode)->start;

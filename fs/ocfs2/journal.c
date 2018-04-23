@@ -1161,9 +1161,10 @@ static int ocfs2_force_read_journal(struct inode *inode)
 	int i;
 	u64 v_blkno, p_blkno, p_blocks, num_blocks;
 	struct buffer_head *bh = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
-	num_blocks = ocfs2_blocks_for_bytes(inode->i_sb, i_size_read(inode));
+	num_blocks = ocfs2_blocks_for_bytes(inode_sb(inode),
+					    i_size_read(inode));
 	v_blkno = 0;
 	while (v_blkno < num_blocks) {
 		status = ocfs2_extent_map_get_blocks(inode, v_blkno,

@@ -791,7 +791,7 @@ static int hugetlbfs_mknod(struct inode *dir,
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = hugetlbfs_get_inode(dir->i_sb, dir, mode, dev);
+	inode = hugetlbfs_get_inode(inode_sb(dir), dir, mode, dev);
 	if (inode) {
 		dir->i_ctime = dir->i_mtime = current_time(dir);
 		d_instantiate(dentry, inode);
@@ -820,7 +820,7 @@ static int hugetlbfs_symlink(struct inode *dir,
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = hugetlbfs_get_inode(dir->i_sb, dir, S_IFLNK|S_IRWXUGO, 0);
+	inode = hugetlbfs_get_inode(inode_sb(dir), dir, S_IFLNK|S_IRWXUGO, 0);
 	if (inode) {
 		int l = strlen(symname)+1;
 		error = page_symlink(inode, symname, l);
@@ -1021,7 +1021,7 @@ static void hugetlbfs_i_callback(struct rcu_head *head)
 
 static void hugetlbfs_destroy_inode(struct inode *inode)
 {
-	hugetlbfs_inc_free_inodes(HUGETLBFS_SB(inode->i_sb));
+	hugetlbfs_inc_free_inodes(HUGETLBFS_SB(inode_sb(inode)));
 	mpol_free_shared_policy(&HUGETLBFS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, hugetlbfs_i_callback);
 }

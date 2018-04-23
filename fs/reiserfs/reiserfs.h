@@ -2886,7 +2886,7 @@ int journal_mark_dirty(struct reiserfs_transaction_handle *,
 
 static inline int reiserfs_file_data_log(struct inode *inode)
 {
-	if (reiserfs_data_log(inode->i_sb) ||
+	if (reiserfs_data_log(inode_sb(inode)) ||
 	    (REISERFS_I(inode)->i_flags & i_data_log))
 		return 1;
 	return 0;
@@ -3042,12 +3042,12 @@ int reiserfs_do_truncate(struct reiserfs_transaction_handle *th,
 			 struct inode *inode, struct page *,
 			 int update_timestamps);
 
-#define i_block_size(inode) ((inode)->i_sb->s_blocksize)
+#define i_block_size(inode) (inode_sb((inode))->s_blocksize)
 #define file_size(inode) ((inode)->i_size)
 #define tail_size(inode) (file_size (inode) & (i_block_size (inode) - 1))
 
-#define tail_has_to_be_packed(inode) (have_large_tails ((inode)->i_sb)?\
-!STORE_TAIL_IN_UNFM_S1(file_size (inode), tail_size(inode), inode->i_sb->s_blocksize):have_small_tails ((inode)->i_sb)?!STORE_TAIL_IN_UNFM_S2(file_size (inode), tail_size(inode), inode->i_sb->s_blocksize):0 )
+#define tail_has_to_be_packed(inode) (have_large_tails (inode_sb((inode)))?\
+!STORE_TAIL_IN_UNFM_S1(file_size (inode), tail_size(inode), inode_sb(inode)->s_blocksize):have_small_tails (inode_sb((inode)))?!STORE_TAIL_IN_UNFM_S2(file_size (inode), tail_size(inode), inode_sb(inode)->s_blocksize):0 )
 
 void padd_item(char *item, int total_length, int length);
 

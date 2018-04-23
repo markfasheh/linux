@@ -42,7 +42,7 @@ int jfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 	if (!(inode->i_state & I_DIRTY_ALL) ||
 	    (datasync && !(inode->i_state & I_DIRTY_DATASYNC))) {
 		/* Make sure committed changes hit the disk */
-		jfs_flush_journal(JFS_SBI(inode->i_sb)->log, 1);
+		jfs_flush_journal(JFS_SBI(inode_sb(inode))->log, 1);
 		inode_unlock(inode);
 		return rc;
 	}
@@ -74,7 +74,7 @@ static int jfs_open(struct inode *inode, struct file *file)
 		struct jfs_inode_info *ji = JFS_IP(inode);
 		spin_lock_irq(&ji->ag_lock);
 		if (ji->active_ag == -1) {
-			struct jfs_sb_info *jfs_sb = JFS_SBI(inode->i_sb);
+			struct jfs_sb_info *jfs_sb = JFS_SBI(inode_sb(inode));
 			ji->active_ag = BLKTOAG(addressPXD(&ji->ixpxd), jfs_sb);
 			atomic_inc(&jfs_sb->bmap->db_active[ji->active_ag]);
 		}
@@ -89,7 +89,7 @@ static int jfs_release(struct inode *inode, struct file *file)
 
 	spin_lock_irq(&ji->ag_lock);
 	if (ji->active_ag != -1) {
-		struct bmap *bmap = JFS_SBI(inode->i_sb)->bmap;
+		struct bmap *bmap = JFS_SBI(inode_sb(inode))->bmap;
 		atomic_dec(&bmap->db_active[ji->active_ag]);
 		ji->active_ag = -1;
 	}

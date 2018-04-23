@@ -124,7 +124,7 @@ TRACE_EVENT(jbd2_submit_inode_data,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 	),
 

@@ -38,7 +38,7 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 				       (iinfo->i_efe ?
 					sizeof(struct extendedFileEntry) :
 					sizeof(struct fileEntry)),
-				       dir->i_sb->s_blocksize,
+				       inode_sb(dir)->s_blocksize,
 				       &(fibh->eoffset));
 		if (!fi)
 			return NULL;
@@ -51,15 +51,15 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 		return fi;
 	}
 
-	if (fibh->eoffset == dir->i_sb->s_blocksize) {
+	if (fibh->eoffset == inode_sb(dir)->s_blocksize) {
 		uint32_t lextoffset = epos->offset;
-		unsigned char blocksize_bits = dir->i_sb->s_blocksize_bits;
+		unsigned char blocksize_bits = inode_sb(dir)->s_blocksize_bits;
 
 		if (udf_next_aext(dir, epos, eloc, elen, 1) !=
 		    (EXT_RECORDED_ALLOCATED >> 30))
 			return NULL;
 
-		block = udf_get_lb_pblock(dir->i_sb, eloc, *offset);
+		block = udf_get_lb_pblock(inode_sb(dir), eloc, *offset);
 
 		(*offset)++;
 
@@ -69,7 +69,7 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 			epos->offset = lextoffset;
 
 		brelse(fibh->sbh);
-		fibh->sbh = fibh->ebh = udf_tread(dir->i_sb, block);
+		fibh->sbh = fibh->ebh = udf_tread(inode_sb(dir), block);
 		if (!fibh->sbh)
 			return NULL;
 		fibh->soffset = fibh->eoffset = 0;
@@ -79,9 +79,9 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 			if (i + *offset > (*elen >> blocksize_bits))
 				i = (*elen >> blocksize_bits)-*offset;
 			for (num = 0; i > 0; i--) {
-				block = udf_get_lb_pblock(dir->i_sb, eloc,
+				block = udf_get_lb_pblock(inode_sb(dir), eloc,
 							  *offset + i);
-				tmp = udf_tgetblk(dir->i_sb, block);
+				tmp = udf_tgetblk(inode_sb(dir), block);
 				if (tmp && !buffer_uptodate(tmp) &&
 						!buffer_locked(tmp))
 					bha[num++] = tmp;
@@ -99,7 +99,7 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 		fibh->sbh = fibh->ebh;
 	}
 
-	fi = udf_get_fileident(fibh->sbh->b_data, dir->i_sb->s_blocksize,
+	fi = udf_get_fileident(fibh->sbh->b_data, inode_sb(dir)->s_blocksize,
 			       &(fibh->eoffset));
 
 	if (!fi)
@@ -107,29 +107,29 @@ struct fileIdentDesc *udf_fileident_read(struct inode *dir, loff_t *nf_pos,
 
 	*nf_pos += fibh->eoffset - fibh->soffset;
 
-	if (fibh->eoffset <= dir->i_sb->s_blocksize) {
+	if (fibh->eoffset <= inode_sb(dir)->s_blocksize) {
 		memcpy((uint8_t *)cfi, (uint8_t *)fi,
 		       sizeof(struct fileIdentDesc));
-	} else if (fibh->eoffset > dir->i_sb->s_blocksize) {
+	} else if (fibh->eoffset > inode_sb(dir)->s_blocksize) {
 		uint32_t lextoffset = epos->offset;
 
 		if (udf_next_aext(dir, epos, eloc, elen, 1) !=
 		    (EXT_RECORDED_ALLOCATED >> 30))
 			return NULL;
 
-		block = udf_get_lb_pblock(dir->i_sb, eloc, *offset);
+		block = udf_get_lb_pblock(inode_sb(dir), eloc, *offset);
 
 		(*offset)++;
 
-		if ((*offset << dir->i_sb->s_blocksize_bits) >= *elen)
+		if ((*offset << inode_sb(dir)->s_blocksize_bits) >= *elen)
 			*offset = 0;
 		else
 			epos->offset = lextoffset;
 
-		fibh->soffset -= dir->i_sb->s_blocksize;
-		fibh->eoffset -= dir->i_sb->s_blocksize;
+		fibh->soffset -= inode_sb(dir)->s_blocksize;
+		fibh->eoffset -= inode_sb(dir)->s_blocksize;
 
-		fibh->ebh = udf_tread(dir->i_sb, block);
+		fibh->ebh = udf_tread(inode_sb(dir), block);
 		if (!fibh->ebh)
 			return NULL;
 

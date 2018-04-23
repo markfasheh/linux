@@ -611,7 +611,7 @@ int nfs_initiate_pgio(struct rpc_clnt *clnt, struct nfs_pgio_header *hdr,
 
 	dprintk("NFS: initiated pgio call "
 		"(req %s/%llu, %u bytes @ offset %llu)\n",
-		hdr->inode->i_sb->s_id,
+		inode_sb(hdr->inode)->s_id,
 		(unsigned long long)NFS_FILEID(hdr->inode),
 		hdr->args.count,
 		(unsigned long long)hdr->args.offset);

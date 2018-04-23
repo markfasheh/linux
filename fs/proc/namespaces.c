@@ -94,7 +94,7 @@ static int proc_ns_instantiate(struct inode *dir,
 	struct inode *inode;
 	struct proc_inode *ei;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFLNK | S_IRWXUGO);
+	inode = proc_pid_make_inode(inode_sb(dir), task, S_IFLNK | S_IRWXUGO);
 	if (!inode)
 		goto out;
 

@@ -84,7 +84,7 @@ static int ocfs2_init_file_private(struct inode *inode, struct file *file)
 static void ocfs2_free_file_private(struct inode *inode, struct file *file)
 {
 	struct ocfs2_file_private *fp = file->private_data;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (fp) {
 		ocfs2_simple_drop_lockres(osb, &fp->fp_flock);
@@ -182,7 +182,7 @@ static int ocfs2_sync_file(struct file *file, loff_t start, loff_t end,
 {
 	int err = 0;
 	struct inode *inode = file->f_mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
 	journal_t *journal = osb->journal->j_journal;
 	int ret;
@@ -208,7 +208,8 @@ static int ocfs2_sync_file(struct file *file, loff_t start, loff_t end,
 		needs_barrier = true;
 	err = jbd2_complete_transaction(journal, commit_tid);
 	if (needs_barrier) {
-		ret = blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+		ret = blkdev_issue_flush(inode_sb(inode)->s_bdev, GFP_KERNEL,
+					 NULL);
 		if (!err)
 			err = ret;
 	}
@@ -223,13 +224,13 @@ int ocfs2_should_update_atime(struct inode *inode,
 			      struct vfsmount *vfsmnt)
 {
 	struct timespec now;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (ocfs2_is_hard_readonly(osb) || ocfs2_is_soft_readonly(osb))
 		return 0;
 
 	if ((inode->i_flags & S_NOATIME) ||
-	    ((inode->i_sb->s_flags & SB_NODIRATIME) && S_ISDIR(inode->i_mode)))
+	    ((inode_sb(inode)->s_flags & SB_NODIRATIME) && S_ISDIR(inode->i_mode)))
 		return 0;
 
 	/*
@@ -266,7 +267,7 @@ int ocfs2_update_inode_atime(struct inode *inode,
 			     struct buffer_head *bh)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	handle_t *handle;
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *) bh->b_data;
 
@@ -296,7 +297,7 @@ int ocfs2_update_inode_atime(struct inode *inode,
 	ocfs2_journal_dirty(handle, bh);
 
 out_commit:
-	ocfs2_commit_trans(OCFS2_SB(inode->i_sb), handle);
+	ocfs2_commit_trans(OCFS2_SB(inode_sb(inode)), handle);
 out:
 	return ret;
 }
@@ -327,7 +328,7 @@ int ocfs2_simple_size_update(struct inode *inode,
 			     u64 new_i_size)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	handle_t *handle = NULL;
 
 	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
@@ -353,7 +354,7 @@ static int ocfs2_cow_file_pos(struct inode *inode,
 			      u64 offset)
 {
 	int status;
-	u32 phys, cpos = offset >> OCFS2_SB(inode->i_sb)->s_clustersize_bits;
+	u32 phys, cpos = offset >> OCFS2_SB(inode_sb(inode))->s_clustersize_bits;
 	unsigned int num_clusters = 0;
 	unsigned int ext_flags = 0;
 
@@ -362,7 +363,7 @@ static int ocfs2_cow_file_pos(struct inode *inode,
 	 * no space for ocfs2_zero_range_for_truncate to fill, so no need to
 	 * CoW either.
 	 */
-	if ((offset & (OCFS2_SB(inode->i_sb)->s_clustersize - 1)) == 0)
+	if ((offset & (OCFS2_SB(inode_sb(inode))->s_clustersize - 1)) == 0)
 		return 0;
 
 	status = ocfs2_get_clusters(inode, cpos, &phys,
@@ -422,7 +423,8 @@ static int ocfs2_orphan_for_truncate(struct ocfs2_super *osb,
 	/*
 	 * Do this before setting i_size.
 	 */
-	cluster_bytes = ocfs2_align_bytes_to_clusters(inode->i_sb, new_i_size);
+	cluster_bytes = ocfs2_align_bytes_to_clusters(inode_sb(inode),
+						      new_i_size);
 	status = ocfs2_zero_range_for_truncate(inode, handle, new_i_size,
 					       cluster_bytes);
 	if (status) {
@@ -453,7 +455,7 @@ int ocfs2_truncate_file(struct inode *inode,
 {
 	int status = 0;
 	struct ocfs2_dinode *fe = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	/* We trust di_bh because it comes from ocfs2_inode_lock(), which
 	 * already validated it */
@@ -576,7 +578,7 @@ static int __ocfs2_extend_allocation(struct inode *inode, u32 logical_start,
 	struct ocfs2_alloc_context *data_ac = NULL;
 	struct ocfs2_alloc_context *meta_ac = NULL;
 	enum ocfs2_alloc_restarted why = RESTART_NONE;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_extent_tree et;
 	int did_quota = 0;
 
@@ -722,7 +724,7 @@ leave:
 static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode,
 						struct buffer_head *di_bh)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	handle_t *handle = NULL;
 	int ret = 0;
 
@@ -849,7 +851,7 @@ out_unlock:
 	put_page(page);
 out_commit_trans:
 	if (handle)
-		ocfs2_commit_trans(OCFS2_SB(inode->i_sb), handle);
+		ocfs2_commit_trans(OCFS2_SB(inode_sb(inode)), handle);
 out:
 	return ret;
 }
@@ -874,8 +876,8 @@ static int ocfs2_zero_extend_get_range(struct inode *inode,
 	int rc = 0, needs_cow = 0;
 	u32 p_cpos, zero_clusters = 0;
 	u32 zero_cpos =
-		zero_start >> OCFS2_SB(inode->i_sb)->s_clustersize_bits;
-	u32 last_cpos = ocfs2_clusters_for_bytes(inode->i_sb, zero_end);
+		zero_start >> OCFS2_SB(inode_sb(inode))->s_clustersize_bits;
+	u32 last_cpos = ocfs2_clusters_for_bytes(inode_sb(inode), zero_end);
 	unsigned int num_clusters = 0;
 	unsigned int ext_flags = 0;
 
@@ -928,8 +930,8 @@ static int ocfs2_zero_extend_get_range(struct inode *inode,
 		}
 	}
 
-	*range_start = ocfs2_clusters_to_bytes(inode->i_sb, zero_cpos);
-	*range_end = ocfs2_clusters_to_bytes(inode->i_sb,
+	*range_start = ocfs2_clusters_to_bytes(inode_sb(inode), zero_cpos);
+	*range_end = ocfs2_clusters_to_bytes(inode_sb(inode),
 					     zero_cpos + zero_clusters);
 
 out:
@@ -979,7 +981,7 @@ int ocfs2_zero_extend(struct inode *inode, struct buffer_head *di_bh,
 {
 	int ret = 0;
 	u64 zero_start, range_start = 0, range_end = 0;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	zero_start = ocfs2_align_bytes_to_blocks(sb, i_size_read(inode));
 	trace_ocfs2_zero_extend((unsigned long long)OCFS2_I(inode)->ip_blkno,
@@ -1028,7 +1030,8 @@ int ocfs2_extend_no_holes(struct inode *inode, struct buffer_head *di_bh,
 	BUG_ON(!di_bh && ocfs2_is_refcount_inode(inode));
 	BUG_ON(!di_bh && !(oi->ip_flags & OCFS2_INODE_SYSTEM_FILE));
 
-	clusters_to_add = ocfs2_clusters_for_bytes(inode->i_sb, new_i_size);
+	clusters_to_add = ocfs2_clusters_for_bytes(inode_sb(inode),
+						   new_i_size);
 	if (clusters_to_add < oi->ip_clusters)
 		clusters_to_add = 0;
 	else
@@ -1100,7 +1103,7 @@ static int ocfs2_extend_file(struct inode *inode,
 		}
 	}
 
-	if (ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)))
+	if (ocfs2_sparse_alloc(OCFS2_SB(inode_sb(inode))))
 		ret = ocfs2_zero_extend(inode, di_bh, new_i_size);
 	else
 		ret = ocfs2_extend_no_holes(inode, di_bh, new_i_size,
@@ -1127,7 +1130,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
 	int status = 0, size_change;
 	int inode_locked = 0;
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ocfs2_super *osb = OCFS2_SB(sb);
 	struct buffer_head *bh = NULL;
 	handle_t *handle = NULL;
@@ -1375,7 +1378,7 @@ static int __ocfs2_write_remove_suid(struct inode *inode,
 {
 	int ret;
 	handle_t *handle;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di;
 
 	trace_ocfs2_write_remove_suid(
@@ -1466,8 +1469,8 @@ static int ocfs2_allocate_unwritten_extents(struct inode *inode,
 	/*
 	 * We consider both start and len to be inclusive.
 	 */
-	cpos = start >> OCFS2_SB(inode->i_sb)->s_clustersize_bits;
-	clusters = ocfs2_clusters_for_bytes(inode->i_sb, start + len);
+	cpos = start >> OCFS2_SB(inode_sb(inode))->s_clustersize_bits;
+	clusters = ocfs2_clusters_for_bytes(inode_sb(inode), start + len);
 	clusters -= cpos;
 
 	while (clusters) {
@@ -1519,11 +1522,12 @@ out:
 static void ocfs2_truncate_cluster_pages(struct inode *inode, u64 byte_start,
 					 u64 byte_len)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	loff_t start, end;
 	struct address_space *mapping = inode->i_mapping;
 
-	start = (loff_t)ocfs2_align_bytes_to_clusters(inode->i_sb, byte_start);
+	start = (loff_t)ocfs2_align_bytes_to_clusters(inode_sb(inode),
+						      byte_start);
 	end = byte_start + byte_len;
 	end = end & ~(osb->s_clustersize - 1);
 
@@ -1539,7 +1543,7 @@ static int ocfs2_zero_partial_clusters(struct inode *inode,
 	int ret = 0;
 	u64 tmpend = 0;
 	u64 end = start + len;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	unsigned int csize = osb->s_clustersize;
 	handle_t *handle;
 
@@ -1681,7 +1685,8 @@ static void ocfs2_calc_trunc_pos(struct inode *inode,
 		*trunc_len = *trunc_end - trunc_start;
 		coff = trunc_start - le32_to_cpu(rec->e_cpos);
 		*blkno = le64_to_cpu(rec->e_blkno) +
-				ocfs2_clusters_to_blocks(inode->i_sb, coff);
+				ocfs2_clusters_to_blocks(inode_sb(inode),
+							 coff);
 		*trunc_end = trunc_start;
 	} else {
 		/*
@@ -1705,7 +1710,7 @@ int ocfs2_remove_inode_range(struct inode *inode,
 	int ret = 0, flags = 0, done = 0, i;
 	u32 trunc_start, trunc_len, trunc_end, trunc_cpos, phys_cpos;
 	u32 cluster_in_el;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_cached_dealloc_ctxt dealloc;
 	struct address_space *mapping = inode->i_mapping;
 	struct ocfs2_extent_tree et;
@@ -1800,7 +1805,7 @@ int ocfs2_remove_inode_range(struct inode *inode,
 			if (path->p_tree_depth == 0)
 				break;
 
-			ret = ocfs2_find_cpos_for_left_leaf(inode->i_sb,
+			ret = ocfs2_find_cpos_for_left_leaf(inode_sb(inode),
 							    path,
 							    &cluster_in_el);
 			if (ret) {
@@ -1834,7 +1839,7 @@ int ocfs2_remove_inode_range(struct inode *inode,
 			break;
 
 		flags = rec->e_flags;
-		phys_cpos = ocfs2_blocks_to_clusters(inode->i_sb, blkno);
+		phys_cpos = ocfs2_blocks_to_clusters(inode_sb(inode), blkno);
 
 		ret = ocfs2_remove_btree_range(inode, &et, trunc_cpos,
 					       phys_cpos, trunc_len, flags,
@@ -1870,10 +1875,10 @@ static int __ocfs2_change_file_space(struct file *file, struct inode *inode,
 	int ret;
 	s64 llen;
 	loff_t size;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct buffer_head *di_bh = NULL;
 	handle_t *handle;
-	unsigned long long max_off = inode->i_sb->s_maxbytes;
+	unsigned long long max_off = inode_sb(inode)->s_maxbytes;
 
 	if (ocfs2_is_hard_readonly(osb) || ocfs2_is_soft_readonly(osb))
 		return -EROFS;
@@ -2005,7 +2010,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
 			    struct ocfs2_space_resv *sr)
 {
 	struct inode *inode = file_inode(file);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	int ret;
 
 	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
@@ -2033,7 +2038,7 @@ static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
 			    loff_t len)
 {
 	struct inode *inode = file_inode(file);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_space_resv sr;
 	int change_size = 1;
 	int cmd = OCFS2_IOC_RESVSP64;
@@ -2063,9 +2068,9 @@ int ocfs2_check_range_for_refcount(struct inode *inode, loff_t pos,
 	int ret = 0;
 	unsigned int extent_flags;
 	u32 cpos, clusters, extent_len, phys_cpos;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
-	if (!ocfs2_refcount_tree(OCFS2_SB(inode->i_sb)) ||
+	if (!ocfs2_refcount_tree(OCFS2_SB(inode_sb(inode))) ||
 	    !ocfs2_is_refcount_inode(inode) ||
 	    OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL)
 		return 0;
@@ -2098,7 +2103,7 @@ out:
 
 static int ocfs2_is_io_unaligned(struct inode *inode, size_t count, loff_t pos)
 {
-	int blockmask = inode->i_sb->s_blocksize - 1;
+	int blockmask = inode_sb(inode)->s_blocksize - 1;
 	loff_t final_size = pos + count;
 
 	if ((pos & blockmask) || (final_size & blockmask))
@@ -2113,9 +2118,9 @@ static int ocfs2_prepare_inode_for_refcount(struct inode *inode,
 {
 	int ret;
 	struct buffer_head *di_bh = NULL;
-	u32 cpos = pos >> OCFS2_SB(inode->i_sb)->s_clustersize_bits;
+	u32 cpos = pos >> OCFS2_SB(inode_sb(inode))->s_clustersize_bits;
 	u32 clusters =
-		ocfs2_clusters_for_bytes(inode->i_sb, pos + count) - cpos;
+		ocfs2_clusters_for_bytes(inode_sb(inode), pos + count) - cpos;
 
 	ret = ocfs2_inode_lock(inode, &di_bh, 1);
 	if (ret) {
@@ -2248,7 +2253,7 @@ static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
 	size_t count = iov_iter_count(from);
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file_inode(file);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	int full_coherency = !(osb->s_mount_opt &
 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
 	void *saved_ki_complete = NULL;
@@ -2518,7 +2523,7 @@ static loff_t ocfs2_file_llseek(struct file *file, loff_t offset, int whence)
 		goto out;
 	}
 
-	offset = vfs_setpos(file, offset, inode->i_sb->s_maxbytes);
+	offset = vfs_setpos(file, offset, inode_sb(inode)->s_maxbytes);
 
 out:
 	inode_unlock(inode);

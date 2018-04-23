@@ -360,7 +360,7 @@ xfs_vn_unlink(
 	 * but still hashed. This is incompatible with case-insensitive
 	 * mode, so invalidate (unhash) the dentry in CI-mode.
 	 */
-	if (xfs_sb_version_hasasciici(&XFS_M(dir->i_sb)->m_sb))
+	if (xfs_sb_version_hasasciici(&XFS_M(inode_sb(dir))->m_sb))
 		d_invalidate(dentry);
 	return 0;
 }
@@ -503,7 +503,7 @@ xfs_vn_getattr(
 		return -EIO;
 
 	stat->size = XFS_ISIZE(ip);
-	stat->dev = inode->i_sb->s_dev;
+	stat->dev = inode_sb(inode)->s_dev;
 	stat->mode = inode->i_mode;
 	stat->nlink = inode->i_nlink;
 	stat->uid = inode->i_uid;
@@ -1275,7 +1275,7 @@ xfs_setup_iops(
 		inode->i_mapping->a_ops = &xfs_address_space_operations;
 		break;
 	case S_IFDIR:
-		if (xfs_sb_version_hasasciici(&XFS_M(inode->i_sb)->m_sb))
+		if (xfs_sb_version_hasasciici(&XFS_M(inode_sb(inode))->m_sb))
 			inode->i_op = &xfs_dir_ci_inode_operations;
 		else
 			inode->i_op = &xfs_dir_inode_operations;

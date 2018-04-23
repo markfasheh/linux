@@ -1265,7 +1265,7 @@ CIFS_SB(struct super_block *sb)
 static inline struct cifs_sb_info *
 CIFS_FILE_SB(struct file *file)
 {
-	return CIFS_SB(file_inode(file)->i_sb);
+	return CIFS_SB(inode_sb(file_inode(file)));
 }
 
 static inline char CIFS_DIR_SEP(const struct cifs_sb_info *cifs_sb)

@@ -136,7 +136,7 @@ DECLARE_EVENT_CLASS(btrfs__inode,
 		__field(	u64,  root_objectid		)
 	),
 
-	TP_fast_assign_btrfs(btrfs_sb(inode->i_sb),
+	TP_fast_assign_btrfs(btrfs_sb(inode_sb(inode)),
 		__entry->ino	= inode->i_ino;
 		__entry->blocks	= inode->i_blocks;
 		__entry->disk_i_size  = BTRFS_I(inode)->disk_i_size;
@@ -415,7 +415,7 @@ DECLARE_EVENT_CLASS(btrfs__ordered_extent,
 		__field(	u64,  truncated_len	)
 	),
 
-	TP_fast_assign_btrfs(btrfs_sb(inode->i_sb),
+	TP_fast_assign_btrfs(btrfs_sb(inode_sb(inode)),
 		__entry->ino 		= inode->i_ino;
 		__entry->file_offset	= ordered->file_offset;
 		__entry->start		= ordered->start;
@@ -500,7 +500,7 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
 		__field(	u64,    root_objectid		)
 	),
 
-	TP_fast_assign_btrfs(btrfs_sb(inode->i_sb),
+	TP_fast_assign_btrfs(btrfs_sb(inode_sb(inode)),
 		__entry->ino		= inode->i_ino;
 		__entry->index		= page->index;
 		__entry->nr_to_write	= wbc->nr_to_write;
@@ -551,7 +551,7 @@ TRACE_EVENT(btrfs_writepage_end_io_hook,
 		__field(	u64,    root_objectid	)
 	),
 
-	TP_fast_assign_btrfs(btrfs_sb(page->mapping->host->i_sb),
+	TP_fast_assign_btrfs(btrfs_sb(inode_sb(page->mapping->host)),
 		__entry->ino	= page->mapping->host->i_ino;
 		__entry->index	= page->index;
 		__entry->start	= start;
@@ -1442,7 +1442,7 @@ DECLARE_EVENT_CLASS(btrfs__qgroup_rsv_data,
 		__field(	int,		op		)
 	),
 
-	TP_fast_assign_btrfs(btrfs_sb(inode->i_sb),
+	TP_fast_assign_btrfs(btrfs_sb(inode_sb(inode)),
 		__entry->rootid		= BTRFS_I(inode)->root->objectid;
 		__entry->ino		= inode->i_ino;
 		__entry->start		= start;

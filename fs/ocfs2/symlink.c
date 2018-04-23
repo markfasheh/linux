@@ -72,7 +72,7 @@ static int ocfs2_fast_symlink_readpage(struct file *unused, struct page *page)
 	fe = (struct ocfs2_dinode *) bh->b_data;
 	link = (char *) fe->id2.i_symlink;
 	/* will be less than a page size */
-	len = strnlen(link, ocfs2_fast_symlink_chars(inode->i_sb));
+	len = strnlen(link, ocfs2_fast_symlink_chars(inode_sb(inode)));
 	kaddr = kmap_atomic(page);
 	memcpy(kaddr, link, len + 1);
 	kunmap_atomic(kaddr);

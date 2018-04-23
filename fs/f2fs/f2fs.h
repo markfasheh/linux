@@ -1331,7 +1331,7 @@ static inline struct f2fs_sb_info *F2FS_SB(struct super_block *sb)
 
 static inline struct f2fs_sb_info *F2FS_I_SB(struct inode *inode)
 {
-	return F2FS_SB(inode->i_sb);
+	return F2FS_SB(inode_sb(inode));
 }
 
 static inline struct f2fs_sb_info *F2FS_M_SB(struct address_space *mapping)

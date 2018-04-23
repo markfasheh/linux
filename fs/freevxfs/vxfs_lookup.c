@@ -80,13 +80,13 @@ const struct file_operations vxfs_dir_operations = {
 static struct vxfs_direct *
 vxfs_find_entry(struct inode *ip, struct dentry *dp, struct page **ppp)
 {
-	u_long bsize = ip->i_sb->s_blocksize;
+	u_long bsize = inode_sb(ip)->s_blocksize;
 	const char *name = dp->d_name.name;
 	int namelen = dp->d_name.len;
 	loff_t limit = VXFS_DIRROUND(ip->i_size);
 	struct vxfs_direct *de_exit = NULL;
 	loff_t pos = 0;
-	struct vxfs_sb_info *sbi = VXFS_SBI(ip->i_sb);
+	struct vxfs_sb_info *sbi = VXFS_SBI(inode_sb(ip));
 
 	while (pos < limit) {
 		struct page *pp;
@@ -161,7 +161,7 @@ vxfs_inode_by_name(struct inode *dip, struct dentry *dp)
 
 	de = vxfs_find_entry(dip, dp, &pp);
 	if (de) {
-		ino = fs32_to_cpu(VXFS_SBI(dip->i_sb), de->d_ino);
+		ino = fs32_to_cpu(VXFS_SBI(inode_sb(dip)), de->d_ino);
 		kunmap(pp);
 		put_page(pp);
 	}
@@ -194,7 +194,7 @@ vxfs_lookup(struct inode *dip, struct dentry *dp, unsigned int flags)
 				 
 	ino = vxfs_inode_by_name(dip, dp);
 	if (ino) {
-		ip = vxfs_iget(dip->i_sb, ino);
+		ip = vxfs_iget(inode_sb(dip), ino);
 		if (IS_ERR(ip))
 			return ERR_CAST(ip);
 	}
@@ -219,7 +219,7 @@ static int
 vxfs_readdir(struct file *fp, struct dir_context *ctx)
 {
 	struct inode		*ip = file_inode(fp);
-	struct super_block	*sbp = ip->i_sb;
+	struct super_block	*sbp = inode_sb(ip);
 	u_long			bsize = sbp->s_blocksize;
 	loff_t			pos, limit;
 	struct vxfs_sb_info	*sbi = VXFS_SBI(sbp);

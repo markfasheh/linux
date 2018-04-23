@@ -240,7 +240,7 @@ struct page *fscrypt_encrypt_page(const struct inode *inode,
 
 	BUG_ON(len % FS_CRYPTO_BLOCK_SIZE != 0);
 
-	if (inode->i_sb->s_cop->flags & FS_CFLG_OWN_PAGES) {
+	if (inode_sb(inode)->s_cop->flags & FS_CFLG_OWN_PAGES) {
 		/* with inplace-encryption we just encrypt the page */
 		err = fscrypt_do_page_crypto(inode, FS_ENCRYPT, lblk_num, page,
 					     ciphertext_page, len, offs,
@@ -299,7 +299,7 @@ EXPORT_SYMBOL(fscrypt_encrypt_page);
 int fscrypt_decrypt_page(const struct inode *inode, struct page *page,
 			unsigned int len, unsigned int offs, u64 lblk_num)
 {
-	if (!(inode->i_sb->s_cop->flags & FS_CFLG_OWN_PAGES))
+	if (!(inode_sb(inode)->s_cop->flags & FS_CFLG_OWN_PAGES))
 		BUG_ON(!PageLocked(page));
 
 	return fscrypt_do_page_crypto(inode, FS_DECRYPT, lblk_num, page, page,

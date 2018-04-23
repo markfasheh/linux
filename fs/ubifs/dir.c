@@ -215,7 +215,7 @@ static struct dentry *ubifs_lookup(struct inode *dir, struct dentry *dentry,
 	union ubifs_key key;
 	struct inode *inode = NULL;
 	struct ubifs_dent_node *dent;
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct fscrypt_name nm;
 
 	dbg_gen("'%pd' in dir ino %lu", dentry, dir->i_ino);
@@ -262,7 +262,7 @@ static struct dentry *ubifs_lookup(struct inode *dir, struct dentry *dentry,
 		goto out_dent;
 	}
 
-	inode = ubifs_iget(dir->i_sb, le64_to_cpu(dent->inum));
+	inode = ubifs_iget(inode_sb(dir), le64_to_cpu(dent->inum));
 	if (IS_ERR(inode)) {
 		/*
 		 * This should not happen. Probably the file-system needs
@@ -307,7 +307,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 			bool excl)
 {
 	struct inode *inode;
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct ubifs_budget_req req = { .new_ino = 1, .new_dent = 1,
 					.dirtied_ino = 1 };
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
@@ -376,7 +376,7 @@ static int do_tmpfile(struct inode *dir, struct dentry *dentry,
 		      umode_t mode, struct inode **whiteout)
 {
 	struct inode *inode;
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct ubifs_budget_req req = { .new_ino = 1, .new_dent = 1};
 	struct ubifs_budget_req ino_req = { .dirtied_ino = 1 };
 	struct ubifs_inode *ui, *dir_ui = ubifs_inode(dir);
@@ -525,7 +525,7 @@ static int ubifs_readdir(struct file *file, struct dir_context *ctx)
 	union ubifs_key key;
 	struct ubifs_dent_node *dent;
 	struct inode *dir = file_inode(file);
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	bool encrypted = ubifs_crypt_is_encrypted(dir);
 
 	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, ctx->pos);
@@ -712,7 +712,7 @@ static void unlock_2_inodes(struct inode *inode1, struct inode *inode2)
 static int ubifs_link(struct dentry *old_dentry, struct inode *dir,
 		      struct dentry *dentry)
 {
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct inode *inode = d_inode(old_dentry);
 	struct ubifs_inode *ui = ubifs_inode(inode);
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
@@ -786,7 +786,7 @@ out_fname:
 
 static int ubifs_unlink(struct inode *dir, struct dentry *dentry)
 {
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct inode *inode = d_inode(dentry);
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
 	int err, sz_change, budgeted = 1;
@@ -873,7 +873,7 @@ out_fname:
  */
 int ubifs_check_dir_empty(struct inode *dir)
 {
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct fscrypt_name nm = { 0 };
 	struct ubifs_dent_node *dent;
 	union ubifs_key key;
@@ -894,7 +894,7 @@ int ubifs_check_dir_empty(struct inode *dir)
 
 static int ubifs_rmdir(struct inode *dir, struct dentry *dentry)
 {
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	struct inode *inode = d_inode(dentry);
 	int err, sz_change, budgeted = 1;
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
@@ -973,7 +973,7 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct inode *inode;
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	int err, sz_change;
 	struct ubifs_budget_req req = { .new_ino = 1, .new_dent = 1 };
 	struct fscrypt_name nm;
@@ -1046,7 +1046,7 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
 	struct inode *inode;
 	struct ubifs_inode *ui;
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	union ubifs_dev_desc *dev = NULL;
 	int sz_change;
 	int err, devlen = 0;
@@ -1135,7 +1135,7 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 	struct inode *inode;
 	struct ubifs_inode *ui;
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
-	struct ubifs_info *c = dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(dir)->s_fs_info;
 	int err, len = strlen(symname);
 	int sz_change = CALC_DENT_SIZE(len);
 	struct fscrypt_str disk_link;
@@ -1276,7 +1276,7 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 		     struct inode *new_dir, struct dentry *new_dentry,
 		     unsigned int flags)
 {
-	struct ubifs_info *c = old_dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(old_dir)->s_fs_info;
 	struct inode *old_inode = d_inode(old_dentry);
 	struct inode *new_inode = d_inode(new_dentry);
 	struct inode *whiteout = NULL;
@@ -1470,7 +1470,7 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (release)
 		ubifs_release_budget(c, &ino_req);
 	if (IS_SYNC(old_inode))
-		err = old_inode->i_sb->s_op->write_inode(old_inode, NULL);
+		err = inode_sb(old_inode)->s_op->write_inode(old_inode, NULL);
 
 	fscrypt_free_filename(&old_nm);
 	fscrypt_free_filename(&new_nm);
@@ -1511,7 +1511,7 @@ out_release:
 static int ubifs_xrename(struct inode *old_dir, struct dentry *old_dentry,
 			struct inode *new_dir, struct dentry *new_dentry)
 {
-	struct ubifs_info *c = old_dir->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(old_dir)->s_fs_info;
 	struct ubifs_budget_req req = { .new_dent = 1, .mod_dent = 1,
 				.dirtied_ino = 2 };
 	int sync = IS_DIRSYNC(old_dir) || IS_DIRSYNC(new_dir);

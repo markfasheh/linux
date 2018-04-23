@@ -22,7 +22,7 @@ ext2_xattr_user_get(const struct xattr_handler *handler,
 		    struct dentry *unused, struct inode *inode,
 		    const char *name, void *buffer, size_t size)
 {
-	if (!test_opt(inode->i_sb, XATTR_USER))
+	if (!test_opt(inode_sb(inode), XATTR_USER))
 		return -EOPNOTSUPP;
 	return ext2_xattr_get(inode, EXT2_XATTR_INDEX_USER,
 			      name, buffer, size);
@@ -34,7 +34,7 @@ ext2_xattr_user_set(const struct xattr_handler *handler,
 		    const char *name, const void *value,
 		    size_t size, int flags)
 {
-	if (!test_opt(inode->i_sb, XATTR_USER))
+	if (!test_opt(inode_sb(inode), XATTR_USER))
 		return -EOPNOTSUPP;
 
 	return ext2_xattr_set(inode, EXT2_XATTR_INDEX_USER,

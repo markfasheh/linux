@@ -66,7 +66,7 @@ static struct rb_node *tree_insert(struct rb_root *root, u64 file_offset,
 static void ordered_data_tree_panic(struct inode *inode, int errno,
 					       u64 offset)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	btrfs_panic(fs_info, errno,
 		    "Inconsistency in ordered tree at offset %llu", offset);
 }
@@ -186,7 +186,7 @@ static int __btrfs_add_ordered_extent(struct inode *inode, u64 file_offset,
 				      u64 start, u64 len, u64 disk_len,
 				      int type, int dio, int compress_type)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_root *root = BTRFS_I(inode)->root;
 	struct btrfs_ordered_inode_tree *tree;
 	struct rb_node *node;
@@ -312,7 +312,7 @@ int btrfs_dec_test_first_ordered_pending(struct inode *inode,
 				   struct btrfs_ordered_extent **cached,
 				   u64 *file_offset, u64 io_size, int uptodate)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_ordered_inode_tree *tree;
 	struct rb_node *node;
 	struct btrfs_ordered_extent *entry = NULL;
@@ -598,7 +598,7 @@ void btrfs_put_ordered_extent(struct btrfs_ordered_extent *entry)
 void btrfs_remove_ordered_extent(struct inode *inode,
 				 struct btrfs_ordered_extent *entry)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_ordered_inode_tree *tree;
 	struct btrfs_inode *btrfs_inode = BTRFS_I(inode);
 	struct btrfs_root *root = btrfs_inode->root;
@@ -1123,9 +1123,9 @@ int btrfs_find_ordered_sum(struct inode *inode, u64 offset, u64 disk_bytenr,
 		if (disk_bytenr >= ordered_sum->bytenr &&
 		    disk_bytenr < ordered_sum->bytenr + ordered_sum->len) {
 			i = (disk_bytenr - ordered_sum->bytenr) >>
-			    inode->i_sb->s_blocksize_bits;
+			    inode_sb(inode)->s_blocksize_bits;
 			num_sectors = ordered_sum->len >>
-				      inode->i_sb->s_blocksize_bits;
+				      inode_sb(inode)->s_blocksize_bits;
 			num_sectors = min_t(int, len - index, num_sectors - i);
 			memcpy(sum + index, ordered_sum->sums + i,
 			       num_sectors);

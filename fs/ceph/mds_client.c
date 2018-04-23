@@ -760,7 +760,7 @@ static int __choose_mds(struct ceph_mds_client *mdsc,
 		parent = req->r_dentry->d_parent;
 		dir = req->r_parent ? : d_inode_rcu(parent);
 
-		if (!dir || dir->i_sb != mdsc->fsc->sb) {
+		if (!dir || inode_sb(dir) != mdsc->fsc->sb) {
 			/*  not this fs or parent went negative */
 			inode = d_inode(req->r_dentry);
 			if (inode)

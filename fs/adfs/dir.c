@@ -20,7 +20,7 @@ static int
 adfs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	const struct adfs_dir_ops *ops = ADFS_SB(sb)->s_dir;
 	struct object_info obj;
 	struct adfs_dir dir;
@@ -128,7 +128,7 @@ adfs_match(const struct qstr *name, struct object_info *obj)
 static int
 adfs_dir_lookup_byname(struct inode *inode, const struct qstr *name, struct object_info *obj)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	const struct adfs_dir_ops *ops = ADFS_SB(sb)->s_dir;
 	struct adfs_dir dir;
 	int ret;
@@ -271,7 +271,7 @@ adfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
 		 * This only returns NULL if get_empty_inode
 		 * fails.
 		 */
-		inode = adfs_iget(dir->i_sb, &obj);
+		inode = adfs_iget(inode_sb(dir), &obj);
 		if (inode)
 			error = 0;
 	}

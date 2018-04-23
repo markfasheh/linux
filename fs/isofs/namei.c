@@ -41,7 +41,7 @@ isofs_find_entry(struct inode *dir, struct dentry *dentry,
 	unsigned char bufbits = ISOFS_BUFFER_BITS(dir);
 	unsigned long block, f_pos, offset, block_saved, offset_saved;
 	struct buffer_head *bh = NULL;
-	struct isofs_sb_info *sbi = ISOFS_SB(dir->i_sb);
+	struct isofs_sb_info *sbi = ISOFS_SB(inode_sb(dir));
 
 	if (!ISOFS_I(dir)->i_first_extent)
 		return 0;
@@ -167,7 +167,7 @@ struct dentry *isofs_lookup(struct inode *dir, struct dentry *dentry, unsigned i
 				1024 + page_address(page));
 	__free_page(page);
 
-	inode = found ? isofs_iget(dir->i_sb, block, offset) : NULL;
+	inode = found ? isofs_iget(inode_sb(dir), block, offset) : NULL;
 
 	return d_splice_alias(inode, dentry);
 }

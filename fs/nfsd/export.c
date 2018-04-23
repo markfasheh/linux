@@ -366,15 +366,15 @@ static int check_export(struct inode *inode, int *flags, unsigned char *uuid)
 	 * 2:  We must be able to find an inode from a filehandle.
 	 *       This means that s_export_op must be set.
 	 */
-	if (!(inode->i_sb->s_type->fs_flags & FS_REQUIRES_DEV) &&
+	if (!(inode_sb(inode)->s_type->fs_flags & FS_REQUIRES_DEV) &&
 	    !(*flags & NFSEXP_FSID) &&
 	    uuid == NULL) {
 		dprintk("exp_export: export of non-dev fs without fsid\n");
 		return -EINVAL;
 	}
 
-	if (!inode->i_sb->s_export_op ||
-	    !inode->i_sb->s_export_op->fh_to_dentry) {
+	if (!inode_sb(inode)->s_export_op ||
+	    !inode_sb(inode)->s_export_op->fh_to_dentry) {
 		dprintk("exp_export: export of invalid fs type.\n");
 		return -EINVAL;
 	}
@@ -895,7 +895,7 @@ exp_rootfh(struct net *net, struct auth_domain *clp, char *name,
 
 	dprintk("nfsd: exp_rootfh(%s [%p] %s:%s/%ld)\n",
 		 name, path.dentry, clp->name,
-		 inode->i_sb->s_id, inode->i_ino);
+		 inode_sb(inode)->s_id, inode->i_ino);
 	exp = exp_parent(cd, clp, &path);
 	if (IS_ERR(exp)) {
 		err = PTR_ERR(exp);

@@ -166,7 +166,7 @@ static int nilfs_ioctl_setflags(struct inode *inode, struct file *filp,
 	    !capable(CAP_LINUX_IMMUTABLE))
 		goto out;
 
-	ret = nilfs_transaction_begin(inode->i_sb, &ti, 0);
+	ret = nilfs_transaction_begin(inode_sb(inode), &ti, 0);
 	if (ret)
 		goto out;
 
@@ -179,7 +179,7 @@ static int nilfs_ioctl_setflags(struct inode *inode, struct file *filp,
 		nilfs_set_transaction_flag(NILFS_TI_SYNC);
 
 	nilfs_mark_inode_dirty(inode);
-	ret = nilfs_transaction_commit(inode->i_sb);
+	ret = nilfs_transaction_commit(inode_sb(inode));
 out:
 	inode_unlock(inode);
 	mnt_drop_write_file(filp);
@@ -216,7 +216,7 @@ static int nilfs_ioctl_getversion(struct inode *inode, void __user *argp)
 static int nilfs_ioctl_change_cpmode(struct inode *inode, struct file *filp,
 				     unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_transaction_info ti;
 	struct nilfs_cpmode cpmode;
 	int ret;
@@ -234,13 +234,13 @@ static int nilfs_ioctl_change_cpmode(struct inode *inode, struct file *filp,
 
 	mutex_lock(&nilfs->ns_snapshot_mount_mutex);
 
-	nilfs_transaction_begin(inode->i_sb, &ti, 0);
+	nilfs_transaction_begin(inode_sb(inode), &ti, 0);
 	ret = nilfs_cpfile_change_cpmode(
 		nilfs->ns_cpfile, cpmode.cm_cno, cpmode.cm_mode);
 	if (unlikely(ret < 0))
-		nilfs_transaction_abort(inode->i_sb);
+		nilfs_transaction_abort(inode_sb(inode));
 	else
-		nilfs_transaction_commit(inode->i_sb); /* never fails */
+		nilfs_transaction_commit(inode_sb(inode)); /* never fails */
 
 	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
 out:
@@ -271,7 +271,7 @@ static int
 nilfs_ioctl_delete_checkpoint(struct inode *inode, struct file *filp,
 			      unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_transaction_info ti;
 	__u64 cno;
 	int ret;
@@ -287,12 +287,12 @@ nilfs_ioctl_delete_checkpoint(struct inode *inode, struct file *filp,
 	if (copy_from_user(&cno, argp, sizeof(cno)))
 		goto out;
 
-	nilfs_transaction_begin(inode->i_sb, &ti, 0);
+	nilfs_transaction_begin(inode_sb(inode), &ti, 0);
 	ret = nilfs_cpfile_delete_checkpoint(nilfs->ns_cpfile, cno);
 	if (unlikely(ret < 0))
-		nilfs_transaction_abort(inode->i_sb);
+		nilfs_transaction_abort(inode_sb(inode));
 	else
-		nilfs_transaction_commit(inode->i_sb); /* never fails */
+		nilfs_transaction_commit(inode_sb(inode)); /* never fails */
 out:
 	mnt_drop_write_file(filp);
 	return ret;
@@ -350,7 +350,7 @@ nilfs_ioctl_do_get_cpinfo(struct the_nilfs *nilfs, __u64 *posp, int flags,
 static int nilfs_ioctl_get_cpstat(struct inode *inode, struct file *filp,
 				  unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_cpstat cpstat;
 	int ret;
 
@@ -417,7 +417,7 @@ nilfs_ioctl_do_get_suinfo(struct the_nilfs *nilfs, __u64 *posp, int flags,
 static int nilfs_ioctl_get_sustat(struct inode *inode, struct file *filp,
 				  unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_sustat sustat;
 	int ret;
 
@@ -526,7 +526,7 @@ nilfs_ioctl_do_get_bdescs(struct the_nilfs *nilfs, __u64 *posp, int flags,
 static int nilfs_ioctl_get_bdescs(struct inode *inode, struct file *filp,
 				  unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_argv argv;
 	int ret;
 
@@ -583,7 +583,7 @@ static int nilfs_ioctl_move_inode_block(struct inode *inode,
 
 	if (unlikely(ret < 0)) {
 		if (ret == -ENOENT)
-			nilfs_msg(inode->i_sb, KERN_CRIT,
+			nilfs_msg(inode_sb(inode), KERN_CRIT,
 				  "%s: invalid virtual block address (%s): ino=%llu, cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu",
 				  __func__, vdesc->vd_flags ? "node" : "data",
 				  (unsigned long long)vdesc->vd_ino,
@@ -594,7 +594,7 @@ static int nilfs_ioctl_move_inode_block(struct inode *inode,
 		return ret;
 	}
 	if (unlikely(!list_empty(&bh->b_assoc_buffers))) {
-		nilfs_msg(inode->i_sb, KERN_CRIT,
+		nilfs_msg(inode_sb(inode), KERN_CRIT,
 			  "%s: conflicting %s buffer: ino=%llu, cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu",
 			  __func__, vdesc->vd_flags ? "node" : "data",
 			  (unsigned long long)vdesc->vd_ino,
@@ -916,7 +916,7 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
 		ret = PTR_ERR(kbufs[4]);
 		goto out;
 	}
-	nilfs = inode->i_sb->s_fs_info;
+	nilfs = inode_sb(inode)->s_fs_info;
 
 	for (n = 0; n < 4; n++) {
 		ret = -EINVAL;
@@ -959,15 +959,15 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
 		goto out_free;
 	}
 
-	ret = nilfs_ioctl_move_blocks(inode->i_sb, &argv[0], kbufs[0]);
+	ret = nilfs_ioctl_move_blocks(inode_sb(inode), &argv[0], kbufs[0]);
 	if (ret < 0) {
-		nilfs_msg(inode->i_sb, KERN_ERR,
+		nilfs_msg(inode_sb(inode), KERN_ERR,
 			  "error %d preparing GC: cannot read source blocks",
 			  ret);
 	} else {
 		if (nilfs_sb_need_update(nilfs))
 			set_nilfs_discontinued(nilfs);
-		ret = nilfs_clean_segments(inode->i_sb, argv, kbufs);
+		ret = nilfs_clean_segments(inode_sb(inode), argv, kbufs);
 	}
 
 	nilfs_remove_all_gcinodes(nilfs);
@@ -1016,11 +1016,11 @@ static int nilfs_ioctl_sync(struct inode *inode, struct file *filp,
 	int ret;
 	struct the_nilfs *nilfs;
 
-	ret = nilfs_construct_segment(inode->i_sb);
+	ret = nilfs_construct_segment(inode_sb(inode));
 	if (ret < 0)
 		return ret;
 
-	nilfs = inode->i_sb->s_fs_info;
+	nilfs = inode_sb(inode)->s_fs_info;
 	ret = nilfs_flush_device(nilfs);
 	if (ret < 0)
 		return ret;
@@ -1060,7 +1060,7 @@ static int nilfs_ioctl_resize(struct inode *inode, struct file *filp,
 	if (copy_from_user(&newsize, argp, sizeof(newsize)))
 		goto out_drop_write;
 
-	ret = nilfs_resize_fs(inode->i_sb, newsize);
+	ret = nilfs_resize_fs(inode_sb(inode), newsize);
 
 out_drop_write:
 	mnt_drop_write_file(filp);
@@ -1081,7 +1081,7 @@ out:
  */
 static int nilfs_ioctl_trim_fs(struct inode *inode, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct request_queue *q = bdev_get_queue(nilfs->ns_bdev);
 	struct fstrim_range range;
 	int ret;
@@ -1123,7 +1123,7 @@ static int nilfs_ioctl_trim_fs(struct inode *inode, void __user *argp)
  */
 static int nilfs_ioctl_set_alloc_range(struct inode *inode, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	__u64 range[2];
 	__u64 minseg, maxseg;
 	unsigned long segbytes;
@@ -1137,7 +1137,7 @@ static int nilfs_ioctl_set_alloc_range(struct inode *inode, void __user *argp)
 		goto out;
 
 	ret = -ERANGE;
-	if (range[1] > i_size_read(inode->i_sb->s_bdev->bd_inode))
+	if (range[1] > i_size_read(inode_sb(inode)->s_bdev->bd_inode))
 		goto out;
 
 	segbytes = nilfs->ns_blocks_per_segment * nilfs->ns_blocksize;
@@ -1183,7 +1183,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
 						  void *, size_t, size_t))
 
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_argv argv;
 	int ret;
 
@@ -1229,7 +1229,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
 static int nilfs_ioctl_set_suinfo(struct inode *inode, struct file *filp,
 				unsigned int cmd, void __user *argp)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_transaction_info ti;
 	struct nilfs_argv argv;
 	size_t len;
@@ -1276,13 +1276,13 @@ static int nilfs_ioctl_set_suinfo(struct inode *inode, struct file *filp,
 		goto out_free;
 	}
 
-	nilfs_transaction_begin(inode->i_sb, &ti, 0);
+	nilfs_transaction_begin(inode_sb(inode), &ti, 0);
 	ret = nilfs_sufile_set_suinfo(nilfs->ns_sufile, kbuf, argv.v_size,
 			argv.v_nmembs);
 	if (unlikely(ret < 0))
-		nilfs_transaction_abort(inode->i_sb);
+		nilfs_transaction_abort(inode_sb(inode));
 	else
-		nilfs_transaction_commit(inode->i_sb); /* never fails */
+		nilfs_transaction_commit(inode_sb(inode)); /* never fails */
 
 out_free:
 	vfree(kbuf);

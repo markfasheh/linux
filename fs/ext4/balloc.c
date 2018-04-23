@@ -654,7 +654,7 @@ ext4_fsblk_t ext4_new_meta_blocks(handle_t *handle, struct inode *inode,
 	 */
 	if (!(*errp) && (flags & EXT4_MB_DELALLOC_RESERVED)) {
 		dquot_alloc_block_nofail(inode,
-				EXT4_C2B(EXT4_SB(inode->i_sb), ar.len));
+				EXT4_C2B(EXT4_SB(inode_sb(inode)), ar.len));
 	}
 	return ret;
 }
@@ -855,7 +855,7 @@ ext4_fsblk_t ext4_inode_to_goal_block(struct inode *inode)
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	ext4_group_t block_group;
 	ext4_grpblk_t colour;
-	int flex_size = ext4_flex_bg_size(EXT4_SB(inode->i_sb));
+	int flex_size = ext4_flex_bg_size(EXT4_SB(inode_sb(inode)));
 	ext4_fsblk_t bg_start;
 	ext4_fsblk_t last_block;
 
@@ -873,19 +873,19 @@ ext4_fsblk_t ext4_inode_to_goal_block(struct inode *inode)
 		if (S_ISREG(inode->i_mode))
 			block_group++;
 	}
-	bg_start = ext4_group_first_block_no(inode->i_sb, block_group);
-	last_block = ext4_blocks_count(EXT4_SB(inode->i_sb)->s_es) - 1;
+	bg_start = ext4_group_first_block_no(inode_sb(inode), block_group);
+	last_block = ext4_blocks_count(EXT4_SB(inode_sb(inode))->s_es) - 1;
 
 	/*
 	 * If we are doing delayed allocation, we don't need take
 	 * colour into account.
 	 */
-	if (test_opt(inode->i_sb, DELALLOC))
+	if (test_opt(inode_sb(inode), DELALLOC))
 		return bg_start;
 
-	if (bg_start + EXT4_BLOCKS_PER_GROUP(inode->i_sb) <= last_block)
+	if (bg_start + EXT4_BLOCKS_PER_GROUP(inode_sb(inode)) <= last_block)
 		colour = (current->pid % 16) *
-			(EXT4_BLOCKS_PER_GROUP(inode->i_sb) / 16);
+			(EXT4_BLOCKS_PER_GROUP(inode_sb(inode)) / 16);
 	else
 		colour = (current->pid % 16) * ((last_block - bg_start) / 16);
 	return bg_start + colour;

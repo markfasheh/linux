@@ -385,7 +385,7 @@ static int read_page(struct file *file, unsigned long index,
 				ret = -EINVAL;
 				goto out;
 			}
-			bh->b_bdev = inode->i_sb->s_bdev;
+			bh->b_bdev = inode_sb(inode)->s_bdev;
 			if (count < (1<<inode->i_blkbits))
 				count = 0;
 			else

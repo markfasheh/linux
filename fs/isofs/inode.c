@@ -1090,7 +1090,7 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock,
 			struct inode *ninode;
 
 			offset += sect_size;
-			ninode = isofs_iget(inode->i_sb, nextblk, nextoff);
+			ninode = isofs_iget(inode_sb(inode), nextblk, nextoff);
 			if (IS_ERR(ninode)) {
 				error = PTR_ERR(ninode);
 				goto abort;
@@ -1113,9 +1113,11 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock,
 		}
 
 		if (*bh) {
-			map_bh(*bh, inode->i_sb, firstext + b_off - offset);
+			map_bh(*bh, inode_sb(inode),
+			       firstext + b_off - offset);
 		} else {
-			*bh = sb_getblk(inode->i_sb, firstext+b_off-offset);
+			*bh = sb_getblk(inode_sb(inode),
+					firstext+b_off-offset);
 			if (!*bh)
 				goto abort;
 		}
@@ -1165,7 +1167,7 @@ struct buffer_head *isofs_bread(struct inode *inode, sector_t block)
 	sector_t blknr = isofs_bmap(inode, block);
 	if (!blknr)
 		return NULL;
-	return sb_bread(inode->i_sb, blknr);
+	return sb_bread(inode_sb(inode), blknr);
 }
 
 static int isofs_readpage(struct file *file, struct page *page)
@@ -1193,7 +1195,7 @@ static const struct address_space_operations isofs_aops = {
 static int isofs_read_level3_size(struct inode *inode)
 {
 	unsigned long bufsize = ISOFS_BUFFER_SIZE(inode);
-	int high_sierra = ISOFS_SB(inode->i_sb)->s_high_sierra;
+	int high_sierra = ISOFS_SB(inode_sb(inode))->s_high_sierra;
 	struct buffer_head *bh = NULL;
 	unsigned long block, offset, block_saved, offset_saved;
 	int i = 0;
@@ -1217,7 +1219,7 @@ static int isofs_read_level3_size(struct inode *inode)
 		unsigned int de_len;
 
 		if (!bh) {
-			bh = sb_bread(inode->i_sb, block);
+			bh = sb_bread(inode_sb(inode), block);
 			if (!bh)
 				goto out_noread;
 		}
@@ -1250,7 +1252,7 @@ static int isofs_read_level3_size(struct inode *inode)
 			brelse(bh);
 			bh = NULL;
 			if (offset) {
-				bh = sb_bread(inode->i_sb, block);
+				bh = sb_bread(inode_sb(inode), block);
 				if (!bh)
 					goto out_noread;
 				memcpy((void *)tmpde+slop, bh->b_data, offset);
@@ -1295,7 +1297,7 @@ out_toomany:
 
 static int isofs_read_inode(struct inode *inode, int relocated)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
 	unsigned long bufsize = ISOFS_BUFFER_SIZE(inode);
 	unsigned long block;
@@ -1309,7 +1311,7 @@ static int isofs_read_inode(struct inode *inode, int relocated)
 	int ret = -EIO;
 
 	block = ei->i_iget5_block;
-	bh = sb_bread(inode->i_sb, block);
+	bh = sb_bread(inode_sb(inode), block);
 	if (!bh)
 		goto out_badread;
 
@@ -1328,7 +1330,7 @@ static int isofs_read_inode(struct inode *inode, int relocated)
 		}
 		memcpy(tmpde, bh->b_data + offset, frag1);
 		brelse(bh);
-		bh = sb_bread(inode->i_sb, ++block);
+		bh = sb_bread(inode_sb(inode), ++block);
 		if (!bh)
 			goto out_badread;
 		memcpy((char *)tmpde+frag1, bh->b_data, de_len - frag1);

@@ -68,7 +68,8 @@ static bool ntfs_check_restart_page_header(struct inode *vi,
 			logfile_system_page_size &
 			(logfile_system_page_size - 1) ||
 			!is_power_of_2(logfile_log_page_size)) {
-		ntfs_error(vi->i_sb, "$LogFile uses unsupported page size.");
+		ntfs_error(inode_sb(vi),
+			   "$LogFile uses unsupported page size.");
 		return false;
 	}
 	/*
@@ -76,14 +77,14 @@ static bool ntfs_check_restart_page_header(struct inode *vi,
 	 * size (2nd restart page).
 	 */
 	if (pos && pos != logfile_system_page_size) {
-		ntfs_error(vi->i_sb, "Found restart area in incorrect "
+		ntfs_error(inode_sb(vi), "Found restart area in incorrect "
 				"position in $LogFile.");
 		return false;
 	}
 	/* We only know how to handle version 1.1. */
 	if (sle16_to_cpu(rp->major_ver) != 1 ||
 			sle16_to_cpu(rp->minor_ver) != 1) {
-		ntfs_error(vi->i_sb, "$LogFile version %i.%i is not "
+		ntfs_error(inode_sb(vi), "$LogFile version %i.%i is not "
 				"supported.  (This driver supports version "
 				"1.1 only.)", (int)sle16_to_cpu(rp->major_ver),
 				(int)sle16_to_cpu(rp->minor_ver));
@@ -100,7 +101,7 @@ static bool ntfs_check_restart_page_header(struct inode *vi,
 	/* Verify the size of the update sequence array. */
 	usa_count = 1 + (logfile_system_page_size >> NTFS_BLOCK_SIZE_BITS);
 	if (usa_count != le16_to_cpu(rp->usa_count)) {
-		ntfs_error(vi->i_sb, "$LogFile restart page specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart page specifies "
 				"inconsistent update sequence array count.");
 		return false;
 	}
@@ -109,7 +110,7 @@ static bool ntfs_check_restart_page_header(struct inode *vi,
 	usa_end = usa_ofs + usa_count * sizeof(u16);
 	if (usa_ofs < sizeof(RESTART_PAGE_HEADER) ||
 			usa_end > NTFS_BLOCK_SIZE - sizeof(u16)) {
-		ntfs_error(vi->i_sb, "$LogFile restart page specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart page specifies "
 				"inconsistent update sequence array offset.");
 		return false;
 	}
@@ -124,7 +125,7 @@ skip_usa_checks:
 	if (ra_ofs & 7 || (have_usa ? ra_ofs < usa_end :
 			ra_ofs < sizeof(RESTART_PAGE_HEADER)) ||
 			ra_ofs > logfile_system_page_size) {
-		ntfs_error(vi->i_sb, "$LogFile restart page specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart page specifies "
 				"inconsistent restart area offset.");
 		return false;
 	}
@@ -133,7 +134,8 @@ skip_usa_checks:
 	 * set.
 	 */
 	if (!ntfs_is_chkd_record(rp->magic) && sle64_to_cpu(rp->chkdsk_lsn)) {
-		ntfs_error(vi->i_sb, "$LogFile restart page is not modified "
+		ntfs_error(inode_sb(vi),
+				"$LogFile restart page is not modified "
 				"by chkdsk but a chkdsk LSN is specified.");
 		return false;
 	}
@@ -172,7 +174,7 @@ static bool ntfs_check_restart_area(struct inode *vi, RESTART_PAGE_HEADER *rp)
 	 */
 	if (ra_ofs + offsetof(RESTART_AREA, file_size) >
 			NTFS_BLOCK_SIZE - sizeof(u16)) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"inconsistent file offset.");
 		return false;
 	}
@@ -186,7 +188,7 @@ static bool ntfs_check_restart_area(struct inode *vi, RESTART_PAGE_HEADER *rp)
 	ca_ofs = le16_to_cpu(ra->client_array_offset);
 	if (((ca_ofs + 7) & ~7) != ca_ofs ||
 			ra_ofs + ca_ofs > NTFS_BLOCK_SIZE - sizeof(u16)) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"inconsistent client array offset.");
 		return false;
 	}
@@ -201,7 +203,8 @@ static bool ntfs_check_restart_area(struct inode *vi, RESTART_PAGE_HEADER *rp)
 			ra_ofs + le16_to_cpu(ra->restart_area_length) >
 			le32_to_cpu(rp->system_page_size) ||
 			ra_len > le16_to_cpu(ra->restart_area_length)) {
-		ntfs_error(vi->i_sb, "$LogFile restart area is out of bounds "
+		ntfs_error(inode_sb(vi),
+				"$LogFile restart area is out of bounds "
 				"of the system page size specified by the "
 				"restart page header and/or the specified "
 				"restart area length is inconsistent.");
@@ -218,7 +221,7 @@ static bool ntfs_check_restart_area(struct inode *vi, RESTART_PAGE_HEADER *rp)
 			(ra->client_in_use_list != LOGFILE_NO_CLIENT &&
 			le16_to_cpu(ra->client_in_use_list) >=
 			le16_to_cpu(ra->log_clients))) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"overflowing client free and/or in use lists.");
 		return false;
 	}
@@ -233,21 +236,21 @@ static bool ntfs_check_restart_area(struct inode *vi, RESTART_PAGE_HEADER *rp)
 		fs_bits++;
 	}
 	if (le32_to_cpu(ra->seq_number_bits) != 67 - fs_bits) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"inconsistent sequence number bits.");
 		return false;
 	}
 	/* The log record header length must be a multiple of 8. */
 	if (((le16_to_cpu(ra->log_record_header_length) + 7) & ~7) !=
 			le16_to_cpu(ra->log_record_header_length)) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"inconsistent log record header length.");
 		return false;
 	}
 	/* Dito for the log page data offset. */
 	if (((le16_to_cpu(ra->log_page_data_offset) + 7) & ~7) !=
 			le16_to_cpu(ra->log_page_data_offset)) {
-		ntfs_error(vi->i_sb, "$LogFile restart area specifies "
+		ntfs_error(inode_sb(vi), "$LogFile restart area specifies "
 				"inconsistent log page data offset.");
 		return false;
 	}
@@ -316,7 +319,7 @@ check_list:
 	ntfs_debug("Done.");
 	return true;
 err_out:
-	ntfs_error(vi->i_sb, "$LogFile log client array is corrupt.");
+	ntfs_error(inode_sb(vi), "$LogFile log client array is corrupt.");
 	return false;
 }
 
@@ -373,7 +376,8 @@ static int ntfs_check_and_load_restart_page(struct inode *vi,
 	 */
 	trp = ntfs_malloc_nofs(le32_to_cpu(rp->system_page_size));
 	if (!trp) {
-		ntfs_error(vi->i_sb, "Failed to allocate memory for $LogFile "
+		ntfs_error(inode_sb(vi),
+				"Failed to allocate memory for $LogFile "
 				"restart page buffer.");
 		return -ENOMEM;
 	}
@@ -400,7 +404,8 @@ static int ntfs_check_and_load_restart_page(struct inode *vi,
 		do {
 			page = ntfs_map_page(vi->i_mapping, idx);
 			if (IS_ERR(page)) {
-				ntfs_error(vi->i_sb, "Error mapping $LogFile "
+				ntfs_error(inode_sb(vi),
+						"Error mapping $LogFile "
 						"page (index %lu).", idx);
 				err = PTR_ERR(page);
 				if (err != -EIO && err != -ENOMEM)
@@ -430,7 +435,8 @@ static int ntfs_check_and_load_restart_page(struct inode *vi,
 		if (le16_to_cpu(rp->restart_area_offset) +
 				le16_to_cpu(ra->restart_area_length) >
 				NTFS_BLOCK_SIZE - sizeof(u16)) {
-			ntfs_error(vi->i_sb, "Multi sector transfer error "
+			ntfs_error(inode_sb(vi),
+					"Multi sector transfer error "
 					"detected in $LogFile restart page.");
 			err = -EINVAL;
 			goto err_out;
@@ -486,7 +492,7 @@ bool ntfs_check_logfile(struct inode *log_vi, RESTART_PAGE_HEADER **rp)
 {
 	s64 size, pos;
 	LSN rstr1_lsn, rstr2_lsn;
-	ntfs_volume *vol = NTFS_SB(log_vi->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(log_vi));
 	struct address_space *mapping = log_vi->i_mapping;
 	struct page *page = NULL;
 	u8 *kaddr = NULL;
@@ -679,7 +685,7 @@ err_out:
  */
 bool ntfs_is_logfile_clean(struct inode *log_vi, const RESTART_PAGE_HEADER *rp)
 {
-	ntfs_volume *vol = NTFS_SB(log_vi->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(log_vi));
 	RESTART_AREA *ra;
 
 	ntfs_debug("Entering.");

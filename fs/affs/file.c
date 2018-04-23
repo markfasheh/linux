@@ -47,7 +47,7 @@ affs_file_release(struct inode *inode, struct file *filp)
 static int
 affs_grow_extcache(struct inode *inode, u32 lc_idx)
 {
-	struct super_block	*sb = inode->i_sb;
+	struct super_block	*sb = inode_sb(inode);
 	struct buffer_head	*bh;
 	u32 lc_max;
 	int i, j, key;
@@ -117,7 +117,7 @@ err:
 static struct buffer_head *
 affs_alloc_extblock(struct inode *inode, struct buffer_head *bh, u32 ext)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *new_bh;
 	u32 blocknr, tmp;
 
@@ -169,7 +169,7 @@ affs_get_extblock(struct inode *inode, u32 ext)
 static struct buffer_head *
 affs_get_extblock_slow(struct inode *inode, u32 ext)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh;
 	u32 ext_key;
 	u32 lc_idx, lc_off, ac_idx;
@@ -294,7 +294,7 @@ err_bread:
 static int
 affs_get_block(struct inode *inode, sector_t block, struct buffer_head *bh_result, int create)
 {
-	struct super_block	*sb = inode->i_sb;
+	struct super_block	*sb = inode_sb(inode);
 	struct buffer_head	*ext_bh;
 	u32			 ext;
 
@@ -353,7 +353,7 @@ affs_get_block(struct inode *inode, sector_t block, struct buffer_head *bh_resul
 	return 0;
 
 err_big:
-	affs_error(inode->i_sb, "get_block", "strange block request %llu",
+	affs_error(inode_sb(inode), "get_block", "strange block request %llu",
 		   (unsigned long long)block);
 	return -EIO;
 err_ext:
@@ -451,7 +451,7 @@ affs_bread_ino(struct inode *inode, int block, int create)
 	tmp_bh.b_state = 0;
 	err = affs_get_block(inode, block, &tmp_bh, create);
 	if (!err) {
-		bh = affs_bread(inode->i_sb, tmp_bh.b_blocknr);
+		bh = affs_bread(inode_sb(inode), tmp_bh.b_blocknr);
 		if (bh) {
 			bh->b_state |= tmp_bh.b_state;
 			return bh;
@@ -470,7 +470,7 @@ affs_getzeroblk_ino(struct inode *inode, int block)
 	tmp_bh.b_state = 0;
 	err = affs_get_block(inode, block, &tmp_bh, 1);
 	if (!err) {
-		bh = affs_getzeroblk(inode->i_sb, tmp_bh.b_blocknr);
+		bh = affs_getzeroblk(inode_sb(inode), tmp_bh.b_blocknr);
 		if (bh) {
 			bh->b_state |= tmp_bh.b_state;
 			return bh;
@@ -489,7 +489,7 @@ affs_getemptyblk_ino(struct inode *inode, int block)
 	tmp_bh.b_state = 0;
 	err = affs_get_block(inode, block, &tmp_bh, 1);
 	if (!err) {
-		bh = affs_getemptyblk(inode->i_sb, tmp_bh.b_blocknr);
+		bh = affs_getemptyblk(inode_sb(inode), tmp_bh.b_blocknr);
 		if (bh) {
 			bh->b_state |= tmp_bh.b_state;
 			return bh;
@@ -503,7 +503,7 @@ static int
 affs_do_readpage_ofs(struct page *page, unsigned to, int create)
 {
 	struct inode *inode = page->mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh;
 	char *data;
 	unsigned pos = 0;
@@ -539,7 +539,7 @@ affs_do_readpage_ofs(struct page *page, unsigned to, int create)
 static int
 affs_extent_file_ofs(struct inode *inode, u32 newsize)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh, *prev_bh;
 	u32 bidx, boff;
 	u32 size, bsize;
@@ -671,7 +671,7 @@ static int affs_write_end_ofs(struct file *file, struct address_space *mapping,
 				struct page *page, void *fsdata)
 {
 	struct inode *inode = mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh, *prev_bh;
 	char *data;
 	u32 bidx, boff, bsize;
@@ -819,7 +819,7 @@ const struct address_space_operations affs_aops_ofs = {
 void
 affs_free_prealloc(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	pr_debug("free_prealloc(ino=%lu)\n", inode->i_ino);
 
@@ -834,7 +834,7 @@ affs_free_prealloc(struct inode *inode)
 void
 affs_truncate(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	u32 ext, ext_key;
 	u32 last_blk, blkcnt, blk;
 	u32 size;
@@ -961,7 +961,7 @@ int affs_file_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 
 	inode_lock(inode);
 	ret = write_inode_now(inode, 0);
-	err = sync_blockdev(inode->i_sb->s_bdev);
+	err = sync_blockdev(inode_sb(inode)->s_bdev);
 	if (!ret)
 		ret = err;
 	inode_unlock(inode);

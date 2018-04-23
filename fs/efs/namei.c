@@ -30,7 +30,7 @@ static efs_ino_t efs_find_entry(struct inode *inode, const char *name, int len)
 
 	for(block = 0; block < inode->i_blocks; block++) {
 
-		bh = sb_bread(inode->i_sb, efs_bmap(inode, block));
+		bh = sb_bread(inode_sb(inode), efs_bmap(inode, block));
 		if (!bh) {
 			pr_err("%s(): failed to read dir block %d\n",
 			       __func__, block);
@@ -69,7 +69,7 @@ struct dentry *efs_lookup(struct inode *dir, struct dentry *dentry, unsigned int
 
 	inodenum = efs_find_entry(dir, dentry->d_name.name, dentry->d_name.len);
 	if (inodenum)
-		inode = efs_iget(dir->i_sb, inodenum);
+		inode = efs_iget(inode_sb(dir), inodenum);
 
 	return d_splice_alias(inode, dentry);
 }

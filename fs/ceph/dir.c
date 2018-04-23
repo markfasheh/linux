@@ -317,7 +317,7 @@ static int ceph_readdir(struct file *file, struct dir_context *ctx)
 	if (ctx->pos == 0) {
 		dout("readdir off 0 -> '.'\n");
 		if (!dir_emit(ctx, ".", 1, 
-			    ceph_translate_ino(inode->i_sb, inode->i_ino),
+			    ceph_translate_ino(inode_sb(inode), inode->i_ino),
 			    inode->i_mode >> 12))
 			return 0;
 		ctx->pos = 1;
@@ -326,7 +326,7 @@ static int ceph_readdir(struct file *file, struct dir_context *ctx)
 		ino_t ino = parent_ino(file->f_path.dentry);
 		dout("readdir off 1 -> '..'\n");
 		if (!dir_emit(ctx, "..", 2,
-			    ceph_translate_ino(inode->i_sb, ino),
+			    ceph_translate_ino(inode_sb(inode), ino),
 			    inode->i_mode >> 12))
 			return 0;
 		ctx->pos = 2;
@@ -513,7 +513,7 @@ more:
 		ino = ceph_vino_to_ino(vino);
 
 		if (!dir_emit(ctx, rde->name, rde->name_len,
-			      ceph_translate_ino(inode->i_sb, ino), ftype)) {
+			      ceph_translate_ino(inode_sb(inode), ino), ftype)) {
 			dout("filldir stopping us...\n");
 			return 0;
 		}
@@ -727,7 +727,7 @@ static bool is_root_ceph_dentry(struct inode *inode, struct dentry *dentry)
 static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
 				  unsigned int flags)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	int op;
@@ -816,7 +816,7 @@ int ceph_handle_notrace_create(struct inode *dir, struct dentry *dentry)
 static int ceph_mknod(struct inode *dir, struct dentry *dentry,
 		      umode_t mode, dev_t rdev)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	struct ceph_acls_info acls = {};
@@ -870,7 +870,7 @@ static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 static int ceph_symlink(struct inode *dir, struct dentry *dentry,
 			    const char *dest)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	int err;
@@ -908,7 +908,7 @@ out:
 
 static int ceph_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	struct ceph_acls_info acls = {};
@@ -967,7 +967,7 @@ out:
 static int ceph_link(struct dentry *old_dentry, struct inode *dir,
 		     struct dentry *dentry)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	int err;
@@ -1007,7 +1007,7 @@ static int ceph_link(struct dentry *old_dentry, struct inode *dir,
  */
 static int ceph_unlink(struct inode *dir, struct dentry *dentry)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct inode *inode = d_inode(dentry);
 	struct ceph_mds_request *req;
@@ -1049,7 +1049,7 @@ static int ceph_rename(struct inode *old_dir, struct dentry *old_dentry,
 		       struct inode *new_dir, struct dentry *new_dentry,
 		       unsigned int flags)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(old_dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(old_dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	int op = CEPH_MDS_OP_RENAME;
@@ -1232,7 +1232,7 @@ static int ceph_d_revalidate(struct dentry *dentry, unsigned int flags)
 
 	if (!valid) {
 		struct ceph_mds_client *mdsc =
-			ceph_sb_to_client(dir->i_sb)->mdsc;
+			ceph_sb_to_client(inode_sb(dir))->mdsc;
 		struct ceph_mds_request *req;
 		int op, err;
 		u32 mask;
@@ -1358,7 +1358,7 @@ static ssize_t ceph_read_dir(struct file *file, char __user *buf, size_t size,
 	int left;
 	const int bufsize = 1024;
 
-	if (!ceph_test_mount_opt(ceph_sb_to_client(inode->i_sb), DIRSTAT))
+	if (!ceph_test_mount_opt(ceph_sb_to_client(inode_sb(inode)), DIRSTAT))
 		return -EISDIR;
 
 	if (!cf->dir_info) {

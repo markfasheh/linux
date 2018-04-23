@@ -494,10 +494,10 @@ int mnt_want_write_file(struct file *file)
 
 	ret = may_write_real(file);
 	if (!ret) {
-		sb_start_write(file_inode(file)->i_sb);
+		sb_start_write(inode_sb(file_inode(file)));
 		ret = __mnt_want_write_file(file);
 		if (ret)
-			sb_end_write(file_inode(file)->i_sb);
+			sb_end_write(inode_sb(file_inode(file)));
 	}
 	return ret;
 }
@@ -546,7 +546,7 @@ void mnt_drop_write_file_path(struct file *file)
 void mnt_drop_write_file(struct file *file)
 {
 	__mnt_drop_write(file->f_path.mnt);
-	sb_end_write(file_inode(file)->i_sb);
+	sb_end_write(inode_sb(file_inode(file)));
 }
 EXPORT_SYMBOL(mnt_drop_write_file);
 

@@ -127,7 +127,7 @@ nfs_get_parent(struct dentry *dentry)
 {
 	int ret;
 	struct inode *inode = d_inode(dentry), *pinode;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct nfs_server *server = NFS_SB(sb);
 	struct nfs_fattr *fattr = NULL;
 	struct nfs4_label *label = NULL;

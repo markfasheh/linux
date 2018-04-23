@@ -3738,7 +3738,7 @@ static noinline int copy_items(struct btrfs_trans_handle *trans,
 			       int start_slot, int nr, int inode_only,
 			       u64 logged_isize)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	unsigned long src_offset;
 	unsigned long dst_offset;
 	struct btrfs_root *log = inode->root->log_root;
@@ -5417,7 +5417,7 @@ static int btrfs_log_all_parents(struct btrfs_trans_handle *trans,
 				 struct btrfs_inode *inode,
 				 struct btrfs_log_ctx *ctx)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	int ret;
 	struct btrfs_path *path;
 	struct btrfs_key key;
@@ -5533,7 +5533,7 @@ static int btrfs_log_inode_parent(struct btrfs_trans_handle *trans,
 	bool log_dentries = false;
 	struct btrfs_inode *orig_inode = inode;
 
-	sb = inode->vfs_inode.i_sb;
+	sb = inode_sb(&inode->vfs_inode);
 
 	if (btrfs_test_opt(fs_info, NOTREELOG)) {
 		ret = 1;
@@ -5952,7 +5952,7 @@ int btrfs_log_new_name(struct btrfs_trans_handle *trans,
 			struct btrfs_inode *inode, struct btrfs_inode *old_dir,
 			struct dentry *parent)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->vfs_inode.i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(&inode->vfs_inode));
 	struct btrfs_root *root = inode->root;
 
 	/*

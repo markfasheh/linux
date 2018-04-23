@@ -327,7 +327,7 @@ static int vfat_create_shortname(struct inode *dir, struct nls_table *nls,
 				 wchar_t *uname, int ulen,
 				 unsigned char *name_res, unsigned char *lcase)
 {
-	struct fat_mount_options *opts = &MSDOS_SB(dir->i_sb)->options;
+	struct fat_mount_options *opts = &MSDOS_SB(inode_sb(dir))->options;
 	wchar_t *ip, *ext_start, *end, *name_start;
 	unsigned char base[9], ext[4], buf[5], *p;
 	unsigned char charbuf[NLS_MAX_CHARSET_SIZE];
@@ -580,7 +580,7 @@ static int vfat_build_slots(struct inode *dir, const unsigned char *name,
 			    struct timespec *ts,
 			    struct msdos_dir_slot *slots, int *nr_slots)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(dir->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(dir));
 	struct fat_mount_options *opts = &sbi->options;
 	struct msdos_dir_slot *ps;
 	struct msdos_dir_entry *de;
@@ -709,7 +709,7 @@ static int vfat_d_anon_disconn(struct dentry *dentry)
 static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
 				  unsigned int flags)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct fat_slot_info sinfo;
 	struct inode *inode;
 	struct dentry *alias;
@@ -769,7 +769,7 @@ error:
 static int vfat_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		       bool excl)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode *inode;
 	struct fat_slot_info sinfo;
 	struct timespec ts;
@@ -802,7 +802,7 @@ out:
 static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct fat_slot_info sinfo;
 	int err;
 
@@ -833,7 +833,7 @@ out:
 static int vfat_unlink(struct inode *dir, struct dentry *dentry)
 {
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct fat_slot_info sinfo;
 	int err;
 
@@ -858,7 +858,7 @@ out:
 
 static int vfat_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode *inode;
 	struct fat_slot_info sinfo;
 	struct timespec ts;
@@ -913,7 +913,7 @@ static int vfat_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct timespec ts;
 	loff_t new_i_pos;
 	int err, is_dir, update_dotdot, corrupt = 0;
-	struct super_block *sb = old_dir->i_sb;
+	struct super_block *sb = inode_sb(old_dir);
 
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
@@ -1027,7 +1027,7 @@ error_inode:
 		sinfo.bh = NULL;
 	}
 	if (corrupt < 0) {
-		fat_fs_error(new_dir->i_sb,
+		fat_fs_error(inode_sb(new_dir),
 			     "%s: Filesystem corrupted (i_pos %lld)",
 			     __func__, sinfo.i_pos);
 	}

@@ -280,7 +280,7 @@ void ocfs2_populate_inode(struct inode *inode, struct ocfs2_dinode *fe,
 	struct ocfs2_super *osb;
 	int use_plocks = 1;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	osb = OCFS2_SB(sb);
 
 	if ((osb->s_mount_opt & OCFS2_MOUNT_LOCALFLOCKS) ||
@@ -383,8 +383,8 @@ void ocfs2_populate_inode(struct inode *inode, struct ocfs2_dinode *fe,
 	}
 
 	if (create_ino) {
-		inode->i_ino = ino_from_blkno(inode->i_sb,
-			       le64_to_cpu(fe->i_blkno));
+		inode->i_ino = ino_from_blkno(inode_sb(inode),
+				              le64_to_cpu(fe->i_blkno));
 
 		/*
 		 * If we ever want to create system files from kernel,
@@ -425,7 +425,7 @@ static int ocfs2_read_locked_inode(struct inode *inode,
 	u32 generation = 0;
 
 	status = -EINVAL;
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	osb = OCFS2_SB(sb);
 
 	/*
@@ -658,7 +658,7 @@ static int ocfs2_remove_inode(struct inode *inode,
 	struct inode *inode_alloc_inode = NULL;
 	struct buffer_head *inode_alloc_bh = NULL;
 	handle_t *handle;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *) di_bh->b_data;
 
 	inode_alloc_inode =
@@ -680,7 +680,7 @@ static int ocfs2_remove_inode(struct inode *inode,
 	}
 
 	handle = ocfs2_start_trans(osb, OCFS2_DELETE_INODE_CREDITS +
-				   ocfs2_quota_trans_credits(inode->i_sb));
+				   ocfs2_quota_trans_credits(inode_sb(inode)));
 	if (IS_ERR(handle)) {
 		status = PTR_ERR(handle);
 		mlog_errno(status);
@@ -769,7 +769,7 @@ static int ocfs2_wipe_inode(struct inode *inode,
 	int status, orphaned_slot = -1;
 	struct inode *orphan_dir_inode = NULL;
 	struct buffer_head *orphan_dir_bh = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *) di_bh->b_data;
 
 	if (!(OCFS2_I(inode)->ip_flags & OCFS2_INODE_SKIP_ORPHAN_DIR)) {
@@ -858,7 +858,7 @@ static int ocfs2_inode_is_valid_to_delete(struct inode *inode)
 {
 	int ret = 0;
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	trace_ocfs2_inode_is_valid_to_delete(current, osb->dc_task,
 					     (unsigned long long)oi->ip_blkno,
@@ -1045,7 +1045,7 @@ static void ocfs2_delete_inode(struct inode *inode)
 	 * shared mode so that all nodes can still concurrently
 	 * process deletes.
 	 */
-	status = ocfs2_nfs_sync_lock(OCFS2_SB(inode->i_sb), 0);
+	status = ocfs2_nfs_sync_lock(OCFS2_SB(inode_sb(inode)), 0);
 	if (status < 0) {
 		mlog(ML_ERROR, "getting nfs sync lock(PR) failed %d\n", status);
 		ocfs2_cleanup_delete_inode(inode, 0);
@@ -1117,7 +1117,7 @@ bail_unlock_inode:
 	brelse(di_bh);
 
 bail_unlock_nfs_sync:
-	ocfs2_nfs_sync_unlock(OCFS2_SB(inode->i_sb), 0);
+	ocfs2_nfs_sync_unlock(OCFS2_SB(inode_sb(inode)), 0);
 
 bail_unblock:
 	ocfs2_unblock_signals(&oldset);
@@ -1129,13 +1129,13 @@ static void ocfs2_clear_inode(struct inode *inode)
 {
 	int status;
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	clear_inode(inode);
 	trace_ocfs2_clear_inode((unsigned long long)oi->ip_blkno,
 				inode->i_nlink);
 
-	mlog_bug_on_msg(OCFS2_SB(inode->i_sb) == NULL,
+	mlog_bug_on_msg(OCFS2_SB(inode_sb(inode)) == NULL,
 			"Inode=%lu\n", inode->i_ino);
 
 	dquot_drop(inode);
@@ -1150,7 +1150,7 @@ static void ocfs2_clear_inode(struct inode *inode)
 	ocfs2_mark_lockres_freeing(osb, &oi->ip_inode_lockres);
 	ocfs2_mark_lockres_freeing(osb, &oi->ip_open_lockres);
 
-	ocfs2_resv_discard(&OCFS2_SB(inode->i_sb)->osb_la_resmap,
+	ocfs2_resv_discard(&OCFS2_SB(inode_sb(inode))->osb_la_resmap,
 			   &oi->ip_la_data_resv);
 	ocfs2_resv_init_once(&oi->ip_la_data_resv);
 
@@ -1223,7 +1223,7 @@ static void ocfs2_clear_inode(struct inode *inode)
 	 * the journal is flushed before journal shutdown. Thus it is safe to
 	 * have inodes get cleaned up after journal shutdown.
 	 */
-	jbd2_journal_release_jbd_inode(OCFS2_SB(inode->i_sb)->journal->j_journal,
+	jbd2_journal_release_jbd_inode(OCFS2_SB(inode_sb(inode))->journal->j_journal,
 				       &oi->ip_jinode);
 }
 
@@ -1636,7 +1636,7 @@ static struct super_block *ocfs2_inode_cache_get_super(struct ocfs2_caching_info
 {
 	struct ocfs2_inode_info *oi = cache_info_to_inode(ci);
 
-	return oi->vfs_inode.i_sb;
+	return inode_sb(&oi->vfs_inode);
 }
 
 static void ocfs2_inode_cache_lock(struct ocfs2_caching_info *ci)

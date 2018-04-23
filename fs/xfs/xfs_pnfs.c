@@ -129,7 +129,7 @@ xfs_fs_map_blocks(
 	limit = mp->m_super->s_maxbytes;
 	if (!write)
 		limit = max(limit, round_up(i_size_read(inode),
-				     inode->i_sb->s_blocksize));
+				     inode_sb(inode)->s_blocksize));
 	if (offset > limit)
 		goto out_unlock;
 	if (offset > limit - length)

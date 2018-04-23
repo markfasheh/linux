@@ -149,7 +149,7 @@ static struct dentry *open_xa_dir(const struct inode *inode, int flags)
 	struct dentry *xaroot, *xadir;
 	char namebuf[17];
 
-	xaroot = open_xa_root(inode->i_sb, flags);
+	xaroot = open_xa_root(inode_sb(inode), flags);
 	if (IS_ERR(xaroot))
 		return xaroot;
 
@@ -290,21 +290,21 @@ static int reiserfs_for_each_xattr(struct inode *inode,
 		 * outer transaction.
 		 */
 		int blocks = JOURNAL_PER_BALANCE_CNT * 2 + 2 +
-			     4 * REISERFS_QUOTA_TRANS_BLOCKS(inode->i_sb);
+			     4 * REISERFS_QUOTA_TRANS_BLOCKS(inode_sb(inode));
 		struct reiserfs_transaction_handle th;
 
-		reiserfs_write_lock(inode->i_sb);
-		err = journal_begin(&th, inode->i_sb, blocks);
-		reiserfs_write_unlock(inode->i_sb);
+		reiserfs_write_lock(inode_sb(inode));
+		err = journal_begin(&th, inode_sb(inode), blocks);
+		reiserfs_write_unlock(inode_sb(inode));
 		if (!err) {
 			int jerror;
 
 			inode_lock_nested(d_inode(dir->d_parent),
 					  I_MUTEX_XATTR);
 			err = action(dir, data);
-			reiserfs_write_lock(inode->i_sb);
+			reiserfs_write_lock(inode_sb(inode));
 			jerror = journal_end(&th);
-			reiserfs_write_unlock(inode->i_sb);
+			reiserfs_write_unlock(inode_sb(inode));
 			inode_unlock(d_inode(dir->d_parent));
 			err = jerror ?: err;
 		}
@@ -353,7 +353,7 @@ int reiserfs_delete_xattrs(struct inode *inode)
 	int err = reiserfs_for_each_xattr(inode, delete_one_xattr, NULL);
 
 	if (err)
-		reiserfs_warning(inode->i_sb, "jdm-20004",
+		reiserfs_warning(inode_sb(inode), "jdm-20004",
 				 "Couldn't delete all xattrs (%d)\n", err);
 	return err;
 }
@@ -364,7 +364,7 @@ int reiserfs_chown_xattrs(struct inode *inode, struct iattr *attrs)
 	int err = reiserfs_for_each_xattr(inode, chown_one_xattr, attrs);
 
 	if (err)
-		reiserfs_warning(inode->i_sb, "jdm-20007",
+		reiserfs_warning(inode_sb(inode), "jdm-20007",
 				 "Couldn't chown all xattrs (%d)\n", err);
 	return err;
 }
@@ -554,7 +554,7 @@ reiserfs_xattr_set_handle(struct reiserfs_transaction_handle *th,
 			rxh->h_hash = cpu_to_le32(xahash);
 		}
 
-		reiserfs_write_lock(inode->i_sb);
+		reiserfs_write_lock(inode_sb(inode));
 		err = __reiserfs_write_begin(page, page_offset, chunk + skip);
 		if (!err) {
 			if (buffer)
@@ -563,7 +563,7 @@ reiserfs_xattr_set_handle(struct reiserfs_transaction_handle *th,
 						    page_offset + chunk +
 						    skip);
 		}
-		reiserfs_write_unlock(inode->i_sb);
+		reiserfs_write_unlock(inode_sb(inode));
 		unlock_page(page);
 		reiserfs_put_page(page);
 		buffer_pos += chunk;
@@ -606,9 +606,9 @@ int reiserfs_xattr_set(struct inode *inode, const char *name,
 	if (!(flags & XATTR_REPLACE))
 		jbegin_count += reiserfs_xattr_jcreate_nblocks(inode);
 
-	reiserfs_write_lock(inode->i_sb);
-	error = journal_begin(&th, inode->i_sb, jbegin_count);
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
+	error = journal_begin(&th, inode_sb(inode), jbegin_count);
+	reiserfs_write_unlock(inode_sb(inode));
 	if (error) {
 		return error;
 	}
@@ -616,9 +616,9 @@ int reiserfs_xattr_set(struct inode *inode, const char *name,
 	error = reiserfs_xattr_set_handle(&th, inode, name,
 					  buffer, buffer_size, flags);
 
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 	error2 = journal_end(&th);
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 	if (error == 0)
 		error = error2;
 
@@ -698,7 +698,7 @@ reiserfs_xattr_get(struct inode *inode, const char *name, void *buffer,
 			if (rxh->h_magic != cpu_to_le32(REISERFS_XATTR_MAGIC)) {
 				unlock_page(page);
 				reiserfs_put_page(page);
-				reiserfs_warning(inode->i_sb, "jdm-20001",
+				reiserfs_warning(inode_sb(inode), "jdm-20001",
 						 "Invalid magic for xattr (%s) "
 						 "associated with %k", name,
 						 INODE_PKEY(inode));
@@ -718,7 +718,7 @@ reiserfs_xattr_get(struct inode *inode, const char *name, void *buffer,
 
 	if (xattr_hash(buffer, isize - sizeof(struct reiserfs_xattr_header)) !=
 	    hash) {
-		reiserfs_warning(inode->i_sb, "jdm-20002",
+		reiserfs_warning(inode_sb(inode), "jdm-20002",
 				 "Invalid hash for xattr (%s) associated "
 				 "with %k", name, INODE_PKEY(inode));
 		err = -EIO;

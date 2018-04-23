@@ -38,13 +38,14 @@ int nilfs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 
 	if (nilfs_inode_dirty(inode)) {
 		if (datasync)
-			err = nilfs_construct_dsync_segment(inode->i_sb, inode,
+			err = nilfs_construct_dsync_segment(inode_sb(inode),
+							    inode,
 							    start, end);
 		else
-			err = nilfs_construct_segment(inode->i_sb);
+			err = nilfs_construct_segment(inode_sb(inode));
 	}
 
-	nilfs = inode->i_sb->s_fs_info;
+	nilfs = inode_sb(inode)->s_fs_info;
 	if (!err)
 		err = nilfs_flush_device(nilfs);
 
@@ -59,10 +60,10 @@ static int nilfs_page_mkwrite(struct vm_fault *vmf)
 	struct nilfs_transaction_info ti;
 	int ret = 0;
 
-	if (unlikely(nilfs_near_disk_full(inode->i_sb->s_fs_info)))
+	if (unlikely(nilfs_near_disk_full(inode_sb(inode)->s_fs_info)))
 		return VM_FAULT_SIGBUS; /* -ENOSPC */
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 	lock_page(page);
 	if (page->mapping != inode->i_mapping ||
 	    page_offset(page) >= i_size_read(inode) || !PageUptodate(page)) {
@@ -99,7 +100,7 @@ static int nilfs_page_mkwrite(struct vm_fault *vmf)
 	/*
 	 * fill hole blocks
 	 */
-	ret = nilfs_transaction_begin(inode->i_sb, &ti, 1);
+	ret = nilfs_transaction_begin(inode_sb(inode), &ti, 1);
 	/* never returns -ENOMEM, but may return -ENOSPC */
 	if (unlikely(ret))
 		goto out;
@@ -107,16 +108,16 @@ static int nilfs_page_mkwrite(struct vm_fault *vmf)
 	file_update_time(vma->vm_file);
 	ret = block_page_mkwrite(vma, vmf, nilfs_get_block);
 	if (ret) {
-		nilfs_transaction_abort(inode->i_sb);
+		nilfs_transaction_abort(inode_sb(inode));
 		goto out;
 	}
 	nilfs_set_file_dirty(inode, 1 << (PAGE_SHIFT - inode->i_blkbits));
-	nilfs_transaction_commit(inode->i_sb);
+	nilfs_transaction_commit(inode_sb(inode));
 
  mapped:
 	wait_for_stable_page(page);
  out:
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	return block_page_mkwrite_return(ret);
 }
 

@@ -263,7 +263,8 @@ locks_check_ctx_lists(struct inode *inode)
 		     !list_empty(&ctx->flc_posix) ||
 		     !list_empty(&ctx->flc_lease))) {
 		pr_warn("Leaked locks on dev=0x%x:0x%x ino=0x%lx:\n",
-			MAJOR(inode->i_sb->s_dev), MINOR(inode->i_sb->s_dev),
+			MAJOR(inode_sb(inode)->s_dev),
+			MINOR(inode_sb(inode)->s_dev),
 			inode->i_ino);
 		locks_dump_ctx_list(&ctx->flc_flock, "FLOCK");
 		locks_dump_ctx_list(&ctx->flc_posix, "POSIX");
@@ -282,8 +283,8 @@ locks_check_ctx_file_list(struct file *filp, struct list_head *list,
 		if (fl->fl_file == filp)
 			pr_warn("Leaked %s lock on dev=0x%x:0x%x ino=0x%lx "
 				" fl_owner=%p fl_flags=0x%x fl_type=0x%x fl_pid=%u\n",
-				list_type, MAJOR(inode->i_sb->s_dev),
-				MINOR(inode->i_sb->s_dev), inode->i_ino,
+				list_type, MAJOR(inode_sb(inode)->s_dev),
+				MINOR(inode_sb(inode)->s_dev), inode->i_ino,
 				fl->fl_owner, fl->fl_flags, fl->fl_type, fl->fl_pid);
 }
 
@@ -2622,7 +2623,7 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
 {
 	struct inode *inode = NULL;
 	unsigned int fl_pid;
-	struct pid_namespace *proc_pidns = file_inode(f->file)->i_sb->s_fs_info;
+	struct pid_namespace *proc_pidns = inode_sb(file_inode(f->file))->s_fs_info;
 
 	fl_pid = locks_translate_pid(fl, proc_pidns);
 	/*
@@ -2683,8 +2684,8 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
 	if (inode) {
 		/* userspace relies on this representation of dev_t */
 		seq_printf(f, "%d %02x:%02x:%ld ", fl_pid,
-				MAJOR(inode->i_sb->s_dev),
-				MINOR(inode->i_sb->s_dev), inode->i_ino);
+				MAJOR(inode_sb(inode)->s_dev),
+				MINOR(inode_sb(inode)->s_dev), inode->i_ino);
 	} else {
 		seq_printf(f, "%d <none>:0 ", fl_pid);
 	}
@@ -2702,7 +2703,7 @@ static int locks_show(struct seq_file *f, void *v)
 {
 	struct locks_iterator *iter = f->private;
 	struct file_lock *fl, *bfl;
-	struct pid_namespace *proc_pidns = file_inode(f->file)->i_sb->s_fs_info;
+	struct pid_namespace *proc_pidns = inode_sb(file_inode(f->file))->s_fs_info;
 
 	fl = hlist_entry(v, struct file_lock, fl_link);
 

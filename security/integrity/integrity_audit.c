@@ -57,7 +57,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
 	}
 	if (inode) {
 		audit_log_format(ab, " dev=");
-		audit_log_untrustedstring(ab, inode->i_sb->s_id);
+		audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 		audit_log_format(ab, " ino=%lu", inode->i_ino);
 	}
 	audit_log_format(ab, " res=%d", !result);

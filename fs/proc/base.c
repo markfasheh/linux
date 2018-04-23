@@ -698,7 +698,7 @@ static bool has_pid_permissions(struct pid_namespace *pid,
 
 static int proc_pid_permission(struct inode *inode, int mask)
 {
-	struct pid_namespace *pid = inode->i_sb->s_fs_info;
+	struct pid_namespace *pid = inode_sb(inode)->s_fs_info;
 	struct task_struct *task;
 	bool has_perms;
 
@@ -738,7 +738,7 @@ static int proc_single_show(struct seq_file *m, void *v)
 	struct task_struct *task;
 	int ret;
 
-	ns = inode->i_sb->s_fs_info;
+	ns = inode_sb(inode)->s_fs_info;
 	pid = proc_pid(inode);
 	task = get_pid_task(pid, PIDTYPE_PID);
 	if (!task)
@@ -1410,7 +1410,7 @@ static const struct file_operations proc_fail_nth_operations = {
 static int sched_show(struct seq_file *m, void *v)
 {
 	struct inode *inode = m->private;
-	struct pid_namespace *ns = inode->i_sb->s_fs_info;
+	struct pid_namespace *ns = inode_sb(inode)->s_fs_info;
 	struct task_struct *p;
 
 	p = get_proc_task(inode);
@@ -2065,7 +2065,7 @@ proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
 	struct proc_inode *ei;
 	struct inode *inode;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFLNK |
+	inode = proc_pid_make_inode(inode_sb(dir), task, S_IFLNK |
 				    ((mode & FMODE_READ ) ? S_IRUSR : 0) |
 				    ((mode & FMODE_WRITE) ? S_IWUSR : 0));
 	if (!inode)
@@ -2327,7 +2327,7 @@ static int proc_timers_open(struct inode *inode, struct file *file)
 		return -ENOMEM;
 
 	tp->pid = proc_pid(inode);
-	tp->ns = inode->i_sb->s_fs_info;
+	tp->ns = inode_sb(inode)->s_fs_info;
 	return 0;
 }
 
@@ -2432,7 +2432,7 @@ static int proc_pident_instantiate(struct inode *dir,
 	struct inode *inode;
 	struct proc_inode *ei;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, p->mode);
+	inode = proc_pid_make_inode(inode_sb(dir), task, p->mode);
 	if (!inode)
 		goto out;
 
@@ -3137,7 +3137,8 @@ static int proc_pid_instantiate(struct inode *dir,
 {
 	struct inode *inode;
 
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFDIR | S_IRUGO | S_IXUGO);
+	inode = proc_pid_make_inode(inode_sb(dir), task,
+				    S_IFDIR | S_IRUGO | S_IXUGO);
 	if (!inode)
 		goto out;
 
@@ -3232,7 +3233,7 @@ retry:
 int proc_pid_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct tgid_iter iter;
-	struct pid_namespace *ns = file_inode(file)->i_sb->s_fs_info;
+	struct pid_namespace *ns = inode_sb(file_inode(file))->s_fs_info;
 	loff_t pos = ctx->pos;
 
 	if (pos >= PID_MAX_LIMIT + TGID_OFFSET)
@@ -3435,7 +3436,8 @@ static int proc_task_instantiate(struct inode *dir,
 	struct dentry *dentry, struct task_struct *task, const void *ptr)
 {
 	struct inode *inode;
-	inode = proc_pid_make_inode(dir->i_sb, task, S_IFDIR | S_IRUGO | S_IXUGO);
+	inode = proc_pid_make_inode(inode_sb(dir), task,
+				    S_IFDIR | S_IRUGO | S_IXUGO);
 
 	if (!inode)
 		goto out;
@@ -3584,7 +3586,7 @@ static int proc_task_readdir(struct file *file, struct dir_context *ctx)
 	/* f_version caches the tgid value that the last readdir call couldn't
 	 * return. lseek aka telldir automagically resets f_version to 0.
 	 */
-	ns = inode->i_sb->s_fs_info;
+	ns = inode_sb(inode)->s_fs_info;
 	tid = (int)file->f_version;
 	file->f_version = 0;
 	for (task = first_tid(proc_pid(inode), tid, ctx->pos - 2, ns);

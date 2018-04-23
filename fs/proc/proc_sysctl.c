@@ -280,7 +280,7 @@ static void proc_sys_prune_dcache(struct ctl_table_header *head)
 		spin_unlock(&sysctl_lock);
 
 		inode = &ei->vfs_inode;
-		sb = inode->i_sb;
+		sb = inode_sb(inode);
 		if (!atomic_inc_not_zero(&sb->s_active))
 			continue;
 		inode = igrab(inode);
@@ -550,7 +550,7 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
 	}
 
 	err = ERR_PTR(-ENOMEM);
-	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
+	inode = proc_sys_make_inode(inode_sb(dir), h ? h : head, p);
 	if (!inode)
 		goto out;
 

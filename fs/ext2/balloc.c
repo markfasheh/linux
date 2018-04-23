@@ -413,7 +413,7 @@ void ext2_init_block_alloc_info(struct inode *inode)
 {
 	struct ext2_inode_info *ei = EXT2_I(inode);
 	struct ext2_block_alloc_info *block_i;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	block_i = kmalloc(sizeof(*block_i), GFP_NOFS);
 	if (block_i) {
@@ -455,7 +455,7 @@ void ext2_discard_reservation(struct inode *inode)
 	struct ext2_inode_info *ei = EXT2_I(inode);
 	struct ext2_block_alloc_info *block_i = ei->i_block_alloc_info;
 	struct ext2_reserve_window_node *rsv;
-	spinlock_t *rsv_lock = &EXT2_SB(inode->i_sb)->s_rsv_window_lock;
+	spinlock_t *rsv_lock = &EXT2_SB(inode_sb(inode))->s_rsv_window_lock;
 
 	if (!block_i)
 		return;
@@ -464,7 +464,7 @@ void ext2_discard_reservation(struct inode *inode)
 	if (!rsv_is_empty(&rsv->rsv_window)) {
 		spin_lock(rsv_lock);
 		if (!rsv_is_empty(&rsv->rsv_window))
-			rsv_window_remove(inode->i_sb, rsv);
+			rsv_window_remove(inode_sb(inode), rsv);
 		spin_unlock(rsv_lock);
 	}
 }
@@ -484,7 +484,7 @@ void ext2_free_blocks (struct inode * inode, unsigned long block,
 	unsigned long bit;
 	unsigned long i;
 	unsigned long overflow;
-	struct super_block * sb = inode->i_sb;
+	struct super_block * sb = inode_sb(inode);
 	struct ext2_sb_info * sbi = EXT2_SB(sb);
 	struct ext2_group_desc * desc;
 	struct ext2_super_block * es = sbi->s_es;
@@ -1255,7 +1255,7 @@ ext2_fsblk_t ext2_new_blocks(struct inode *inode, ext2_fsblk_t goal,
 	int ret;
 
 	*errp = -ENOSPC;
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 
 	/*
 	 * Check quota for allocation of this block.

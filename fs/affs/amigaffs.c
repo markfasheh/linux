@@ -25,7 +25,7 @@
 int
 affs_insert_hash(struct inode *dir, struct buffer_head *bh)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct buffer_head *dir_bh;
 	u32 ino, hash_ino;
 	int offset;
@@ -80,7 +80,7 @@ affs_remove_hash(struct inode *dir, struct buffer_head *rem_bh)
 	__be32 ino;
 	int offset, retval;
 
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	rem_ino = rem_bh->b_blocknr;
 	offset = affs_hash_name(sb, AFFS_TAIL(sb, rem_bh)->name+1, AFFS_TAIL(sb, rem_bh)->name[0]);
 	pr_debug("%s(dir=%lu, ino=%d, hashval=%d)\n", __func__, dir->i_ino,
@@ -142,7 +142,7 @@ static int
 affs_remove_link(struct dentry *dentry)
 {
 	struct inode *dir, *inode = d_inode(dentry);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh, *link_bh = NULL;
 	u32 link_ino, ino;
 	int retval;
@@ -233,7 +233,7 @@ done:
 static int
 affs_empty_dir(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh;
 	int retval, size;
 
@@ -272,7 +272,7 @@ affs_remove_header(struct dentry *dentry)
 	int retval;
 
 	dir = d_inode(dentry->d_parent);
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 
 	retval = -ENOENT;
 	inode = d_inode(dentry);

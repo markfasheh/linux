@@ -477,11 +477,11 @@ out:
 		wake_up_interruptible_sync_poll(&pipe->wait, EPOLLIN | EPOLLRDNORM);
 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
 	}
-	if (ret > 0 && sb_start_write_trylock(file_inode(filp)->i_sb)) {
+	if (ret > 0 && sb_start_write_trylock(inode_sb(file_inode(filp)))) {
 		int err = file_update_time(filp);
 		if (err)
 			ret = err;
-		sb_end_write(file_inode(filp)->i_sb);
+		sb_end_write(inode_sb(file_inode(filp)));
 	}
 	return ret;
 }
@@ -888,7 +888,7 @@ static void wake_up_partner(struct pipe_inode_info *pipe)
 static int fifo_open(struct inode *inode, struct file *filp)
 {
 	struct pipe_inode_info *pipe;
-	bool is_pipe = inode->i_sb->s_magic == PIPEFS_MAGIC;
+	bool is_pipe = inode_sb(inode)->s_magic == PIPEFS_MAGIC;
 	int ret;
 
 	filp->f_version = 0;

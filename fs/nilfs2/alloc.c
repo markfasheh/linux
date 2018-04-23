@@ -622,7 +622,7 @@ void nilfs_palloc_commit_free_entry(struct inode *inode,
 	lock = nilfs_mdt_bgl_lock(inode, group);
 
 	if (!nilfs_clear_bit_atomic(lock, group_offset, bitmap))
-		nilfs_msg(inode->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(inode), KERN_WARNING,
 			  "%s (ino=%lu): entry number %llu already freed",
 			  __func__, inode->i_ino,
 			  (unsigned long long)req->pr_entry_nr);
@@ -663,7 +663,7 @@ void nilfs_palloc_abort_alloc_entry(struct inode *inode,
 	lock = nilfs_mdt_bgl_lock(inode, group);
 
 	if (!nilfs_clear_bit_atomic(lock, group_offset, bitmap))
-		nilfs_msg(inode->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(inode), KERN_WARNING,
 			  "%s (ino=%lu): entry number %llu already freed",
 			  __func__, inode->i_ino,
 			  (unsigned long long)req->pr_entry_nr);
@@ -772,7 +772,7 @@ int nilfs_palloc_freev(struct inode *inode, __u64 *entry_nrs, size_t nitems)
 		do {
 			if (!nilfs_clear_bit_atomic(lock, group_offset,
 						    bitmap)) {
-				nilfs_msg(inode->i_sb, KERN_WARNING,
+				nilfs_msg(inode_sb(inode), KERN_WARNING,
 					  "%s (ino=%lu): entry number %llu already freed",
 					  __func__, inode->i_ino,
 					  (unsigned long long)entry_nrs[j]);
@@ -817,7 +817,7 @@ int nilfs_palloc_freev(struct inode *inode, __u64 *entry_nrs, size_t nitems)
 			ret = nilfs_palloc_delete_entry_block(inode,
 							      last_nrs[k]);
 			if (ret && ret != -ENOENT)
-				nilfs_msg(inode->i_sb, KERN_WARNING,
+				nilfs_msg(inode_sb(inode), KERN_WARNING,
 					  "error %d deleting block that object (entry=%llu, ino=%lu) belongs to",
 					  ret, (unsigned long long)last_nrs[k],
 					  inode->i_ino);
@@ -835,7 +835,7 @@ int nilfs_palloc_freev(struct inode *inode, __u64 *entry_nrs, size_t nitems)
 		if (nfree == nilfs_palloc_entries_per_group(inode)) {
 			ret = nilfs_palloc_delete_bitmap_block(inode, group);
 			if (ret && ret != -ENOENT)
-				nilfs_msg(inode->i_sb, KERN_WARNING,
+				nilfs_msg(inode_sb(inode), KERN_WARNING,
 					  "error %d deleting bitmap block of group=%lu, ino=%lu",
 					  ret, group, inode->i_ino);
 		}

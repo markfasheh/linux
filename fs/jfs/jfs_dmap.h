@@ -137,7 +137,7 @@ static inline signed char TREEMAX(signed char *cp)
  * number.
  */
 #define AGTOBLK(a,ip)	\
-	((s64)(a) << (JFS_SBI((ip)->i_sb)->bmap->db_agl2size))
+	((s64)(a) << (JFS_SBI(inode_sb((ip)))->bmap->db_agl2size))
 
 /*
  *	dmap summary tree

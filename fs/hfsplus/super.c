@@ -25,7 +25,7 @@ static void hfsplus_destroy_inode(struct inode *inode);
 
 static int hfsplus_system_read_inode(struct inode *inode)
 {
-	struct hfsplus_vh *vhdr = HFSPLUS_SB(inode->i_sb)->s_vhdr;
+	struct hfsplus_vh *vhdr = HFSPLUS_SB(inode_sb(inode))->s_vhdr;
 
 	switch (inode->i_ino) {
 	case HFSPLUS_EXT_CNID:
@@ -76,9 +76,11 @@ struct inode *hfsplus_iget(struct super_block *sb, unsigned long ino)
 
 	if (inode->i_ino >= HFSPLUS_FIRSTUSER_CNID ||
 	    inode->i_ino == HFSPLUS_ROOT_CNID) {
-		err = hfs_find_init(HFSPLUS_SB(inode->i_sb)->cat_tree, &fd);
+		err = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->cat_tree,
+				    &fd);
 		if (!err) {
-			err = hfsplus_find_cat(inode->i_sb, inode->i_ino, &fd);
+			err = hfsplus_find_cat(inode_sb(inode), inode->i_ino,
+					       &fd);
 			if (!err)
 				err = hfsplus_cat_read_inode(inode, &fd);
 			hfs_find_exit(&fd);
@@ -98,7 +100,7 @@ struct inode *hfsplus_iget(struct super_block *sb, unsigned long ino)
 
 static int hfsplus_system_write_inode(struct inode *inode)
 {
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(inode));
 	struct hfsplus_vh *vhdr = sbi->s_vhdr;
 	struct hfsplus_fork_raw *fork;
 	struct hfs_btree *tree = NULL;
@@ -128,7 +130,7 @@ static int hfsplus_system_write_inode(struct inode *inode)
 
 	if (fork->total_size != cpu_to_be64(inode->i_size)) {
 		set_bit(HFSPLUS_SB_WRITEBACKUP, &sbi->flags);
-		hfsplus_mark_mdb_dirty(inode->i_sb);
+		hfsplus_mark_mdb_dirty(inode_sb(inode));
 	}
 	hfsplus_inode_write_fork(inode, fork);
 	if (tree) {
@@ -254,7 +256,7 @@ static void delayed_sync_fs(struct work_struct *work)
 	sbi->work_queued = 0;
 	spin_unlock(&sbi->work_lock);
 
-	err = hfsplus_sync_fs(sbi->alloc_file->i_sb, 1);
+	err = hfsplus_sync_fs(inode_sb(sbi->alloc_file), 1);
 	if (err)
 		pr_err("delayed sync fs err %d\n", err);
 }

@@ -66,7 +66,7 @@ vxfs_typdump(struct vxfs_typed *typ)
 static daddr_t
 vxfs_bmap_ext4(struct inode *ip, long bn)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	struct vxfs_inode_info *vip = VXFS_INO(ip);
 	struct vxfs_sb_info *sbi = VXFS_SBI(sb);
 	unsigned long bsize = sb->s_blocksize;
@@ -130,22 +130,22 @@ fail_buf:
 static daddr_t
 vxfs_bmap_indir(struct inode *ip, long indir, int size, long block)
 {
-	struct vxfs_sb_info		*sbi = VXFS_SBI(ip->i_sb);
+	struct vxfs_sb_info		*sbi = VXFS_SBI(inode_sb(ip));
 	struct buffer_head		*bp = NULL;
 	daddr_t				pblock = 0;
 	int				i;
 
-	for (i = 0; i < size * VXFS_TYPED_PER_BLOCK(ip->i_sb); i++) {
+	for (i = 0; i < size * VXFS_TYPED_PER_BLOCK(inode_sb(ip)); i++) {
 		struct vxfs_typed	*typ;
 		int64_t			off;
 
-		bp = sb_bread(ip->i_sb,
-				indir + (i / VXFS_TYPED_PER_BLOCK(ip->i_sb)));
+		bp = sb_bread(inode_sb(ip),
+				indir + (i / VXFS_TYPED_PER_BLOCK(inode_sb(ip))));
 		if (!bp || !buffer_mapped(bp))
 			return 0;
 
 		typ = ((struct vxfs_typed *)bp->b_data) +
-			(i % VXFS_TYPED_PER_BLOCK(ip->i_sb));
+			(i % VXFS_TYPED_PER_BLOCK(inode_sb(ip)));
 		off = fs64_to_cpu(sbi, typ->vt_hdr) & VXFS_TYPED_OFFSETMASK;
 
 		if (block < off) {
@@ -210,7 +210,7 @@ static daddr_t
 vxfs_bmap_typed(struct inode *ip, long iblock)
 {
 	struct vxfs_inode_info		*vip = VXFS_INO(ip);
-	struct vxfs_sb_info		*sbi = VXFS_SBI(ip->i_sb);
+	struct vxfs_sb_info		*sbi = VXFS_SBI(inode_sb(ip));
 	daddr_t				pblock = 0;
 	int				i;
 

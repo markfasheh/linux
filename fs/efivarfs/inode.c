@@ -92,7 +92,7 @@ static int efivarfs_create(struct inode *dir, struct dentry *dentry,
 					 dentry->d_name.name, namelen))
 		is_removable = true;
 
-	inode = efivarfs_get_inode(dir->i_sb, dir, mode, 0, is_removable);
+	inode = efivarfs_get_inode(inode_sb(dir), dir, mode, 0, is_removable);
 	if (!inode) {
 		err = -ENOMEM;
 		goto out;

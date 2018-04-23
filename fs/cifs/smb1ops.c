@@ -774,7 +774,7 @@ smb_set_file_info(struct inode *inode, const char *full_path,
 	struct cifs_open_parms oparms;
 	struct cifsFileInfo *open_file;
 	struct cifsInodeInfo *cinode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink = NULL;
 	struct cifs_tcon *tcon;
 
@@ -1013,7 +1013,7 @@ cifs_is_read_op(__u32 oplock)
 static unsigned int
 cifs_wp_retry_size(struct inode *inode)
 {
-	return CIFS_SB(inode->i_sb)->wsize;
+	return CIFS_SB(inode_sb(inode))->wsize;
 }
 
 static bool

@@ -114,7 +114,7 @@ static inline void nilfs_mdt_clear_dirty(struct inode *inode)
 
 static inline __u64 nilfs_mdt_cno(struct inode *inode)
 {
-	return ((struct the_nilfs *)inode->i_sb->s_fs_info)->ns_cno;
+	return ((struct the_nilfs *) inode_sb(inode)->s_fs_info)->ns_cno;
 }
 
 static inline spinlock_t *

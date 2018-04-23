@@ -2064,9 +2064,9 @@ static ssize_t generic_file_buffered_read(struct kiocb *iocb,
 	unsigned int prev_offset;
 	int error = 0;
 
-	if (unlikely(*ppos >= inode->i_sb->s_maxbytes))
+	if (unlikely(*ppos >= inode_sb(inode)->s_maxbytes))
 		return 0;
-	iov_iter_truncate(iter, inode->i_sb->s_maxbytes);
+	iov_iter_truncate(iter, inode_sb(inode)->s_maxbytes);
 
 	index = *ppos >> PAGE_SHIFT;
 	prev_index = ra->prev_pos >> PAGE_SHIFT;
@@ -2702,7 +2702,7 @@ int filemap_page_mkwrite(struct vm_fault *vmf)
 	struct inode *inode = file_inode(vmf->vma->vm_file);
 	int ret = VM_FAULT_LOCKED;
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 	file_update_time(vmf->vma->vm_file);
 	lock_page(page);
 	if (page->mapping != inode->i_mapping) {
@@ -2718,7 +2718,7 @@ int filemap_page_mkwrite(struct vm_fault *vmf)
 	set_page_dirty(page);
 	wait_for_stable_page(page);
 out:
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	return ret;
 }
 EXPORT_SYMBOL(filemap_page_mkwrite);
@@ -2965,10 +2965,10 @@ inline ssize_t generic_write_checks(struct kiocb *iocb, struct iov_iter *from)
 	 * exceeded without writing data we send a signal and return EFBIG.
 	 * Linus frestrict idea will clean these up nicely..
 	 */
-	if (unlikely(pos >= inode->i_sb->s_maxbytes))
+	if (unlikely(pos >= inode_sb(inode)->s_maxbytes))
 		return -EFBIG;
 
-	iov_iter_truncate(from, inode->i_sb->s_maxbytes - pos);
+	iov_iter_truncate(from, inode_sb(inode)->s_maxbytes - pos);
 	return iov_iter_count(from);
 }
 EXPORT_SYMBOL(generic_write_checks);

@@ -565,14 +565,15 @@ void ocfs2_inode_lock_res_init(struct ocfs2_lock_res *res,
 
 	ocfs2_build_lock_name(type, OCFS2_I(inode)->ip_blkno,
 			      generation, res->l_name);
-	ocfs2_lock_res_init_common(OCFS2_SB(inode->i_sb), res, type, ops, inode);
+	ocfs2_lock_res_init_common(OCFS2_SB(inode_sb(inode)), res, type, ops,
+				   inode);
 }
 
 static struct ocfs2_super *ocfs2_get_inode_osb(struct ocfs2_lock_res *lockres)
 {
 	struct inode *inode = ocfs2_lock_res_inode(lockres);
 
-	return OCFS2_SB(inode->i_sb);
+	return OCFS2_SB(inode_sb(inode));
 }
 
 static struct ocfs2_super *ocfs2_get_qinfo_osb(struct ocfs2_lock_res *lockres)
@@ -586,7 +587,7 @@ static struct ocfs2_super *ocfs2_get_file_osb(struct ocfs2_lock_res *lockres)
 {
 	struct ocfs2_file_private *fp = lockres->l_priv;
 
-	return OCFS2_SB(fp->fp_file->f_mapping->host->i_sb);
+	return OCFS2_SB(inode_sb(fp->fp_file->f_mapping->host));
 }
 
 static __u64 ocfs2_get_dentry_lock_ino(struct ocfs2_lock_res *lockres)
@@ -603,7 +604,7 @@ static struct ocfs2_super *ocfs2_get_dentry_osb(struct ocfs2_lock_res *lockres)
 {
 	struct ocfs2_dentry_lock *dl = lockres->l_priv;
 
-	return OCFS2_SB(dl->dl_inode->i_sb);
+	return OCFS2_SB(inode_sb(dl->dl_inode));
 }
 
 void ocfs2_dentry_lock_res_init(struct ocfs2_dentry_lock *dl,
@@ -641,7 +642,7 @@ void ocfs2_dentry_lock_res_init(struct ocfs2_dentry_lock *dl,
 	memcpy(&lockres->l_name[OCFS2_DENTRY_LOCK_INO_START], &inode_blkno_be,
 	       sizeof(__be64));
 
-	ocfs2_lock_res_init_common(OCFS2_SB(inode->i_sb), lockres,
+	ocfs2_lock_res_init_common(OCFS2_SB(inode_sb(inode)), lockres,
 				   OCFS2_LOCK_TYPE_DENTRY, &ocfs2_dentry_lops,
 				   dl);
 }
@@ -716,7 +717,7 @@ void ocfs2_file_lock_res_init(struct ocfs2_lock_res *lockres,
 	ocfs2_lock_res_init_once(lockres);
 	ocfs2_build_lock_name(OCFS2_LOCK_TYPE_FLOCK, oi->ip_blkno,
 			      inode->i_generation, lockres->l_name);
-	ocfs2_lock_res_init_common(OCFS2_SB(inode->i_sb), lockres,
+	ocfs2_lock_res_init_common(OCFS2_SB(inode_sb(inode)), lockres,
 				   OCFS2_LOCK_TYPE_FLOCK, &ocfs2_flock_lops,
 				   fp);
 	lockres->l_flags |= OCFS2_LOCK_NOCACHE;
@@ -1701,7 +1702,7 @@ static int ocfs2_create_new_lock(struct ocfs2_super *osb,
 int ocfs2_create_new_inode_locks(struct inode *inode)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	BUG_ON(!ocfs2_inode_is_new(inode));
 
@@ -1743,7 +1744,7 @@ int ocfs2_rw_lock(struct inode *inode, int write)
 {
 	int status, level;
 	struct ocfs2_lock_res *lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu take %s RW lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
@@ -1756,7 +1757,8 @@ int ocfs2_rw_lock(struct inode *inode, int write)
 
 	level = write ? DLM_LOCK_EX : DLM_LOCK_PR;
 
-	status = ocfs2_cluster_lock(OCFS2_SB(inode->i_sb), lockres, level, 0,
+	status = ocfs2_cluster_lock(OCFS2_SB(inode_sb(inode)), lockres, level,
+				    0,
 				    0);
 	if (status < 0)
 		mlog_errno(status);
@@ -1768,7 +1770,7 @@ int ocfs2_try_rw_lock(struct inode *inode, int write)
 {
 	int status, level;
 	struct ocfs2_lock_res *lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu try to take %s RW lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
@@ -1789,14 +1791,15 @@ void ocfs2_rw_unlock(struct inode *inode, int write)
 {
 	int level = write ? DLM_LOCK_EX : DLM_LOCK_PR;
 	struct ocfs2_lock_res *lockres = &OCFS2_I(inode)->ip_rw_lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu drop %s RW lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
 	     write ? "EXMODE" : "PRMODE");
 
 	if (!ocfs2_mount_local(osb))
-		ocfs2_cluster_unlock(OCFS2_SB(inode->i_sb), lockres, level);
+		ocfs2_cluster_unlock(OCFS2_SB(inode_sb(inode)), lockres,
+				     level);
 }
 
 /*
@@ -1806,7 +1809,7 @@ int ocfs2_open_lock(struct inode *inode)
 {
 	int status = 0;
 	struct ocfs2_lock_res *lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu take PRMODE open lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno);
@@ -1816,7 +1819,7 @@ int ocfs2_open_lock(struct inode *inode)
 
 	lockres = &OCFS2_I(inode)->ip_open_lockres;
 
-	status = ocfs2_cluster_lock(OCFS2_SB(inode->i_sb), lockres,
+	status = ocfs2_cluster_lock(OCFS2_SB(inode_sb(inode)), lockres,
 				    DLM_LOCK_PR, 0, 0);
 	if (status < 0)
 		mlog_errno(status);
@@ -1829,7 +1832,7 @@ int ocfs2_try_open_lock(struct inode *inode, int write)
 {
 	int status = 0, level;
 	struct ocfs2_lock_res *lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu try to take %s open lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
@@ -1854,7 +1857,7 @@ int ocfs2_try_open_lock(struct inode *inode, int write)
 	 * other nodes and the -EAGAIN will indicate to the caller that
 	 * this inode is still in use.
 	 */
-	status = ocfs2_cluster_lock(OCFS2_SB(inode->i_sb), lockres,
+	status = ocfs2_cluster_lock(OCFS2_SB(inode_sb(inode)), lockres,
 				    level, DLM_LKF_NOQUEUE, 0);
 
 out:
@@ -1867,7 +1870,7 @@ out:
 void ocfs2_open_unlock(struct inode *inode)
 {
 	struct ocfs2_lock_res *lockres = &OCFS2_I(inode)->ip_open_lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu drop open lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno);
@@ -1876,10 +1879,10 @@ void ocfs2_open_unlock(struct inode *inode)
 		goto out;
 
 	if(lockres->l_ro_holders)
-		ocfs2_cluster_unlock(OCFS2_SB(inode->i_sb), lockres,
+		ocfs2_cluster_unlock(OCFS2_SB(inode_sb(inode)), lockres,
 				     DLM_LOCK_PR);
 	if(lockres->l_ex_holders)
-		ocfs2_cluster_unlock(OCFS2_SB(inode->i_sb), lockres,
+		ocfs2_cluster_unlock(OCFS2_SB(inode_sb(inode)), lockres,
 				     DLM_LOCK_EX);
 
 out:
@@ -1961,7 +1964,7 @@ int ocfs2_file_lock(struct file *file, int ex, int trylock)
 	unsigned long flags;
 	struct ocfs2_file_private *fp = file->private_data;
 	struct ocfs2_lock_res *lockres = &fp->fp_flock;
-	struct ocfs2_super *osb = OCFS2_SB(file->f_mapping->host->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(file->f_mapping->host));
 	struct ocfs2_mask_waiter mw;
 
 	ocfs2_init_mask_waiter(&mw);
@@ -2057,7 +2060,7 @@ void ocfs2_file_unlock(struct file *file)
 	unsigned long flags;
 	struct ocfs2_file_private *fp = file->private_data;
 	struct ocfs2_lock_res *lockres = &fp->fp_flock;
-	struct ocfs2_super *osb = OCFS2_SB(file->f_mapping->host->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(file->f_mapping->host));
 	struct ocfs2_mask_waiter mw;
 
 	ocfs2_init_mask_waiter(&mw);
@@ -2297,7 +2300,7 @@ static int ocfs2_inode_lock_update(struct inode *inode,
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
 	struct ocfs2_lock_res *lockres = &oi->ip_inode_lockres;
 	struct ocfs2_dinode *fe;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (ocfs2_mount_local(osb))
 		goto bail;
@@ -2405,7 +2408,7 @@ int ocfs2_inode_lock_full_nested(struct inode *inode,
 	int status, level, acquired;
 	u32 dlm_flags;
 	struct ocfs2_lock_res *lockres = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct buffer_head *local_bh = NULL;
 
 	mlog(0, "inode %llu, take %s META lock\n",
@@ -2595,15 +2598,16 @@ void ocfs2_inode_unlock(struct inode *inode,
 {
 	int level = ex ? DLM_LOCK_EX : DLM_LOCK_PR;
 	struct ocfs2_lock_res *lockres = &OCFS2_I(inode)->ip_inode_lockres;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	mlog(0, "inode %llu drop %s META lock\n",
 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
 	     ex ? "EXMODE" : "PRMODE");
 
-	if (!ocfs2_is_hard_readonly(OCFS2_SB(inode->i_sb)) &&
+	if (!ocfs2_is_hard_readonly(OCFS2_SB(inode_sb(inode))) &&
 	    !ocfs2_mount_local(osb))
-		ocfs2_cluster_unlock(OCFS2_SB(inode->i_sb), lockres, level);
+		ocfs2_cluster_unlock(OCFS2_SB(inode_sb(inode)), lockres,
+				     level);
 }
 
 /*
@@ -3468,21 +3472,21 @@ int ocfs2_drop_inode_locks(struct inode *inode)
 	/* No need to call ocfs2_mark_lockres_freeing here -
 	 * ocfs2_clear_inode has done it for us. */
 
-	err = ocfs2_drop_lock(OCFS2_SB(inode->i_sb),
+	err = ocfs2_drop_lock(OCFS2_SB(inode_sb(inode)),
 			      &OCFS2_I(inode)->ip_open_lockres);
 	if (err < 0)
 		mlog_errno(err);
 
 	status = err;
 
-	err = ocfs2_drop_lock(OCFS2_SB(inode->i_sb),
+	err = ocfs2_drop_lock(OCFS2_SB(inode_sb(inode)),
 			      &OCFS2_I(inode)->ip_inode_lockres);
 	if (err < 0)
 		mlog_errno(err);
 	if (err < 0 && !status)
 		status = err;
 
-	err = ocfs2_drop_lock(OCFS2_SB(inode->i_sb),
+	err = ocfs2_drop_lock(OCFS2_SB(inode_sb(inode)),
 			      &OCFS2_I(inode)->ip_rw_lockres);
 	if (err < 0)
 		mlog_errno(err);

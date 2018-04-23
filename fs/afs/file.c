@@ -376,7 +376,7 @@ static int afs_readpage(struct file *file, struct page *page)
 		ret = afs_page_filler(key, page);
 	} else {
 		struct inode *inode = page->mapping->host;
-		key = afs_request_key(AFS_FS_S(inode->i_sb)->cell);
+		key = afs_request_key(AFS_FS_S(inode_sb(inode))->cell);
 		if (IS_ERR(key)) {
 			ret = PTR_ERR(key);
 		} else {

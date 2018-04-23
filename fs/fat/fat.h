@@ -156,7 +156,7 @@ static inline struct msdos_inode_info *MSDOS_I(struct inode *inode)
  */
 static inline int fat_mode_can_hold_ro(struct inode *inode)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	umode_t mask;
 
 	if (S_ISDIR(inode->i_mode)) {

@@ -383,7 +383,7 @@ static int export_encode_fh(struct inode *inode, struct fid *fid,
 int exportfs_encode_inode_fh(struct inode *inode, struct fid *fid,
 			     int *max_len, struct inode *parent)
 {
-	const struct export_operations *nop = inode->i_sb->s_export_op;
+	const struct export_operations *nop = inode_sb(inode)->s_export_op;
 
 	if (nop && nop->encode_fh)
 		return nop->encode_fh(inode, fid->raw, max_len, parent);

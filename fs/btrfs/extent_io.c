@@ -2174,7 +2174,7 @@ void btrfs_free_io_failure_record(struct btrfs_inode *inode, u64 start, u64 end)
 int btrfs_get_io_failure_record(struct inode *inode, u64 start, u64 end,
 		struct io_failure_record **failrec_ret)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct io_failure_record *failrec;
 	struct extent_map *em;
 	struct extent_io_tree *failure_tree = &BTRFS_I(inode)->io_failure_tree;
@@ -2261,7 +2261,7 @@ int btrfs_get_io_failure_record(struct inode *inode, u64 start, u64 end,
 bool btrfs_check_repairable(struct inode *inode, unsigned failed_bio_pages,
 			   struct io_failure_record *failrec, int failed_mirror)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	int num_copies;
 
 	num_copies = btrfs_num_copies(fs_info, failrec->logical, failrec->len);
@@ -2327,7 +2327,7 @@ struct bio *btrfs_create_repair_bio(struct inode *inode, struct bio *failed_bio,
 				    struct page *page, int pg_offset, int icsum,
 				    bio_end_io_t *endio_func, void *data)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct bio *bio;
 	struct btrfs_io_bio *btrfs_failed_bio;
 	struct btrfs_io_bio *btrfs_bio;
@@ -2392,16 +2392,16 @@ static int bio_readpage_error(struct bio *failed_bio, u64 phy_offset,
 	if (failed_bio_pages > 1)
 		read_mode |= REQ_FAILFAST_DEV;
 
-	phy_offset >>= inode->i_sb->s_blocksize_bits;
+	phy_offset >>= inode_sb(inode)->s_blocksize_bits;
 	bio = btrfs_create_repair_bio(inode, failed_bio, failrec, page,
 				      start - page_offset(page),
 				      (int)phy_offset, failed_bio->bi_end_io,
 				      NULL);
 	bio_set_op_attrs(bio, REQ_OP_READ, read_mode);
 
-	btrfs_debug(btrfs_sb(inode->i_sb),
-		"Repair Read Error: submitting new read[%#x] to this_mirror=%d, in_validation=%d",
-		read_mode, failrec->this_mirror, failrec->in_validation);
+	btrfs_debug(btrfs_sb(inode_sb(inode)),
+		    "Repair Read Error: submitting new read[%#x] to this_mirror=%d, in_validation=%d",
+		    read_mode, failrec->this_mirror, failrec->in_validation);
 
 	status = tree->ops->submit_bio_hook(tree->private_data, bio, failrec->this_mirror,
 					 failrec->bio_flags, 0);
@@ -2457,7 +2457,7 @@ static void end_bio_extent_writepage(struct bio *bio)
 	bio_for_each_segment_all(bvec, bio, i) {
 		struct page *page = bvec->bv_page;
 		struct inode *inode = page->mapping->host;
-		struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+		struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 
 		/* We always issue full-page reads, but if some block
 		 * in a page fails to read, blk_update_request() will
@@ -2528,7 +2528,7 @@ static void end_bio_extent_readpage(struct bio *bio)
 	bio_for_each_segment_all(bvec, bio, i) {
 		struct page *page = bvec->bv_page;
 		struct inode *inode = page->mapping->host;
-		struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+		struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 
 		btrfs_debug(fs_info,
 			"end_bio_extent_readpage: bi_sector=%llu, err=%d, mirror=%u",
@@ -2900,7 +2900,7 @@ static int __do_readpage(struct extent_io_tree *tree,
 	size_t pg_offset = 0;
 	size_t iosize;
 	size_t disk_io_size;
-	size_t blocksize = inode->i_sb->s_blocksize;
+	size_t blocksize = inode_sb(inode)->s_blocksize;
 	unsigned long this_bio_flag = 0;
 
 	set_page_extent_mapped(page);
@@ -3358,7 +3358,7 @@ static noinline_for_stack int __extent_writepage_io(struct inode *inode,
 		goto done;
 	}
 
-	blocksize = inode->i_sb->s_blocksize;
+	blocksize = inode_sb(inode)->s_blocksize;
 
 	while (cur <= end) {
 		u64 em_end;
@@ -4176,7 +4176,7 @@ int extent_invalidatepage(struct extent_io_tree *tree,
 	struct extent_state *cached_state = NULL;
 	u64 start = page_offset(page);
 	u64 end = start + PAGE_SIZE - 1;
-	size_t blocksize = page->mapping->host->i_sb->s_blocksize;
+	size_t blocksize = inode_sb(page->mapping->host)->s_blocksize;
 
 	start += ALIGN(offset, blocksize);
 	if (start > end)

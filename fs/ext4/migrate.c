@@ -114,9 +114,9 @@ static int update_ind_extent_range(handle_t *handle, struct inode *inode,
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
-	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+	unsigned long max_entries = inode_sb(inode)->s_blocksize >> 2;
 
-	bh = sb_bread(inode->i_sb, pblock);
+	bh = sb_bread(inode_sb(inode), pblock);
 	if (!bh)
 		return -EIO;
 
@@ -143,9 +143,9 @@ static int update_dind_extent_range(handle_t *handle, struct inode *inode,
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
-	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+	unsigned long max_entries = inode_sb(inode)->s_blocksize >> 2;
 
-	bh = sb_bread(inode->i_sb, pblock);
+	bh = sb_bread(inode_sb(inode), pblock);
 	if (!bh)
 		return -EIO;
 
@@ -173,9 +173,9 @@ static int update_tind_extent_range(handle_t *handle, struct inode *inode,
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
-	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+	unsigned long max_entries = inode_sb(inode)->s_blocksize >> 2;
 
-	bh = sb_bread(inode->i_sb, pblock);
+	bh = sb_bread(inode_sb(inode), pblock);
 	if (!bh)
 		return -EIO;
 
@@ -208,7 +208,7 @@ static int extend_credit_for_blkdel(handle_t *handle, struct inode *inode)
 	 * So allocate a credit of 3. We may update
 	 * quota (user and group).
 	 */
-	needed = 3 + EXT4_MAXQUOTAS_TRANS_BLOCKS(inode->i_sb);
+	needed = 3 + EXT4_MAXQUOTAS_TRANS_BLOCKS(inode_sb(inode));
 
 	if (ext4_journal_extend(handle, needed) != 0)
 		retval = ext4_journal_restart(handle, needed);
@@ -222,9 +222,9 @@ static int free_dind_blocks(handle_t *handle,
 	int i;
 	__le32 *tmp_idata;
 	struct buffer_head *bh;
-	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+	unsigned long max_entries = inode_sb(inode)->s_blocksize >> 2;
 
-	bh = sb_bread(inode->i_sb, le32_to_cpu(i_data));
+	bh = sb_bread(inode_sb(inode), le32_to_cpu(i_data));
 	if (!bh)
 		return -EIO;
 
@@ -252,9 +252,9 @@ static int free_tind_blocks(handle_t *handle,
 	int i, retval = 0;
 	__le32 *tmp_idata;
 	struct buffer_head *bh;
-	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+	unsigned long max_entries = inode_sb(inode)->s_blocksize >> 2;
 
-	bh = sb_bread(inode->i_sb, le32_to_cpu(i_data));
+	bh = sb_bread(inode_sb(inode), le32_to_cpu(i_data));
 	if (!bh)
 		return -EIO;
 
@@ -382,7 +382,7 @@ static int free_ext_idx(handle_t *handle, struct inode *inode,
 	struct ext4_extent_header *eh;
 
 	block = ext4_idx_pblock(ix);
-	bh = sb_bread(inode->i_sb, block);
+	bh = sb_bread(inode_sb(inode), block);
 	if (!bh)
 		return -EIO;
 
@@ -441,7 +441,7 @@ int ext4_ext_migrate(struct inode *inode)
 	 * If the filesystem does not support extents, or the inode
 	 * already is extent-based, error out.
 	 */
-	if (!ext4_has_feature_extents(inode->i_sb) ||
+	if (!ext4_has_feature_extents(inode_sb(inode)) ||
 	    (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
 		return -EINVAL;
 
@@ -457,17 +457,17 @@ int ext4_ext_migrate(struct inode *inode)
 	 * need to worry about credits for modifying the quota inode.
 	 */
 	handle = ext4_journal_start(inode, EXT4_HT_MIGRATE,
-		4 + EXT4_MAXQUOTAS_TRANS_BLOCKS(inode->i_sb));
+		4 + EXT4_MAXQUOTAS_TRANS_BLOCKS(inode_sb(inode)));
 
 	if (IS_ERR(handle)) {
 		retval = PTR_ERR(handle);
 		return retval;
 	}
-	goal = (((inode->i_ino - 1) / EXT4_INODES_PER_GROUP(inode->i_sb)) *
-		EXT4_INODES_PER_GROUP(inode->i_sb)) + 1;
+	goal = (((inode->i_ino - 1) / EXT4_INODES_PER_GROUP(inode_sb(inode))) *
+		EXT4_INODES_PER_GROUP(inode_sb(inode))) + 1;
 	owner[0] = i_uid_read(inode);
 	owner[1] = i_gid_read(inode);
-	tmp_inode = ext4_new_inode(handle, d_inode(inode->i_sb->s_root),
+	tmp_inode = ext4_new_inode(handle, d_inode(inode_sb(inode)->s_root),
 				   S_IFREG, NULL, goal, owner, 0);
 	if (IS_ERR(tmp_inode)) {
 		retval = PTR_ERR(tmp_inode);
@@ -522,7 +522,7 @@ int ext4_ext_migrate(struct inode *inode)
 	memset(&lb, 0, sizeof(lb));
 
 	/* 32 bit block address 4 bytes */
-	max_entries = inode->i_sb->s_blocksize >> 2;
+	max_entries = inode_sb(inode)->s_blocksize >> 2;
 	for (i = 0; i < EXT4_NDIR_BLOCKS; i++) {
 		if (i_data[i]) {
 			retval = update_extent_range(handle, tmp_inode,
@@ -608,7 +608,7 @@ out:
 int ext4_ind_migrate(struct inode *inode)
 {
 	struct ext4_extent_header	*eh;
-	struct ext4_super_block		*es = EXT4_SB(inode->i_sb)->s_es;
+	struct ext4_super_block		*es = EXT4_SB(inode_sb(inode))->s_es;
 	struct ext4_inode_info		*ei = EXT4_I(inode);
 	struct ext4_extent		*ex;
 	unsigned int			i, len;
@@ -617,11 +617,11 @@ int ext4_ind_migrate(struct inode *inode)
 	handle_t			*handle;
 	int				ret;
 
-	if (!ext4_has_feature_extents(inode->i_sb) ||
+	if (!ext4_has_feature_extents(inode_sb(inode)) ||
 	    (!ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
 		return -EINVAL;
 
-	if (ext4_has_feature_bigalloc(inode->i_sb))
+	if (ext4_has_feature_bigalloc(inode_sb(inode)))
 		return -EOPNOTSUPP;
 
 	/*
@@ -629,7 +629,7 @@ int ext4_ind_migrate(struct inode *inode)
 	 * blocks to be allocated, otherwise delayed allocation blocks may not
 	 * be reflected and bypass the checks on extent header.
 	 */
-	if (test_opt(inode->i_sb, DELALLOC))
+	if (test_opt(inode_sb(inode), DELALLOC))
 		ext4_alloc_da_blocks(inode);
 
 	handle = ext4_journal_start(inode, EXT4_HT_MIGRATE, 1);

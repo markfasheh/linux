@@ -93,7 +93,7 @@ static int do_isofs_readdir(struct inode *inode, struct file *file,
 	int first_de = 1;
 	char *p = NULL;		/* Quiet GCC */
 	struct iso_directory_record *de;
-	struct isofs_sb_info *sbi = ISOFS_SB(inode->i_sb);
+	struct isofs_sb_info *sbi = ISOFS_SB(inode_sb(inode));
 
 	offset = ctx->pos & (bufsize - 1);
 	block = ctx->pos >> bufbits;

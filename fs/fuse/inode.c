@@ -130,7 +130,7 @@ static void fuse_evict_inode(struct inode *inode)
 {
 	truncate_inode_pages_final(&inode->i_data);
 	clear_inode(inode);
-	if (inode->i_sb->s_flags & SB_ACTIVE) {
+	if (inode_sb(inode)->s_flags & SB_ACTIVE) {
 		struct fuse_conn *fc = get_fuse_conn(inode);
 		struct fuse_inode *fi = get_fuse_inode(inode);
 		fuse_queue_forget(fc, fi->forget, fi->nodeid, fi->nlookup);
@@ -187,7 +187,7 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
 	if (attr->blksize != 0)
 		inode->i_blkbits = ilog2(attr->blksize);
 	else
-		inode->i_blkbits = inode->i_sb->s_blocksize_bits;
+		inode->i_blkbits = inode_sb(inode)->s_blocksize_bits;
 
 	/*
 	 * Don't set the sticky bit in i_mode, unless we want the VFS
@@ -778,7 +778,8 @@ static struct dentry *fuse_get_parent(struct dentry *child)
 	if (!fc->export_support)
 		return ERR_PTR(-ESTALE);
 
-	err = fuse_lookup_name(child_inode->i_sb, get_node_id(child_inode),
+	err = fuse_lookup_name(inode_sb(child_inode),
+			       get_node_id(child_inode),
 			       &name, &outarg, &inode);
 	if (err) {
 		if (err == -ENOENT)

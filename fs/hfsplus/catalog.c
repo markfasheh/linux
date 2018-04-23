@@ -105,7 +105,7 @@ void hfsplus_cat_set_perms(struct inode *inode, struct hfsplus_perm *perms)
 static int hfsplus_cat_build_record(hfsplus_cat_entry *entry,
 		u32 cnid, struct inode *inode)
 {
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(inode));
 
 	if (S_ISDIR(inode->i_mode)) {
 		struct hfsplus_cat_folder *folder;
@@ -222,7 +222,7 @@ int hfsplus_find_cat(struct super_block *sb, u32 cnid,
 
 static void hfsplus_subfolders_inc(struct inode *dir)
 {
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(dir->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(dir));
 
 	if (test_bit(HFSPLUS_SB_HFSX, &sbi->flags)) {
 		/*
@@ -235,7 +235,7 @@ static void hfsplus_subfolders_inc(struct inode *dir)
 
 static void hfsplus_subfolders_dec(struct inode *dir)
 {
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(dir->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(dir));
 
 	if (test_bit(HFSPLUS_SB_HFSX, &sbi->flags)) {
 		/*
@@ -253,7 +253,7 @@ static void hfsplus_subfolders_dec(struct inode *dir)
 int hfsplus_create_cat(u32 cnid, struct inode *dir,
 		const struct qstr *str, struct inode *inode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct hfs_find_data fd;
 	hfsplus_cat_entry entry;
 	int entry_size;
@@ -321,7 +321,7 @@ err2:
 
 int hfsplus_delete_cat(u32 cnid, struct inode *dir, const struct qstr *str)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct hfs_find_data fd;
 	struct hfsplus_fork_raw fork;
 	struct list_head *pos;
@@ -419,7 +419,7 @@ int hfsplus_rename_cat(u32 cnid,
 		       struct inode *src_dir, const struct qstr *src_name,
 		       struct inode *dst_dir, const struct qstr *dst_name)
 {
-	struct super_block *sb = src_dir->i_sb;
+	struct super_block *sb = inode_sb(src_dir);
 	struct hfs_find_data src_fd, dst_fd;
 	hfsplus_cat_entry entry;
 	int entry_size, type;

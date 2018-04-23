@@ -139,7 +139,7 @@ static void jfs_destroy_inode(struct inode *inode)
 
 	spin_lock_irq(&ji->ag_lock);
 	if (ji->active_ag != -1) {
-		struct bmap *bmap = JFS_SBI(inode->i_sb)->bmap;
+		struct bmap *bmap = JFS_SBI(inode_sb(inode))->bmap;
 		atomic_dec(&bmap->db_active[ji->active_ag]);
 		ji->active_ag = -1;
 	}

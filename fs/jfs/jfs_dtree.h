@@ -101,7 +101,7 @@ struct ldtentry {
 /*
  * Keep persistent index for directory entries
  */
-#define DO_INDEX(INODE) (JFS_SBI((INODE)->i_sb)->mntflag & JFS_DIR_INDEX)
+#define DO_INDEX(INODE) (JFS_SBI(inode_sb((INODE)))->mntflag & JFS_DIR_INDEX)
 
 /*
  * Maximum entry in inline directory table

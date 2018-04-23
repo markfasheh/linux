@@ -962,7 +962,7 @@ ssize_t jffs2_listxattr(struct dentry *dentry, char *buffer, size_t size)
 {
 	struct inode *inode = d_inode(dentry);
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_inode_cache *ic = f->inocache;
 	struct jffs2_xattr_ref *ref, **pref;
 	struct jffs2_xattr_datum *xd;
@@ -1032,7 +1032,7 @@ int do_jffs2_getxattr(struct inode *inode, int xprefix, const char *xname,
 		      char *buffer, size_t size)
 {
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_inode_cache *ic = f->inocache;
 	struct jffs2_xattr_datum *xd;
 	struct jffs2_xattr_ref *ref, **pref;
@@ -1094,7 +1094,7 @@ int do_jffs2_setxattr(struct inode *inode, int xprefix, const char *xname,
 		      const char *buffer, size_t size, int flags)
 {
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_inode_cache *ic = f->inocache;
 	struct jffs2_xattr_datum *xd;
 	struct jffs2_xattr_ref *ref, *newref, **pref;

@@ -25,10 +25,11 @@ static struct dentry *hfs_lookup(struct inode *dir, struct dentry *dentry,
 	struct inode *inode = NULL;
 	int res;
 
-	res = hfs_find_init(HFS_SB(dir->i_sb)->cat_tree, &fd);
+	res = hfs_find_init(HFS_SB(inode_sb(dir))->cat_tree, &fd);
 	if (res)
 		return ERR_PTR(res);
-	hfs_cat_build_key(dir->i_sb, fd.search_key, dir->i_ino, &dentry->d_name);
+	hfs_cat_build_key(inode_sb(dir), fd.search_key, dir->i_ino,
+			  &dentry->d_name);
 	res = hfs_brec_read(&fd, &rec, sizeof(rec));
 	if (res) {
 		hfs_find_exit(&fd);
@@ -39,7 +40,7 @@ static struct dentry *hfs_lookup(struct inode *dir, struct dentry *dentry,
 		}
 		return ERR_PTR(res);
 	}
-	inode = hfs_iget(dir->i_sb, &fd.search_key->cat, &rec);
+	inode = hfs_iget(inode_sb(dir), &fd.search_key->cat, &rec);
 	hfs_find_exit(&fd);
 	if (!inode)
 		return ERR_PTR(-EACCES);
@@ -54,7 +55,7 @@ done:
 static int hfs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int len, err;
 	char strbuf[HFS_MAX_NAMELEN];
 	union hfs_cat_rec entry;
@@ -305,7 +306,7 @@ static int hfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 			   old_dir, &old_dentry->d_name,
 			   new_dir, &new_dentry->d_name);
 	if (!res)
-		hfs_cat_build_key(old_dir->i_sb,
+		hfs_cat_build_key(inode_sb(old_dir),
 				  (btree_key *)&HFS_I(d_inode(old_dentry))->cat_key,
 				  new_dir->i_ino, &new_dentry->d_name);
 	return res;

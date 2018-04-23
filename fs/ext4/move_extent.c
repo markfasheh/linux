@@ -255,13 +255,13 @@ move_extent_per_page(struct file *o_filp, struct inode *donor_inode,
 	struct page *pagep[2] = {NULL, NULL};
 	handle_t *handle;
 	ext4_lblk_t orig_blk_offset, donor_blk_offset;
-	unsigned long blocksize = orig_inode->i_sb->s_blocksize;
+	unsigned long blocksize = inode_sb(orig_inode)->s_blocksize;
 	unsigned int tmp_data_size, data_size, replaced_size;
 	int i, err2, jblocks, retries = 0;
 	int replaced_count = 0;
 	int from = data_offset_in_page << orig_inode->i_blkbits;
 	int blocks_per_page = PAGE_SIZE >> orig_inode->i_blkbits;
-	struct super_block *sb = orig_inode->i_sb;
+	struct super_block *sb = inode_sb(orig_inode);
 	struct buffer_head *bh = NULL;
 
 	/*
@@ -558,7 +558,7 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp, __u64 orig_blk,
 	ext4_lblk_t d_start = donor_blk;
 	int ret;
 
-	if (orig_inode->i_sb != donor_inode->i_sb) {
+	if (inode_sb(orig_inode) != inode_sb(donor_inode)) {
 		ext4_debug("ext4 move extent: The argument files "
 			"should be in same FS [ino:orig %lu, donor %lu]\n",
 			orig_inode->i_ino, donor_inode->i_ino);
@@ -585,14 +585,14 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp, __u64 orig_blk,
 	   journaling enabled */
 	if (ext4_should_journal_data(orig_inode) ||
 	    ext4_should_journal_data(donor_inode)) {
-		ext4_msg(orig_inode->i_sb, KERN_ERR,
+		ext4_msg(inode_sb(orig_inode), KERN_ERR,
 			 "Online defrag not supported with data journaling");
 		return -EOPNOTSUPP;
 	}
 
 	if (ext4_encrypted_inode(orig_inode) ||
 	    ext4_encrypted_inode(donor_inode)) {
-		ext4_msg(orig_inode->i_sb, KERN_ERR,
+		ext4_msg(inode_sb(orig_inode), KERN_ERR,
 			 "Online defrag not supported for encrypted files");
 		return -EOPNOTSUPP;
 	}

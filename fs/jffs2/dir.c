@@ -106,7 +106,7 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
 		ino = fd->ino;
 	mutex_unlock(&dir_f->sem);
 	if (ino) {
-		inode = jffs2_iget(dir_i->i_sb, ino);
+		inode = jffs2_iget(inode_sb(dir_i), ino);
 		if (IS_ERR(inode))
 			pr_warn("iget() failed for ino #%u\n", ino);
 	}
@@ -170,7 +170,7 @@ static int jffs2_create(struct inode *dir_i, struct dentry *dentry,
 	if (!ri)
 		return -ENOMEM;
 
-	c = JFFS2_SB_INFO(dir_i->i_sb);
+	c = JFFS2_SB_INFO(inode_sb(dir_i));
 
 	jffs2_dbg(1, "%s()\n", __func__);
 
@@ -224,7 +224,7 @@ static int jffs2_create(struct inode *dir_i, struct dentry *dentry,
 
 static int jffs2_unlink(struct inode *dir_i, struct dentry *dentry)
 {
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir_i->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(dir_i));
 	struct jffs2_inode_info *dir_f = JFFS2_INODE_INFO(dir_i);
 	struct jffs2_inode_info *dead_f = JFFS2_INODE_INFO(d_inode(dentry));
 	int ret;
@@ -300,7 +300,7 @@ static int jffs2_symlink (struct inode *dir_i, struct dentry *dentry, const char
 	if (!ri)
 		return -ENOMEM;
 
-	c = JFFS2_SB_INFO(dir_i->i_sb);
+	c = JFFS2_SB_INFO(inode_sb(dir_i));
 
 	/* Try to reserve enough space for both node and dirent.
 	 * Just the node will do for now, though
@@ -459,7 +459,7 @@ static int jffs2_mkdir (struct inode *dir_i, struct dentry *dentry, umode_t mode
 	if (!ri)
 		return -ENOMEM;
 
-	c = JFFS2_SB_INFO(dir_i->i_sb);
+	c = JFFS2_SB_INFO(inode_sb(dir_i));
 
 	/* Try to reserve enough space for both node and dirent.
 	 * Just the node will do for now, though
@@ -586,7 +586,7 @@ static int jffs2_mkdir (struct inode *dir_i, struct dentry *dentry, umode_t mode
 
 static int jffs2_rmdir (struct inode *dir_i, struct dentry *dentry)
 {
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir_i->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(dir_i));
 	struct jffs2_inode_info *dir_f = JFFS2_INODE_INFO(dir_i);
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(d_inode(dentry));
 	struct jffs2_full_dirent *fd;
@@ -627,7 +627,7 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, umode_t mode
 	if (!ri)
 		return -ENOMEM;
 
-	c = JFFS2_SB_INFO(dir_i->i_sb);
+	c = JFFS2_SB_INFO(inode_sb(dir_i));
 
 	if (S_ISBLK(mode) || S_ISCHR(mode))
 		devlen = jffs2_encode_dev(&dev, rdev);
@@ -761,7 +761,7 @@ static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
 			 unsigned int flags)
 {
 	int ret;
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(old_dir_i->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(old_dir_i));
 	struct jffs2_inode_info *victim_f = NULL;
 	uint8_t type;
 	uint32_t now;

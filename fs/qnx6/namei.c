@@ -27,7 +27,7 @@ struct dentry *qnx6_lookup(struct inode *dir, struct dentry *dentry,
 
 	ino = qnx6_find_entry(len, dir, name, &page);
 	if (ino) {
-		foundinode = qnx6_iget(dir->i_sb, ino);
+		foundinode = qnx6_iget(inode_sb(dir), ino);
 		qnx6_put_page(page);
 		if (IS_ERR(foundinode)) {
 			pr_debug("lookup->iget ->  error %ld\n",

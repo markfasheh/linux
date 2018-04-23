@@ -162,7 +162,7 @@ static const struct file_operations exports_proc_operations = {
 
 static int exports_nfsd_open(struct inode *inode, struct file *file)
 {
-	return exports_net_open(inode->i_sb->s_fs_info, file);
+	return exports_net_open(inode_sb(inode)->s_fs_info, file);
 }
 
 static const struct file_operations exports_nfsd_operations = {
@@ -231,7 +231,7 @@ static const struct file_operations reply_cache_stats_operations = {
 
 static inline struct net *netns(struct file *file)
 {
-	return file_inode(file)->i_sb->s_fs_info;
+	return inode_sb(file_inode(file))->s_fs_info;
 }
 
 /**

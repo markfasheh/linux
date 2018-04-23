@@ -51,8 +51,9 @@ static inline loff_t reiserfs_xattr_nblocks(struct inode *inode, loff_t size)
 {
 	loff_t ret = 0;
 	if (reiserfs_file_data_log(inode)) {
-		ret = _ROUND_UP(xattr_size(size), inode->i_sb->s_blocksize);
-		ret >>= inode->i_sb->s_blocksize_bits;
+		ret = _ROUND_UP(xattr_size(size),
+				inode_sb(inode)->s_blocksize);
+		ret >>= inode_sb(inode)->s_blocksize_bits;
 	}
 	return ret;
 }
@@ -71,12 +72,12 @@ static inline loff_t reiserfs_xattr_nblocks(struct inode *inode, loff_t size)
  */
 static inline size_t reiserfs_xattr_jcreate_nblocks(struct inode *inode)
 {
-	size_t nblocks = JOURNAL_BLOCKS_PER_OBJECT(inode->i_sb);
+	size_t nblocks = JOURNAL_BLOCKS_PER_OBJECT(inode_sb(inode));
 
 	if ((REISERFS_I(inode)->i_flags & i_has_xattr_dir) == 0) {
-		nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode->i_sb);
-		if (d_really_is_negative(REISERFS_SB(inode->i_sb)->xattr_root))
-			nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode->i_sb);
+		nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode_sb(inode));
+		if (d_really_is_negative(REISERFS_SB(inode_sb(inode))->xattr_root))
+			nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode_sb(inode));
 	}
 
 	return nblocks;

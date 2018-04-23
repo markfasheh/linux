@@ -198,7 +198,7 @@ static int ll_encode_fh(struct inode *inode, __u32 *fh, int *plen,
 	struct lustre_nfs_fid *nfs_fid = (void *)fh;
 
 	CDEBUG(D_INFO, "%s: encoding for (" DFID ") maxlen=%d minlen=%d\n",
-	       ll_get_fsname(inode->i_sb, NULL, 0),
+	       ll_get_fsname(inode_sb(inode), NULL, 0),
 	       PFID(ll_inode2fid(inode)), *plen, fileid_len);
 
 	if (*plen < fileid_len) {
@@ -312,10 +312,10 @@ int ll_dir_get_parent_fid(struct inode *dir, struct lu_fid *parent_fid)
 
 	LASSERT(dir && S_ISDIR(dir->i_mode));
 
-	sbi = ll_s2sbi(dir->i_sb);
+	sbi = ll_s2sbi(inode_sb(dir));
 
 	CDEBUG(D_INFO, "%s: getting parent for (" DFID ")\n",
-	       ll_get_fsname(dir->i_sb, NULL, 0),
+	       ll_get_fsname(inode_sb(dir), NULL, 0),
 	       PFID(ll_inode2fid(dir)));
 
 	rc = ll_get_default_mdsize(sbi, &lmmsize);
@@ -332,7 +332,7 @@ int ll_dir_get_parent_fid(struct inode *dir, struct lu_fid *parent_fid)
 	ll_finish_md_op_data(op_data);
 	if (rc) {
 		CERROR("%s: failure inode " DFID " get parent: rc = %d\n",
-		       ll_get_fsname(dir->i_sb, NULL, 0),
+		       ll_get_fsname(inode_sb(dir), NULL, 0),
 		       PFID(ll_inode2fid(dir)), rc);
 		return rc;
 	}
@@ -361,7 +361,7 @@ static struct dentry *ll_get_parent(struct dentry *dchild)
 	if (rc)
 		return ERR_PTR(rc);
 
-	dentry = ll_iget_for_nfs(dchild->d_inode->i_sb, &parent_fid, NULL);
+	dentry = ll_iget_for_nfs(inode_sb(dchild->d_inode), &parent_fid, NULL);
 
 	return dentry;
 }

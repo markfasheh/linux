@@ -136,7 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_fault *vmf)
 	sigset_t oldset;
 	int ret;
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 	ocfs2_block_signals(&oldset);
 
 	/*
@@ -170,7 +170,7 @@ static int ocfs2_page_mkwrite(struct vm_fault *vmf)
 
 out:
 	ocfs2_unblock_signals(&oldset);
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	return ret;
 }
 

@@ -1568,7 +1568,7 @@ static void gfs2_glock_put_eventually(struct gfs2_glock *gl)
 
 static void gfs2_evict_inode(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct gfs2_sbd *sdp = sb->s_fs_info;
 	struct gfs2_inode *ip = GFS2_I(inode);
 	struct gfs2_holder gh;

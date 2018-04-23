@@ -66,9 +66,9 @@ static struct dentry *ext2_lookup(struct inode * dir, struct dentry *dentry, uns
 	ino = ext2_inode_by_name(dir, &dentry->d_name);
 	inode = NULL;
 	if (ino) {
-		inode = ext2_iget(dir->i_sb, ino);
+		inode = ext2_iget(inode_sb(dir), ino);
 		if (inode == ERR_PTR(-ESTALE)) {
-			ext2_error(dir->i_sb, __func__,
+			ext2_error(inode_sb(dir), __func__,
 					"deleted inode referenced: %lu",
 					(unsigned long) ino);
 			return ERR_PTR(-EIO);
@@ -108,7 +108,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 		return PTR_ERR(inode);
 
 	inode->i_op = &ext2_file_inode_operations;
-	if (test_opt(inode->i_sb, NOBH)) {
+	if (test_opt(inode_sb(inode), NOBH)) {
 		inode->i_mapping->a_ops = &ext2_nobh_aops;
 		inode->i_fop = &ext2_file_operations;
 	} else {
@@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 		return PTR_ERR(inode);
 
 	inode->i_op = &ext2_file_inode_operations;
-	if (test_opt(inode->i_sb, NOBH)) {
+	if (test_opt(inode_sb(inode), NOBH)) {
 		inode->i_mapping->a_ops = &ext2_nobh_aops;
 		inode->i_fop = &ext2_file_operations;
 	} else {
@@ -164,7 +164,7 @@ static int ext2_mknod (struct inode * dir, struct dentry *dentry, umode_t mode, 
 static int ext2_symlink (struct inode * dir, struct dentry * dentry,
 	const char * symname)
 {
-	struct super_block * sb = dir->i_sb;
+	struct super_block * sb = inode_sb(dir);
 	int err = -ENAMETOOLONG;
 	unsigned l = strlen(symname)+1;
 	struct inode * inode;
@@ -185,7 +185,7 @@ static int ext2_symlink (struct inode * dir, struct dentry * dentry,
 		/* slow symlink */
 		inode->i_op = &ext2_symlink_inode_operations;
 		inode_nohighmem(inode);
-		if (test_opt(inode->i_sb, NOBH))
+		if (test_opt(inode_sb(inode), NOBH))
 			inode->i_mapping->a_ops = &ext2_nobh_aops;
 		else
 			inode->i_mapping->a_ops = &ext2_aops;
@@ -254,7 +254,7 @@ static int ext2_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
 
 	inode->i_op = &ext2_dir_inode_operations;
 	inode->i_fop = &ext2_dir_operations;
-	if (test_opt(inode->i_sb, NOBH))
+	if (test_opt(inode_sb(inode), NOBH))
 		inode->i_mapping->a_ops = &ext2_nobh_aops;
 	else
 		inode->i_mapping->a_ops = &ext2_aops;

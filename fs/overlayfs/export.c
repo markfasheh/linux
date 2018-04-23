@@ -316,7 +316,7 @@ static struct dentry *ovl_obtain_alias(struct super_block *sb,
 
 	dentry = d_find_any_alias(inode);
 	if (!dentry) {
-		dentry = d_alloc_anon(inode->i_sb);
+		dentry = d_alloc_anon(inode_sb(inode));
 		if (!dentry)
 			goto nomem;
 		oe = ovl_alloc_entry(lower ? 1 : 0);

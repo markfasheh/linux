@@ -52,7 +52,7 @@ static int qibfs_mknod(struct inode *dir, struct dentry *dentry,
 		       void *data)
 {
 	int error;
-	struct inode *inode = new_inode(dir->i_sb);
+	struct inode *inode = new_inode(inode_sb(dir));
 
 	if (!inode) {
 		error = -EPERM;

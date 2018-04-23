@@ -67,7 +67,7 @@ static struct buffer_head *qnx4_find_entry(int len, struct inode *dir,
 		if (!bh) {
 			block = qnx4_block_map(dir, blkofs);
 			if (block)
-				bh = sb_bread(dir->i_sb, block);
+				bh = sb_bread(inode_sb(dir), block);
 			if (!bh) {
 				blkofs++;
 				continue;
@@ -113,7 +113,7 @@ struct dentry * qnx4_lookup(struct inode *dir, struct dentry *dentry, unsigned i
 	}
 	brelse(bh);
 
-	foundinode = qnx4_iget(dir->i_sb, ino);
+	foundinode = qnx4_iget(inode_sb(dir), ino);
 	if (IS_ERR(foundinode)) {
 		QNX4DEBUG((KERN_ERR "qnx4: lookup->iget -> error %ld\n",
 			   PTR_ERR(foundinode)));

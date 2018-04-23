@@ -1897,7 +1897,7 @@ struct dentry *d_make_root(struct inode *root_inode)
 	struct dentry *res = NULL;
 
 	if (root_inode) {
-		res = d_alloc_anon(root_inode->i_sb);
+		res = d_alloc_anon(inode_sb(root_inode));
 		if (res)
 			d_instantiate(res, root_inode);
 		else
@@ -1996,7 +1996,7 @@ static struct dentry *__d_obtain_alias(struct inode *inode, bool disconnected)
 	if (res)
 		goto out_iput;
 
-	tmp = d_alloc_anon(inode->i_sb);
+	tmp = d_alloc_anon(inode_sb(inode));
 	if (!tmp) {
 		res = ERR_PTR(-ENOMEM);
 		goto out_iput;
@@ -3038,8 +3038,8 @@ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
 					"VFS: Lookup of '%s' in %s %s"
 					" would have caused loop\n",
 					dentry->d_name.name,
-					inode->i_sb->s_type->name,
-					inode->i_sb->s_id);
+					inode_sb(inode)->s_type->name,
+					inode_sb(inode)->s_id);
 			} else if (!IS_ROOT(new)) {
 				int err = __d_unalias(inode, dentry, new);
 				write_sequnlock(&rename_lock);

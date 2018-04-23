@@ -221,7 +221,7 @@ __vxfs_iget(struct inode *ilistp, struct vxfs_inode_info *vip, ino_t ino)
 		caddr_t			kaddr = (char *)page_address(pp);
 
 		dip = (struct vxfs_dinode *)(kaddr + offset);
-		dip2vip_cpy(VXFS_SBI(ilistp->i_sb), vip, dip);
+		dip2vip_cpy(VXFS_SBI(inode_sb(ilistp)), vip, dip);
 		vip->vfs_inode.i_mapping->a_ops = &vxfs_aops;
 #ifdef DIAGNOSTIC
 		vxfs_dumpi(vip, ino);

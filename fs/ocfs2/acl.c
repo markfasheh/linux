@@ -181,7 +181,7 @@ static int ocfs2_acl_set_mode(struct inode *inode, struct buffer_head *di_bh,
 		get_bh(di_bh);
 
 	if (handle == NULL) {
-		handle = ocfs2_start_trans(OCFS2_SB(inode->i_sb),
+		handle = ocfs2_start_trans(OCFS2_SB(inode_sb(inode)),
 					   OCFS2_INODE_UPDATE_CREDITS);
 		if (IS_ERR(handle)) {
 			ret = PTR_ERR(handle);
@@ -211,7 +211,7 @@ static int ocfs2_acl_set_mode(struct inode *inode, struct buffer_head *di_bh,
 
 out_commit:
 	if (commit_handle)
-		ocfs2_commit_trans(OCFS2_SB(inode->i_sb), handle);
+		ocfs2_commit_trans(OCFS2_SB(inode_sb(inode)), handle);
 out_brelse:
 	brelse(di_bh);
 out:
@@ -303,7 +303,7 @@ struct posix_acl *ocfs2_iop_get_acl(struct inode *inode, int type)
 	int had_lock;
 	struct ocfs2_lock_holder oh;
 
-	osb = OCFS2_SB(inode->i_sb);
+	osb = OCFS2_SB(inode_sb(inode));
 	if (!(osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL))
 		return NULL;
 
@@ -322,7 +322,7 @@ struct posix_acl *ocfs2_iop_get_acl(struct inode *inode, int type)
 
 int ocfs2_acl_chmod(struct inode *inode, struct buffer_head *bh)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct posix_acl *acl;
 	int ret;
 
@@ -358,7 +358,7 @@ int ocfs2_init_acl(handle_t *handle,
 		   struct ocfs2_alloc_context *meta_ac,
 		   struct ocfs2_alloc_context *data_ac)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct posix_acl *acl = NULL;
 	int ret = 0, ret2;
 	umode_t mode;

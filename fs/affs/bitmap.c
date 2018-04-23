@@ -122,7 +122,7 @@ affs_alloc_block(struct inode *inode, u32 goal)
 	u32 blk, bmap, bit, mask, mask2, tmp;
 	int i;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	sbi = AFFS_SB(sb);
 
 	pr_debug("balloc(inode=%lu,goal=%u): ", inode->i_ino, goal);

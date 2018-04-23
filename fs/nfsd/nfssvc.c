@@ -866,7 +866,8 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 int nfsd_pool_stats_open(struct inode *inode, struct file *file)
 {
 	int ret;
-	struct nfsd_net *nn = net_generic(inode->i_sb->s_fs_info, nfsd_net_id);
+	struct nfsd_net *nn = net_generic(inode_sb(inode)->s_fs_info,
+					  nfsd_net_id);
 
 	mutex_lock(&nfsd_mutex);
 	if (nn->nfsd_serv == NULL) {
@@ -883,7 +884,7 @@ int nfsd_pool_stats_open(struct inode *inode, struct file *file)
 int nfsd_pool_stats_release(struct inode *inode, struct file *file)
 {
 	int ret = seq_release(inode, file);
-	struct net *net = inode->i_sb->s_fs_info;
+	struct net *net = inode_sb(inode)->s_fs_info;
 
 	mutex_lock(&nfsd_mutex);
 	/* this function really, really should have been called svc_put() */

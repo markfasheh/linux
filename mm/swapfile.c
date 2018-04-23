@@ -2446,7 +2446,7 @@ static int swap_node(struct swap_info_struct *p)
 	if (p->bdev)
 		bdev = p->bdev;
 	else
-		bdev = p->swap_file->f_inode->i_sb->s_bdev;
+		bdev = inode_sb(p->swap_file->f_inode)->s_bdev;
 
 	return bdev ? bdev->bd_disk->node_id : NUMA_NO_NODE;
 }
@@ -2899,7 +2899,7 @@ static int claim_swapfile(struct swap_info_struct *p, struct inode *inode)
 			return error;
 		p->flags |= SWP_BLKDEV;
 	} else if (S_ISREG(inode->i_mode)) {
-		p->bdev = inode->i_sb->s_bdev;
+		p->bdev = inode_sb(inode)->s_bdev;
 		inode_lock(inode);
 		if (IS_SWAPFILE(inode))
 			return -EBUSY;

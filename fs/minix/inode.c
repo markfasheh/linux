@@ -466,7 +466,7 @@ static struct inode *V1_minix_iget(struct inode *inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
-	raw_inode = minix_V1_raw_inode(inode->i_sb, inode->i_ino, &bh);
+	raw_inode = minix_V1_raw_inode(inode_sb(inode), inode->i_ino, &bh);
 	if (!raw_inode) {
 		iget_failed(inode);
 		return ERR_PTR(-EIO);
@@ -499,7 +499,7 @@ static struct inode *V2_minix_iget(struct inode *inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
-	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
+	raw_inode = minix_V2_raw_inode(inode_sb(inode), inode->i_ino, &bh);
 	if (!raw_inode) {
 		iget_failed(inode);
 		return ERR_PTR(-EIO);
@@ -553,7 +553,7 @@ static struct buffer_head * V1_minix_update_inode(struct inode * inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
-	raw_inode = minix_V1_raw_inode(inode->i_sb, inode->i_ino, &bh);
+	raw_inode = minix_V1_raw_inode(inode_sb(inode), inode->i_ino, &bh);
 	if (!raw_inode)
 		return NULL;
 	raw_inode->i_mode = inode->i_mode;
@@ -580,7 +580,7 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
-	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
+	raw_inode = minix_V2_raw_inode(inode_sb(inode), inode->i_ino, &bh);
 	if (!raw_inode)
 		return NULL;
 	raw_inode->i_mode = inode->i_mode;
@@ -614,7 +614,7 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 		sync_dirty_buffer(bh);
 		if (buffer_req(bh) && !buffer_uptodate(bh)) {
 			printk("IO error syncing minix inode [%s:%08lx]\n",
-				inode->i_sb->s_id, inode->i_ino);
+				inode_sb(inode)->s_id, inode->i_ino);
 			err = -EIO;
 		}
 	}

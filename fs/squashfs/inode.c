@@ -112,7 +112,7 @@ struct inode *squashfs_iget(struct super_block *sb, long long ino,
  */
 int squashfs_read_inode(struct inode *inode, long long ino)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	u64 block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
 	int err, type, offset = SQUASHFS_INODE_OFFSET(ino);

@@ -136,7 +136,7 @@ static int bpf_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct inode *inode;
 
-	inode = bpf_get_inode(dir->i_sb, dir, mode | S_IFDIR);
+	inode = bpf_get_inode(inode_sb(dir), dir, mode | S_IFDIR);
 	if (IS_ERR(inode))
 		return PTR_ERR(inode);
 
@@ -154,7 +154,7 @@ static int bpf_mkobj_ops(struct dentry *dentry, umode_t mode, void *raw,
 			 const struct inode_operations *iops)
 {
 	struct inode *dir = dentry->d_parent->d_inode;
-	struct inode *inode = bpf_get_inode(dir->i_sb, dir, mode);
+	struct inode *inode = bpf_get_inode(inode_sb(dir), dir, mode);
 	if (IS_ERR(inode))
 		return PTR_ERR(inode);
 
@@ -193,7 +193,7 @@ static int bpf_symlink(struct inode *dir, struct dentry *dentry,
 	if (!link)
 		return -ENOMEM;
 
-	inode = bpf_get_inode(dir->i_sb, dir, S_IRWXUGO | S_IFLNK);
+	inode = bpf_get_inode(inode_sb(dir), dir, S_IRWXUGO | S_IFLNK);
 	if (IS_ERR(inode)) {
 		kfree(link);
 		return PTR_ERR(inode);

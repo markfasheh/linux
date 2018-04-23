@@ -386,7 +386,7 @@ static inline struct ceph_inode_info *ceph_inode(struct inode *inode)
 
 static inline struct ceph_fs_client *ceph_inode_to_client(struct inode *inode)
 {
-	return (struct ceph_fs_client *)inode->i_sb->s_fs_info;
+	return (struct ceph_fs_client *) inode_sb(inode)->s_fs_info;
 }
 
 static inline struct ceph_fs_client *ceph_sb_to_client(struct super_block *sb)

@@ -761,7 +761,7 @@ int afs_page_mkwrite(struct vm_fault *vmf)
 	_enter("{{%x:%u}},{%lx}",
 	       vnode->fid.vid, vnode->fid.vnode, vmf->page->index);
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 
 	/* Wait for the page to be written to the cache before we allow it to
 	 * be modified.  We then assume the entire page will need writing back.
@@ -790,7 +790,7 @@ int afs_page_mkwrite(struct vm_fault *vmf)
 	SetPagePrivate(vmf->page);
 	set_page_private(vmf->page, priv);
 
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	return VM_FAULT_LOCKED;
 }
 

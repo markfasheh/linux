@@ -1129,7 +1129,7 @@ static int __get_data_block(struct inode *inode, sector_t iblock,
 
 	err = f2fs_map_blocks(inode, &map, create, flag);
 	if (!err) {
-		map_bh(bh, inode->i_sb, map.m_pblk);
+		map_bh(bh, inode_sb(inode), map.m_pblk);
 		bh->b_state = (bh->b_state & ~F2FS_MAP_FLAGS) | map.m_flags;
 		bh->b_size = (u64)map.m_len << inode->i_blkbits;
 	}
@@ -1225,7 +1225,7 @@ static int f2fs_xattr_fiemap(struct inode *inode,
 		get_node_info(sbi, xnid, &ni);
 
 		phys = (__u64)blk_to_logical(inode, ni.blk_addr);
-		len = inode->i_sb->s_blocksize;
+		len = inode_sb(inode)->s_blocksize;
 
 		f2fs_put_page(page, 1);
 
@@ -2272,7 +2272,7 @@ unlock_out:
 static int check_direct_IO(struct inode *inode, struct iov_iter *iter,
 			   loff_t offset)
 {
-	unsigned blocksize_mask = inode->i_sb->s_blocksize - 1;
+	unsigned blocksize_mask = inode_sb(inode)->s_blocksize - 1;
 
 	if (offset & blocksize_mask)
 		return -EINVAL;

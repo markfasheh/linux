@@ -330,7 +330,7 @@ int ocfs2_load_local_alloc(struct ocfs2_super *osb)
 	}
 
 	if ((la->la_size == 0) ||
-	    (le16_to_cpu(la->la_size) > ocfs2_local_alloc_size(inode->i_sb))) {
+	    (le16_to_cpu(la->la_size) > ocfs2_local_alloc_size(inode_sb(inode)))) {
 		mlog(ML_ERROR, "Local alloc size is invalid (la_size = %u)\n",
 		     le16_to_cpu(la->la_size));
 		status = -EINVAL;

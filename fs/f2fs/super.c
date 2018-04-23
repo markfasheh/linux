@@ -776,13 +776,13 @@ static int f2fs_drop_inode(struct inode *inode)
 			/* should remain fi->extent_tree for writepage */
 			f2fs_destroy_extent_node(inode);
 
-			sb_start_intwrite(inode->i_sb);
+			sb_start_intwrite(inode_sb(inode));
 			f2fs_i_size_write(inode, 0);
 
 			if (F2FS_HAS_BLOCKS(inode))
 				f2fs_truncate(inode);
 
-			sb_end_intwrite(inode->i_sb);
+			sb_end_intwrite(inode_sb(inode));
 
 			spin_lock(&inode->i_lock);
 			atomic_dec(&inode->i_count);
@@ -1805,7 +1805,7 @@ static int f2fs_set_context(struct inode *inode, const void *ctx, size_t len,
 static unsigned f2fs_max_namelen(struct inode *inode)
 {
 	return S_ISLNK(inode->i_mode) ?
-			inode->i_sb->s_blocksize : F2FS_NAME_LEN;
+			inode_sb(inode)->s_blocksize : F2FS_NAME_LEN;
 }
 
 static const struct fscrypt_operations f2fs_cryptops = {

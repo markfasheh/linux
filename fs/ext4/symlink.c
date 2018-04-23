@@ -43,7 +43,7 @@ static const char *ext4_encrypted_get_link(struct dentry *dentry,
 		if (IS_ERR(cpage))
 			return ERR_CAST(cpage);
 		caddr = page_address(cpage);
-		max_size = inode->i_sb->s_blocksize;
+		max_size = inode_sb(inode)->s_blocksize;
 	}
 
 	paddr = fscrypt_get_symlink(inode, caddr, max_size, done);

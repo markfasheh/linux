@@ -327,7 +327,7 @@ static int io_ctl_init(struct btrfs_io_ctl *io_ctl, struct inode *inode,
 		return -ENOMEM;
 
 	io_ctl->num_pages = num_pages;
-	io_ctl->fs_info = btrfs_sb(inode->i_sb);
+	io_ctl->fs_info = btrfs_sb(inode_sb(inode));
 	io_ctl->check_crcs = check_crcs;
 	io_ctl->inode = inode;
 
@@ -670,7 +670,7 @@ static int __load_free_space_cache(struct btrfs_root *root, struct inode *inode,
 				   struct btrfs_free_space_ctl *ctl,
 				   struct btrfs_path *path, u64 offset)
 {
-	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
+	struct btrfs_fs_info *fs_info = btrfs_sb(inode_sb(inode));
 	struct btrfs_free_space_header *header;
 	struct extent_buffer *leaf;
 	struct btrfs_io_ctl io_ctl;
@@ -1143,7 +1143,7 @@ static int __btrfs_wait_cache_io(struct btrfs_root *root,
 	if (!inode)
 		return 0;
 
-	fs_info = btrfs_sb(inode->i_sb);
+	fs_info = btrfs_sb(inode_sb(inode));
 
 	/* Flush the dirty pages in the cache file. */
 	ret = flush_dirty_cache(inode);

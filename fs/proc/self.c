@@ -12,7 +12,7 @@ static const char *proc_self_get_link(struct dentry *dentry,
 				      struct inode *inode,
 				      struct delayed_call *done)
 {
-	struct pid_namespace *ns = inode->i_sb->s_fs_info;
+	struct pid_namespace *ns = inode_sb(inode)->s_fs_info;
 	pid_t tgid = task_tgid_nr_ns(current, ns);
 	char *name;
 

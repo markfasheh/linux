@@ -28,7 +28,7 @@ int squashfs_readpage_block(struct page *target_page, u64 block, int bsize)
 
 {
 	struct inode *inode = target_page->mapping->host;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 
 	int file_end = (i_size_read(inode) - 1) >> PAGE_SHIFT;
 	int mask = (1 << (msblk->block_log - PAGE_SHIFT)) - 1;
@@ -91,7 +91,7 @@ int squashfs_readpage_block(struct page *target_page, u64 block, int bsize)
 	}
 
 	/* Decompress directly into the page cache buffers */
-	res = squashfs_read_data(inode->i_sb, block, bsize, NULL, actor);
+	res = squashfs_read_data(inode_sb(inode), block, bsize, NULL, actor);
 	if (res < 0)
 		goto mark_errored;
 
@@ -141,8 +141,9 @@ static int squashfs_read_cache(struct page *target_page, u64 block, int bsize,
 	int pages, struct page **page)
 {
 	struct inode *i = target_page->mapping->host;
-	struct squashfs_cache_entry *buffer = squashfs_get_datablock(i->i_sb,
-						 block, bsize);
+	struct squashfs_cache_entry *buffer = squashfs_get_datablock(inode_sb(i),
+								     block,
+								     bsize);
 	int bytes = buffer->length, res = buffer->error, n, offset = 0;
 	void *pageaddr;
 

@@ -45,8 +45,8 @@ get_joliet_filename(struct iso_directory_record * de, unsigned char *outname, st
 	struct nls_table *nls;
 	unsigned char len = 0;
 
-	utf8 = ISOFS_SB(inode->i_sb)->s_utf8;
-	nls = ISOFS_SB(inode->i_sb)->s_nls_iocharset;
+	utf8 = ISOFS_SB(inode_sb(inode))->s_utf8;
+	nls = ISOFS_SB(inode_sb(inode))->s_nls_iocharset;
 
 	if (utf8) {
 		len = utf16s_to_utf8s((const wchar_t *) de->name,

@@ -259,7 +259,7 @@ retry:
 	}
 out_stop:
 	ext4_journal_stop(handle);
-	if (error == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
+	if (error == -ENOSPC && ext4_should_retry_alloc(inode_sb(inode), &retries))
 		goto retry;
 	return error;
 }
