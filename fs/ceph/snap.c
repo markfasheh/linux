@@ -590,7 +590,7 @@ int __ceph_finish_cap_snap(struct ceph_inode_info *ci,
 			    struct ceph_cap_snap *capsnap)
 {
 	struct inode *inode = &ci->vfs_inode;
-	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode->i_sb)->mdsc;
+	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode_sb(inode))->mdsc;
 
 	BUG_ON(capsnap->writing);
 	capsnap->size = inode->i_size;

@@ -218,7 +218,7 @@ static int ceph_init_file(struct inode *inode, struct file *file, int fmode)
  */
 int ceph_renew_caps(struct inode *inode)
 {
-	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode->i_sb)->mdsc;
+	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode_sb(inode))->mdsc;
 	struct ceph_inode_info *ci = ceph_inode(inode);
 	struct ceph_mds_request *req;
 	int err, flags, wanted;
@@ -248,7 +248,7 @@ int ceph_renew_caps(struct inode *inode)
 		flags |= O_LAZY;
 #endif
 
-	req = prepare_open_request(inode->i_sb, flags, 0);
+	req = prepare_open_request(inode_sb(inode), flags, 0);
 	if (IS_ERR(req)) {
 		err = PTR_ERR(req);
 		goto out;
@@ -275,7 +275,7 @@ out:
 int ceph_open(struct inode *inode, struct file *file)
 {
 	struct ceph_inode_info *ci = ceph_inode(inode);
-	struct ceph_fs_client *fsc = ceph_sb_to_client(inode->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(inode));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	struct ceph_file_info *cf = file->private_data;
@@ -343,7 +343,7 @@ int ceph_open(struct inode *inode, struct file *file)
 	spin_unlock(&ci->i_ceph_lock);
 
 	dout("open fmode %d wants %s\n", fmode, ceph_cap_string(wanted));
-	req = prepare_open_request(inode->i_sb, flags, 0);
+	req = prepare_open_request(inode_sb(inode), flags, 0);
 	if (IS_ERR(req)) {
 		err = PTR_ERR(req);
 		goto out;
@@ -370,7 +370,7 @@ int ceph_atomic_open(struct inode *dir, struct dentry *dentry,
 		     struct file *file, unsigned flags, umode_t mode,
 		     int *opened)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(dir));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	struct dentry *dn;
@@ -392,7 +392,7 @@ int ceph_atomic_open(struct inode *dir, struct dentry *dentry,
 	}
 
 	/* do the open */
-	req = prepare_open_request(dir->i_sb, flags, mode);
+	req = prepare_open_request(inode_sb(dir), flags, mode);
 	if (IS_ERR(req)) {
 		err = PTR_ERR(req);
 		goto out_acl;
@@ -1307,7 +1307,7 @@ static ssize_t ceph_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	struct inode *inode = file_inode(file);
 	struct ceph_inode_info *ci = ceph_inode(inode);
 	struct ceph_osd_client *osdc =
-		&ceph_sb_to_client(inode->i_sb)->client->osdc;
+		&ceph_sb_to_client(inode_sb(inode))->client->osdc;
 	struct ceph_cap_flush *prealloc_cf;
 	ssize_t count, written = 0;
 	int err, want, got;
@@ -1505,7 +1505,7 @@ static loff_t ceph_llseek(struct file *file, loff_t offset, int whence)
 		break;
 	}
 
-	ret = vfs_setpos(file, offset, inode->i_sb->s_maxbytes);
+	ret = vfs_setpos(file, offset, inode_sb(inode)->s_maxbytes);
 
 out:
 	inode_unlock(inode);

@@ -75,7 +75,7 @@ struct inode *ceph_get_snapdir(struct inode *parent)
 		.ino = ceph_ino(parent),
 		.snap = CEPH_SNAPDIR,
 	};
-	struct inode *inode = ceph_get_inode(parent->i_sb, vino);
+	struct inode *inode = ceph_get_inode(inode_sb(parent), vino);
 	struct ceph_inode_info *ci = ceph_inode(inode);
 
 	BUG_ON(!S_ISDIR(parent->i_mode));
@@ -542,7 +542,7 @@ void ceph_destroy_inode(struct inode *inode)
 	 */
 	if (ci->i_snap_realm) {
 		struct ceph_mds_client *mdsc =
-			ceph_sb_to_client(ci->vfs_inode.i_sb)->mdsc;
+			ceph_sb_to_client(inode_sb(&ci->vfs_inode))->mdsc;
 		struct ceph_snap_realm *realm = ci->i_snap_realm;
 
 		dout(" dropping residual ref to snap realm %p\n", realm);
@@ -1832,7 +1832,7 @@ void ceph_queue_vmtruncate(struct inode *inode)
 
 	ihold(inode);
 
-	if (queue_work(ceph_sb_to_client(inode->i_sb)->trunc_wq,
+	if (queue_work(ceph_sb_to_client(inode_sb(inode))->trunc_wq,
 		       &ci->i_vmtruncate_work)) {
 		dout("ceph_queue_vmtruncate %p\n", inode);
 	} else {
@@ -1882,7 +1882,7 @@ retry:
 		truncate_pagecache(inode, to);
 
 		filemap_write_and_wait_range(&inode->i_data, 0,
-					     inode->i_sb->s_maxbytes);
+					     inode_sb(inode)->s_maxbytes);
 		goto retry;
 	}
 
@@ -1929,7 +1929,7 @@ int __ceph_setattr(struct inode *inode, struct iattr *attr)
 	struct ceph_inode_info *ci = ceph_inode(inode);
 	const unsigned int ia_valid = attr->ia_valid;
 	struct ceph_mds_request *req;
-	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode->i_sb)->mdsc;
+	struct ceph_mds_client *mdsc = ceph_sb_to_client(inode_sb(inode))->mdsc;
 	struct ceph_cap_flush *prealloc_cf;
 	int issued;
 	int release = 0, dirtied = 0;
@@ -2167,7 +2167,7 @@ int ceph_setattr(struct dentry *dentry, struct iattr *attr)
 int __ceph_do_getattr(struct inode *inode, struct page *locked_page,
 		      int mask, bool force)
 {
-	struct ceph_fs_client *fsc = ceph_sb_to_client(inode->i_sb);
+	struct ceph_fs_client *fsc = ceph_sb_to_client(inode_sb(inode));
 	struct ceph_mds_client *mdsc = fsc->mdsc;
 	struct ceph_mds_request *req;
 	int err;
@@ -2240,13 +2240,13 @@ int ceph_getattr(const struct path *path, struct kstat *stat,
 	err = ceph_do_getattr(inode, CEPH_STAT_CAP_INODE_ALL, false);
 	if (!err) {
 		generic_fillattr(inode, stat);
-		stat->ino = ceph_translate_ino(inode->i_sb, inode->i_ino);
+		stat->ino = ceph_translate_ino(inode_sb(inode), inode->i_ino);
 		if (ceph_snap(inode) != CEPH_NOSNAP)
 			stat->dev = ceph_snap(inode);
 		else
 			stat->dev = 0;
 		if (S_ISDIR(inode->i_mode)) {
-			if (ceph_test_mount_opt(ceph_sb_to_client(inode->i_sb),
+			if (ceph_test_mount_opt(ceph_sb_to_client(inode_sb(inode)),
 						RBYTES))
 				stat->size = ci->i_rbytes;
 			else
