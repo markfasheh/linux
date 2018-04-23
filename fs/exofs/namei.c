@@ -55,7 +55,7 @@ static struct dentry *exofs_lookup(struct inode *dir, struct dentry *dentry,
 		return ERR_PTR(-ENAMETOOLONG);
 
 	ino = exofs_inode_by_name(dir, dentry);
-	inode = ino ? exofs_iget(dir->i_sb, ino) : NULL;
+	inode = ino ? exofs_iget(inode_sb(dir), ino) : NULL;
 	return d_splice_alias(inode, dentry);
 }
 
@@ -93,7 +93,7 @@ static int exofs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
 static int exofs_symlink(struct inode *dir, struct dentry *dentry,
 			  const char *symname)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	int err = -ENAMETOOLONG;
 	unsigned l = strlen(symname)+1;
 	struct inode *inode;
