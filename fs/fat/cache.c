@@ -224,7 +224,7 @@ static inline void cache_init(struct fat_cache_id *cid, int fclus, int dclus)
 
 int fat_get_cluster(struct inode *inode, int cluster, int *fclus, int *dclus)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	const int limit = sb->s_maxbytes >> MSDOS_SB(sb)->cluster_bits;
 	struct fat_entry fatent;
 	struct fat_cache_id cid;
@@ -285,7 +285,7 @@ out:
 
 static int fat_bmap_cluster(struct inode *inode, int cluster)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int ret, fclus, dclus;
 
 	if (MSDOS_I(inode)->i_start == 0)
@@ -306,7 +306,7 @@ int fat_get_mapped_cluster(struct inode *inode, sector_t sector,
 			   sector_t last_block,
 			   unsigned long *mapped_blocks, sector_t *bmap)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	int cluster, offset;
 
@@ -328,7 +328,7 @@ int fat_get_mapped_cluster(struct inode *inode, sector_t sector,
 static int is_exceed_eof(struct inode *inode, sector_t sector,
 			 sector_t *last_block, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	const unsigned long blocksize = sb->s_blocksize;
 	const unsigned char blocksize_bits = sb->s_blocksize_bits;
 
@@ -353,7 +353,7 @@ static int is_exceed_eof(struct inode *inode, sector_t sector,
 int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
 	     unsigned long *mapped_blocks, int create, bool from_bmap)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	sector_t last_block;
 
 	*phys = 0;
@@ -371,7 +371,7 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
 			return 0;
 	} else {
 		last_block = inode->i_blocks >>
-				(inode->i_sb->s_blocksize_bits - 9);
+				(inode_sb(inode)->s_blocksize_bits - 9);
 		if (sector >= last_block)
 			return 0;
 	}

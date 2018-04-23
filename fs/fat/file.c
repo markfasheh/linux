@@ -34,7 +34,7 @@ static int fat_ioctl_get_attributes(struct inode *inode, u32 __user *user_attr)
 static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
 {
 	struct inode *inode = file_inode(file);
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	int is_dir = S_ISDIR(inode->i_mode);
 	u32 attr, oldattr;
 	struct iattr ia;
@@ -117,7 +117,7 @@ out:
 
 static int fat_ioctl_get_volume_id(struct inode *inode, u32 __user *user_attr)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	return put_user(sbi->vol_id, user_attr);
 }
 
@@ -150,8 +150,8 @@ static long fat_generic_compat_ioctl(struct file *filp, unsigned int cmd,
 static int fat_file_release(struct inode *inode, struct file *filp)
 {
 	if ((filp->f_mode & FMODE_WRITE) &&
-	     MSDOS_SB(inode->i_sb)->options.flush) {
-		fat_flush_inodes(inode->i_sb, inode, NULL);
+	     MSDOS_SB(inode_sb(inode))->options.flush) {
+		fat_flush_inodes(inode_sb(inode), inode, NULL);
 		congestion_wait(BLK_RW_ASYNC, HZ/10);
 	}
 	return 0;
@@ -163,7 +163,7 @@ int fat_file_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 	int res, err;
 
 	res = generic_file_fsync(filp, start, end, datasync);
-	err = sync_mapping_buffers(MSDOS_SB(inode->i_sb)->fat_inode->i_mapping);
+	err = sync_mapping_buffers(MSDOS_SB(inode_sb(inode))->fat_inode->i_mapping);
 
 	return res ? res : err;
 }
@@ -234,7 +234,7 @@ static long fat_fallocate(struct file *file, int mode,
 	loff_t mm_bytes; /* Number of bytes to be allocated for file */
 	loff_t ondisksize; /* block aligned on-disk size in bytes*/
 	struct inode *inode = file->f_mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	int err = 0;
 
@@ -279,7 +279,7 @@ error:
 /* Free all clusters after the skip'th cluster. */
 static int fat_free(struct inode *inode, int skip)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int err, wait, free_start, i_start, i_logstart;
 
 	if (MSDOS_I(inode)->i_start == 0)
@@ -348,7 +348,7 @@ static int fat_free(struct inode *inode, int skip)
 
 void fat_truncate_blocks(struct inode *inode, loff_t offset)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	const unsigned int cluster_size = sbi->cluster_size;
 	int nr_clusters;
 
@@ -362,7 +362,7 @@ void fat_truncate_blocks(struct inode *inode, loff_t offset)
 	nr_clusters = (offset + (cluster_size - 1)) >> sbi->cluster_bits;
 
 	fat_free(inode, nr_clusters);
-	fat_flush_inodes(inode->i_sb, inode, NULL);
+	fat_flush_inodes(inode_sb(inode), inode, NULL);
 }
 
 int fat_getattr(const struct path *path, struct kstat *stat,
@@ -370,11 +370,11 @@ int fat_getattr(const struct path *path, struct kstat *stat,
 {
 	struct inode *inode = d_inode(path->dentry);
 	generic_fillattr(inode, stat);
-	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+	stat->blksize = MSDOS_SB(inode_sb(inode))->cluster_size;
 
-	if (MSDOS_SB(inode->i_sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
+	if (MSDOS_SB(inode_sb(inode))->options.nfs == FAT_NFS_NOSTALE_RO) {
 		/* Use i_pos for ino. This is used as fileid of nfs. */
-		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+		stat->ino = fat_i_pos_read(MSDOS_SB(inode_sb(inode)), inode);
 	}
 	return 0;
 }

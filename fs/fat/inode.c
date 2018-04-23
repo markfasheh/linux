@@ -113,7 +113,7 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
 				  unsigned long *max_blocks,
 				  struct buffer_head *bh_result, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	unsigned long mapped_blocks;
 	sector_t phys, last_block;
@@ -170,7 +170,7 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
 static int fat_get_block(struct inode *inode, sector_t iblock,
 			 struct buffer_head *bh_result, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned long max_blocks = bh_result->b_size >> inode->i_blkbits;
 	int err;
 
@@ -283,7 +283,7 @@ static ssize_t fat_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
 static int fat_get_block_bmap(struct inode *inode, sector_t iblock,
 		struct buffer_head *bh_result, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned long max_blocks = bh_result->b_size >> inode->i_blkbits;
 	int err;
 	sector_t bmap;
@@ -391,7 +391,7 @@ static void dir_hash_init(struct super_block *sb)
 
 void fat_attach(struct inode *inode, loff_t i_pos)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 
 	if (inode->i_ino != MSDOS_ROOT_INO) {
 		struct hlist_head *head =   sbi->inode_hashtable
@@ -420,7 +420,7 @@ EXPORT_SYMBOL_GPL(fat_attach);
 
 void fat_detach(struct inode *inode)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	spin_lock(&sbi->inode_hash_lock);
 	MSDOS_I(inode)->i_pos = 0;
 	hlist_del_init(&MSDOS_I(inode)->i_fat_hash);
@@ -443,7 +443,7 @@ struct inode *fat_iget(struct super_block *sb, loff_t i_pos)
 
 	spin_lock(&sbi->inode_hash_lock);
 	hlist_for_each_entry(i, head, i_fat_hash) {
-		BUG_ON(i->vfs_inode.i_sb != sb);
+		BUG_ON(inode_sb(&i->vfs_inode) != sb);
 		if (i->i_pos != i_pos)
 			continue;
 		inode = igrab(&i->vfs_inode);
@@ -466,7 +466,7 @@ static int is_exec(unsigned char *extension)
 
 static int fat_calc_dir_size(struct inode *inode)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	int ret, fclus, dclus;
 
 	inode->i_size = 0;
@@ -483,7 +483,7 @@ static int fat_calc_dir_size(struct inode *inode)
 
 static int fat_validate_dir(struct inode *dir)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 
 	if (dir->i_nlink < 2) {
 		/* Directory should have "."/".." entries at least. */
@@ -502,7 +502,7 @@ static int fat_validate_dir(struct inode *dir)
 /* doesn't deal with root inode */
 int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	int error;
 
 	MSDOS_I(inode)->i_pos = 0;
@@ -614,7 +614,7 @@ static void fat_free_eofblocks(struct inode *inode)
 	/* Release unwritten fallocated blocks on inode eviction. */
 	if ((inode->i_blocks << 9) >
 			round_up(MSDOS_I(inode)->mmu_private,
-				MSDOS_SB(inode->i_sb)->cluster_size)) {
+				MSDOS_SB(inode_sb(inode))->cluster_size)) {
 		int err;
 
 		fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
@@ -626,7 +626,7 @@ static void fat_free_eofblocks(struct inode *inode)
 		 */
 		err = __fat_write_inode(inode, inode_needs_sync(inode));
 		if (err) {
-			fat_msg(inode->i_sb, KERN_WARNING, "Failed to "
+			fat_msg(inode_sb(inode), KERN_WARNING, "Failed to "
 					"update on disk inode for unused "
 					"fallocated blocks, inode could be "
 					"corrupted. Please run fsck");
@@ -825,7 +825,7 @@ static int fat_statfs(struct dentry *dentry, struct kstatfs *buf)
 
 static int __fat_write_inode(struct inode *inode, int wait)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	struct buffer_head *bh;
 	struct msdos_dir_entry *raw_entry;
@@ -885,7 +885,7 @@ static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
 	int err;
 
 	if (inode->i_ino == MSDOS_FSINFO_INO) {
-		struct super_block *sb = inode->i_sb;
+		struct super_block *sb = inode_sb(inode);
 
 		mutex_lock(&MSDOS_SB(sb)->s_lock);
 		err = fat_clusters_flush(sb);
@@ -1372,7 +1372,7 @@ static void fat_dummy_inode_init(struct inode *inode)
 
 static int fat_read_root(struct inode *inode)
 {
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	int error;
 
 	MSDOS_I(inode)->i_pos = MSDOS_ROOT_INO;

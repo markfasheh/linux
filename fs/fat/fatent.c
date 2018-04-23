@@ -347,8 +347,8 @@ static inline int fat_ent_update_ptr(struct super_block *sb,
 
 int fat_ent_read(struct inode *inode, struct fat_entry *fatent, int entry)
 {
-	struct super_block *sb = inode->i_sb;
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+	struct super_block *sb = inode_sb(inode);
+	struct msdos_sb_info *sbi = MSDOS_SB(inode_sb(inode));
 	const struct fatent_operations *ops = sbi->fatent_ops;
 	int err, offset;
 	sector_t blocknr;
@@ -406,7 +406,7 @@ error:
 int fat_ent_write(struct inode *inode, struct fat_entry *fatent,
 		  int new, int wait)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	const struct fatent_operations *ops = MSDOS_SB(sb)->fatent_ops;
 	int err;
 
@@ -461,7 +461,7 @@ static void fat_collect_bhs(struct buffer_head **bhs, int *nr_bhs,
 
 int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	const struct fatent_operations *ops = sbi->fatent_ops;
 	struct fat_entry fatent, prev_ent;
@@ -549,7 +549,7 @@ out:
 
 int fat_free_clusters(struct inode *inode, int cluster)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 	const struct fatent_operations *ops = sbi->fatent_ops;
 	struct fat_entry fatent;
