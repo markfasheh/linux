@@ -51,7 +51,7 @@ extern void __cleancache_invalidate_fs(struct super_block *);
 #define cleancache_enabled (1)
 static inline bool cleancache_fs_enabled_mapping(struct address_space *mapping)
 {
-	return mapping->host->i_sb->cleancache_poolid >= 0;
+	return inode_sb(mapping->host)->cleancache_poolid >= 0;
 }
 static inline bool cleancache_fs_enabled(struct page *page)
 {

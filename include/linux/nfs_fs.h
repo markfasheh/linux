@@ -238,7 +238,7 @@ static inline struct nfs_fh *NFS_FH(const struct inode *inode)
 
 static inline struct nfs_server *NFS_SERVER(const struct inode *inode)
 {
-	return NFS_SB(inode->i_sb);
+	return NFS_SB(inode_sb(inode));
 }
 
 static inline struct rpc_clnt *NFS_CLIENT(const struct inode *inode)

@@ -382,7 +382,7 @@ extern unsigned int default_hstate_idx;
 
 static inline struct hstate *hstate_inode(struct inode *i)
 {
-	return HUGETLBFS_SB(i->i_sb)->hstate;
+	return HUGETLBFS_SB(inode_sb(i))->hstate;
 }
 
 static inline struct hstate *hstate_file(struct file *f)

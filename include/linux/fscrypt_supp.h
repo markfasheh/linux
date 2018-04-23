@@ -54,8 +54,8 @@ static inline bool fscrypt_has_encryption_key(const struct inode *inode)
 
 static inline bool fscrypt_dummy_context_enabled(struct inode *inode)
 {
-	return inode->i_sb->s_cop->dummy_context &&
-		inode->i_sb->s_cop->dummy_context(inode);
+	return inode_sb(inode)->s_cop->dummy_context &&
+			inode_sb(inode)->s_cop->dummy_context(inode);
 }
 
 /* crypto.c */

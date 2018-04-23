@@ -91,7 +91,7 @@ TRACE_EVENT(ext4_other_inode_update_time,
 
 	TP_fast_assign(
 		__entry->orig_ino = orig_ino;
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->uid	= i_uid_read(inode);
 		__entry->gid	= i_gid_read(inode);
@@ -120,7 +120,7 @@ TRACE_EVENT(ext4_free_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->uid	= i_uid_read(inode);
 		__entry->gid	= i_gid_read(inode);
@@ -146,7 +146,7 @@ TRACE_EVENT(ext4_request_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= dir->i_sb->s_dev;
+		__entry->dev	= inode_sb(dir)->s_dev;
 		__entry->dir	= dir->i_ino;
 		__entry->mode	= mode;
 	),
@@ -169,7 +169,7 @@ TRACE_EVENT(ext4_allocate_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->dir	= dir->i_ino;
 		__entry->mode	= mode;
@@ -193,7 +193,7 @@ TRACE_EVENT(ext4_evict_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->nlink	= inode->i_nlink;
 	),
@@ -215,7 +215,7 @@ TRACE_EVENT(ext4_drop_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->drop	= drop;
 	),
@@ -237,7 +237,7 @@ TRACE_EVENT(ext4_mark_inode_dirty,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->ip	= IP;
 	),
@@ -259,7 +259,7 @@ TRACE_EVENT(ext4_begin_ordered_truncate,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->new_size	= new_size;
 	),
@@ -286,7 +286,7 @@ DECLARE_EVENT_CLASS(ext4__write_begin,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= pos;
 		__entry->len	= len;
@@ -330,7 +330,7 @@ DECLARE_EVENT_CLASS(ext4__write_end,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= pos;
 		__entry->len	= len;
@@ -386,7 +386,7 @@ TRACE_EVENT(ext4_writepages,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->nr_to_write	= wbc->nr_to_write;
 		__entry->pages_skipped	= wbc->pages_skipped;
@@ -424,7 +424,7 @@ TRACE_EVENT(ext4_da_write_pages,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->first_page	= first_page;
 		__entry->nr_to_write	= wbc->nr_to_write;
@@ -452,7 +452,7 @@ TRACE_EVENT(ext4_da_write_pages_extent,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->lblk		= map->m_lblk;
 		__entry->len		= map->m_len;
@@ -482,7 +482,7 @@ TRACE_EVENT(ext4_writepages_result,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->ret		= ret;
 		__entry->pages_written	= pages_written;
@@ -513,7 +513,7 @@ DECLARE_EVENT_CLASS(ext4__page_op,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= page->mapping->host->i_sb->s_dev;
+		__entry->dev	= inode_sb(page->mapping->host)->s_dev;
 		__entry->ino	= page->mapping->host->i_ino;
 		__entry->index	= page->index;
 	),
@@ -559,7 +559,7 @@ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= page->mapping->host->i_sb->s_dev;
+		__entry->dev	= inode_sb(page->mapping->host)->s_dev;
 		__entry->ino	= page->mapping->host->i_ino;
 		__entry->index	= page->index;
 		__entry->offset	= offset;
@@ -669,7 +669,7 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= pa->pa_inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(pa->pa_inode)->s_dev;
 		__entry->ino		= pa->pa_inode->i_ino;
 		__entry->block		= block;
 		__entry->count		= count;
@@ -716,7 +716,7 @@ TRACE_EVENT(ext4_discard_preallocations,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 	),
 
@@ -765,7 +765,7 @@ TRACE_EVENT(ext4_request_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= ar->inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(ar->inode)->s_dev;
 		__entry->ino	= ar->inode->i_ino;
 		__entry->len	= ar->len;
 		__entry->logical = ar->logical;
@@ -806,7 +806,7 @@ TRACE_EVENT(ext4_allocate_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= ar->inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(ar->inode)->s_dev;
 		__entry->ino	= ar->inode->i_ino;
 		__entry->block	= block;
 		__entry->len	= ar->len;
@@ -844,7 +844,7 @@ TRACE_EVENT(ext4_free_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->block		= block;
 		__entry->count		= count;
@@ -898,7 +898,7 @@ TRACE_EVENT(ext4_sync_file_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->ret		= ret;
 	),
@@ -942,7 +942,7 @@ TRACE_EVENT(ext4_alloc_da_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->data_blocks = EXT4_I(inode)->i_reserved_data_blocks;
 	),
@@ -982,7 +982,7 @@ TRACE_EVENT(ext4_mballoc_alloc,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= ac->ac_inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(ac->ac_inode)->s_dev;
 		__entry->ino		= ac->ac_inode->i_ino;
 		__entry->orig_logical	= ac->ac_o_ex.fe_logical;
 		__entry->orig_start	= ac->ac_o_ex.fe_start;
@@ -1039,7 +1039,7 @@ TRACE_EVENT(ext4_mballoc_prealloc,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= ac->ac_inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(ac->ac_inode)->s_dev;
 		__entry->ino		= ac->ac_inode->i_ino;
 		__entry->orig_logical	= ac->ac_o_ex.fe_logical;
 		__entry->orig_start	= ac->ac_o_ex.fe_start;
@@ -1128,7 +1128,7 @@ TRACE_EVENT(ext4_forget,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->block	= block;
 		__entry->is_metadata = is_metadata;
@@ -1157,7 +1157,7 @@ TRACE_EVENT(ext4_da_update_reserve_space,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->i_blocks = inode->i_blocks;
 		__entry->used_blocks = used_blocks;
@@ -1190,7 +1190,7 @@ TRACE_EVENT(ext4_da_reserve_space,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->i_blocks = inode->i_blocks;
 		__entry->reserved_data_blocks = EXT4_I(inode)->i_reserved_data_blocks;
@@ -1220,7 +1220,7 @@ TRACE_EVENT(ext4_da_release_space,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->i_blocks = inode->i_blocks;
 		__entry->freed_blocks = freed_blocks;
@@ -1299,7 +1299,7 @@ TRACE_EVENT(ext4_direct_IO_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= offset;
 		__entry->len	= len;
@@ -1328,7 +1328,7 @@ TRACE_EVENT(ext4_direct_IO_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= offset;
 		__entry->len	= len;
@@ -1357,7 +1357,7 @@ DECLARE_EVENT_CLASS(ext4__fallocate_mode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->offset	= offset;
 		__entry->len	= len;
@@ -1407,7 +1407,7 @@ TRACE_EVENT(ext4_fallocate_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= offset;
 		__entry->blocks	= max_blocks;
@@ -1481,7 +1481,7 @@ DECLARE_EVENT_CLASS(ext4__truncate,
 	),
 
 	TP_fast_assign(
-		__entry->dev    = inode->i_sb->s_dev;
+		__entry->dev    = inode_sb(inode)->s_dev;
 		__entry->ino    = inode->i_ino;
 		__entry->blocks	= inode->i_blocks;
 	),
@@ -1523,7 +1523,7 @@ TRACE_EVENT(ext4_ext_convert_to_initialized_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->m_lblk		= map->m_lblk;
 		__entry->m_len		= map->m_len;
@@ -1564,7 +1564,7 @@ TRACE_EVENT(ext4_ext_convert_to_initialized_fastpath,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->m_lblk		= map->m_lblk;
 		__entry->m_len		= map->m_len;
@@ -1601,7 +1601,7 @@ DECLARE_EVENT_CLASS(ext4__map_blocks_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev    = inode->i_sb->s_dev;
+		__entry->dev    = inode_sb(inode)->s_dev;
 		__entry->ino    = inode->i_ino;
 		__entry->lblk	= lblk;
 		__entry->len	= len;
@@ -1646,7 +1646,7 @@ DECLARE_EVENT_CLASS(ext4__map_blocks_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev    = inode->i_sb->s_dev;
+		__entry->dev    = inode_sb(inode)->s_dev;
 		__entry->ino    = inode->i_ino;
 		__entry->flags	= flags;
 		__entry->pblk	= map->m_pblk;
@@ -1691,7 +1691,7 @@ TRACE_EVENT(ext4_ext_load_extent,
 	),
 
 	TP_fast_assign(
-		__entry->dev    = inode->i_sb->s_dev;
+		__entry->dev    = inode_sb(inode)->s_dev;
 		__entry->ino    = inode->i_ino;
 		__entry->pblk	= pblk;
 		__entry->lblk	= lblk;
@@ -1714,7 +1714,7 @@ TRACE_EVENT(ext4_load_inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 	),
 
@@ -1837,7 +1837,7 @@ TRACE_EVENT(ext4_ext_handle_unwritten_extents,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->flags		= flags;
 		__entry->lblk		= map->m_lblk;
@@ -1901,7 +1901,7 @@ TRACE_EVENT(ext4_ext_put_in_cache,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 		__entry->len	= len;
@@ -1929,7 +1929,7 @@ TRACE_EVENT(ext4_ext_in_cache,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 		__entry->ret	= ret;
@@ -1960,7 +1960,7 @@ TRACE_EVENT(ext4_find_delalloc_range,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->from		= from;
 		__entry->to		= to;
@@ -1991,7 +1991,7 @@ TRACE_EVENT(ext4_get_reserved_cluster_alloc,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 		__entry->len	= len;
@@ -2019,7 +2019,7 @@ TRACE_EVENT(ext4_ext_show_extent,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pblk	= pblk;
 		__entry->lblk	= lblk;
@@ -2053,7 +2053,7 @@ TRACE_EVENT(ext4_remove_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->from		= from;
 		__entry->to		= to;
@@ -2093,7 +2093,7 @@ TRACE_EVENT(ext4_ext_rm_leaf,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->partial	= partial_cluster;
 		__entry->start		= start;
@@ -2125,7 +2125,7 @@ TRACE_EVENT(ext4_ext_rm_idx,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pblk	= pblk;
 	),
@@ -2151,7 +2151,7 @@ TRACE_EVENT(ext4_ext_remove_space,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->start	= start;
 		__entry->end	= end;
@@ -2183,7 +2183,7 @@ TRACE_EVENT(ext4_ext_remove_space_done,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode->i_sb->s_dev;
+		__entry->dev		= inode_sb(inode)->s_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->start		= start;
 		__entry->end		= end;
@@ -2218,7 +2218,7 @@ DECLARE_EVENT_CLASS(ext4__es_extent,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= es->es_lblk;
 		__entry->len	= es->es_len;
@@ -2258,7 +2258,7 @@ TRACE_EVENT(ext4_es_remove_extent,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 		__entry->len	= len;
@@ -2282,7 +2282,7 @@ TRACE_EVENT(ext4_es_find_delayed_extent_range_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 	),
@@ -2307,7 +2307,7 @@ TRACE_EVENT(ext4_es_find_delayed_extent_range_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= es->es_lblk;
 		__entry->len	= es->es_len;
@@ -2334,7 +2334,7 @@ TRACE_EVENT(ext4_es_lookup_extent_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= lblk;
 	),
@@ -2361,7 +2361,7 @@ TRACE_EVENT(ext4_es_lookup_extent_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->lblk	= es->es_lblk;
 		__entry->len	= es->es_len;
@@ -2447,7 +2447,7 @@ TRACE_EVENT(ext4_collapse_range,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->offset	= offset;
 		__entry->len	= len;
@@ -2472,7 +2472,7 @@ TRACE_EVENT(ext4_insert_range,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode->i_sb->s_dev;
+		__entry->dev	= inode_sb(inode)->s_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->offset	= offset;
 		__entry->len	= len;

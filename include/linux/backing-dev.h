@@ -157,7 +157,7 @@ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
 	if (!inode)
 		return &noop_backing_dev_info;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 #ifdef CONFIG_BLOCK
 	if (sb_is_blkdev_sb(sb))
 		return I_BDEV(inode)->bd_bdi;
@@ -251,7 +251,7 @@ static inline bool inode_cgwb_enabled(struct inode *inode)
 		cgroup_subsys_on_dfl(io_cgrp_subsys) &&
 		bdi_cap_account_dirty(bdi) &&
 		(bdi->capabilities & BDI_CAP_CGROUP_WRITEBACK) &&
-		(inode->i_sb->s_iflags & SB_I_CGROUPWB);
+		(inode_sb(inode)->s_iflags & SB_I_CGROUPWB);
 }
 
 /**

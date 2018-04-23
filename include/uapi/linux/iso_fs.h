@@ -160,7 +160,7 @@ struct iso_directory_record {
 #define ISOFS_BLOCK_BITS 11
 #define ISOFS_BLOCK_SIZE 2048
 
-#define ISOFS_BUFFER_SIZE(INODE) ((INODE)->i_sb->s_blocksize)
-#define ISOFS_BUFFER_BITS(INODE) ((INODE)->i_sb->s_blocksize_bits)
+#define ISOFS_BUFFER_SIZE(INODE) (inode_sb((INODE))->s_blocksize)
+#define ISOFS_BUFFER_BITS(INODE) (inode_sb((INODE))->s_blocksize_bits)
 
 #endif /* _ISOFS_FS_H */
