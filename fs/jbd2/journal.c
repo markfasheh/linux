@@ -1262,12 +1262,16 @@ journal_t *jbd2_journal_init_inode(struct inode *inode)
 	}
 
 	jbd_debug(1, "JBD2: inode %s/%ld, size %lld, bits %d, blksize %ld\n",
-		  inode->i_sb->s_id, inode->i_ino, (long long) inode->i_size,
-		  inode->i_sb->s_blocksize_bits, inode->i_sb->s_blocksize);
+		  inode_sb(inode)->s_id, inode->i_ino,
+		  (long long) inode->i_size,
+		  inode_sb(inode)->s_blocksize_bits,
+		  inode_sb(inode)->s_blocksize);
 
-	journal = journal_init_common(inode->i_sb->s_bdev, inode->i_sb->s_bdev,
-			blocknr, inode->i_size >> inode->i_sb->s_blocksize_bits,
-			inode->i_sb->s_blocksize);
+	journal = journal_init_common(inode_sb(inode)->s_bdev,
+				      inode_sb(inode)->s_bdev,
+				      blocknr,
+				      inode->i_size >> inode_sb(inode)->s_blocksize_bits,
+				      inode_sb(inode)->s_blocksize);
 	if (!journal)
 		return NULL;
 
@@ -2233,7 +2237,7 @@ void jbd2_journal_ack_err(journal_t *journal)
 
 int jbd2_journal_blocks_per_page(struct inode *inode)
 {
-	return 1 << (PAGE_SHIFT - inode->i_sb->s_blocksize_bits);
+	return 1 << (PAGE_SHIFT - inode_sb(inode)->s_blocksize_bits);
 }
 
 /*
