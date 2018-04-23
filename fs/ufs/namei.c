@@ -59,7 +59,7 @@ static struct dentry *ufs_lookup(struct inode * dir, struct dentry *dentry, unsi
 
 	ino = ufs_inode_by_name(dir, &dentry->d_name);
 	if (ino)
-		inode = ufs_iget(dir->i_sb, ino);
+		inode = ufs_iget(inode_sb(dir), ino);
 	return d_splice_alias(inode, dentry);
 }
 
@@ -99,7 +99,7 @@ static int ufs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev
 	err = PTR_ERR(inode);
 	if (!IS_ERR(inode)) {
 		init_special_inode(inode, mode, rdev);
-		ufs_set_inode_dev(inode->i_sb, UFS_I(inode), rdev);
+		ufs_set_inode_dev(inode_sb(inode), UFS_I(inode), rdev);
 		mark_inode_dirty(inode);
 		err = ufs_add_nondir(dentry, inode);
 	}
@@ -109,7 +109,7 @@ static int ufs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev
 static int ufs_symlink (struct inode * dir, struct dentry * dentry,
 	const char * symname)
 {
-	struct super_block * sb = dir->i_sb;
+	struct super_block * sb = inode_sb(dir);
 	int err;
 	unsigned l = strlen(symname)+1;
 	struct inode * inode;

@@ -65,7 +65,7 @@ void ufs_free_inode (struct inode * inode)
 	
 	UFSD("ENTER, ino %lu\n", inode->i_ino);
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	
 	ino = inode->i_ino;
@@ -187,7 +187,7 @@ struct inode *ufs_new_inode(struct inode *dir, umode_t mode)
 	/* Cannot create files in a deleted directory */
 	if (!dir || !dir->i_nlink)
 		return ERR_PTR(-EPERM);
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	inode = new_inode(sb);
 	if (!inode)
 		return ERR_PTR(-ENOMEM);

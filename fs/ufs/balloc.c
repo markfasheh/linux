@@ -45,7 +45,7 @@ void ufs_free_fragments(struct inode *inode, u64 fragment, unsigned count)
 	unsigned cgno, bit, end_bit, bbase, blkmap, i;
 	u64 blkno;
 	
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	
 	UFSD("ENTER, fragment %llu, count %u\n",
@@ -141,7 +141,7 @@ void ufs_free_blocks(struct inode *inode, u64 fragment, unsigned count)
 	unsigned overflow, cgno, bit, end_bit, i;
 	u64 blkno;
 	
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 
 	UFSD("ENTER, fragment %llu, count %u\n",
@@ -268,7 +268,7 @@ static void ufs_change_blocknr(struct inode *inode, sector_t beg,
 			if (!page)/* it was truncated */
 				continue;
 			if (IS_ERR(page)) {/* or EIO */
-				ufs_error(inode->i_sb, __func__,
+				ufs_error(inode_sb(inode), __func__,
 					  "read of page %llu failed\n",
 					  (unsigned long long)index);
 				continue;
@@ -294,12 +294,13 @@ static void ufs_change_blocknr(struct inode *inode, sector_t beg,
 			pos = (i - beg) + j;
 
 			if (!buffer_mapped(bh))
-					map_bh(bh, inode->i_sb, oldb + pos);
+					map_bh(bh, inode_sb(inode),
+					       oldb + pos);
 			if (!buffer_uptodate(bh)) {
 				ll_rw_block(REQ_OP_READ, 0, 1, &bh);
 				wait_on_buffer(bh);
 				if (!buffer_uptodate(bh)) {
-					ufs_error(inode->i_sb, __func__,
+					ufs_error(inode_sb(inode), __func__,
 						  "read of block failed\n");
 					break;
 				}
@@ -329,9 +330,9 @@ static void ufs_clear_frags(struct inode *inode, sector_t beg, unsigned int n,
 	sector_t end = beg + n;
 
 	for (; beg < end; ++beg) {
-		bh = sb_getblk(inode->i_sb, beg);
+		bh = sb_getblk(inode_sb(inode), beg);
 		lock_buffer(bh);
-		memset(bh->b_data, 0, inode->i_sb->s_blocksize);
+		memset(bh->b_data, 0, inode_sb(inode)->s_blocksize);
 		set_buffer_uptodate(bh);
 		mark_buffer_dirty(bh);
 		unlock_buffer(bh);
@@ -355,7 +356,7 @@ u64 ufs_new_fragments(struct inode *inode, void *p, u64 fragment,
 	     inode->i_ino, (unsigned long long)fragment,
 	     (unsigned long long)goal, count);
 	
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	usb1 = ubh_get_usb_first(uspi);
 	*err = -ENOSPC;
@@ -517,7 +518,7 @@ static u64 ufs_add_fragments(struct inode *inode, u64 fragment,
 	UFSD("ENTER, fragment %llu, oldcount %u, newcount %u\n",
 	     (unsigned long long)fragment, oldcount, newcount);
 	
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	count = newcount - oldcount;
 	
@@ -597,7 +598,7 @@ static u64 ufs_alloc_fragments(struct inode *inode, unsigned cgno,
 	UFSD("ENTER, ino %lu, cgno %u, goal %llu, count %u\n",
 	     inode->i_ino, cgno, (unsigned long long)goal, count);
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	oldcg = cgno;
 	
@@ -708,7 +709,7 @@ static u64 ufs_alloccg_block(struct inode *inode,
 
 	UFSD("ENTER, goal %llu\n", (unsigned long long)goal);
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	uspi = UFS_SB(sb)->s_uspi;
 	ucg = ubh_get_ucg(UCPI_UBH(ucpi));
 
