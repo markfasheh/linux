@@ -122,7 +122,7 @@ static int romfs_readpage(struct file *file, struct page *page)
 
 		pos = ROMFS_I(inode)->i_dataoffset + offset;
 
-		ret = romfs_dev_read(inode->i_sb, pos, buf, fillsize);
+		ret = romfs_dev_read(inode_sb(inode), pos, buf, fillsize);
 		if (ret < 0) {
 			SetPageError(page);
 			fillsize = 0;
@@ -157,12 +157,12 @@ static int romfs_readdir(struct file *file, struct dir_context *ctx)
 	char fsname[ROMFS_MAXFN];	/* XXX dynamic? */
 	int ret;
 
-	maxoff = romfs_maxsize(i->i_sb);
+	maxoff = romfs_maxsize(inode_sb(i));
 
 	offset = ctx->pos;
 	if (!offset) {
 		offset = i->i_ino & ROMFH_MASK;
-		ret = romfs_dev_read(i->i_sb, offset, &ri, ROMFH_SIZE);
+		ret = romfs_dev_read(inode_sb(i), offset, &ri, ROMFH_SIZE);
 		if (ret < 0)
 			goto out;
 		offset = be32_to_cpu(ri.spec) & ROMFH_MASK;
@@ -178,16 +178,17 @@ static int romfs_readdir(struct file *file, struct dir_context *ctx)
 		ctx->pos = offset;
 
 		/* Fetch inode info */
-		ret = romfs_dev_read(i->i_sb, offset, &ri, ROMFH_SIZE);
+		ret = romfs_dev_read(inode_sb(i), offset, &ri, ROMFH_SIZE);
 		if (ret < 0)
 			goto out;
 
-		j = romfs_dev_strnlen(i->i_sb, offset + ROMFH_SIZE,
+		j = romfs_dev_strnlen(inode_sb(i), offset + ROMFH_SIZE,
 				      sizeof(fsname) - 1);
 		if (j < 0)
 			goto out;
 
-		ret = romfs_dev_read(i->i_sb, offset + ROMFH_SIZE, fsname, j);
+		ret = romfs_dev_read(inode_sb(i), offset + ROMFH_SIZE, fsname,
+				     j);
 		if (ret < 0)
 			goto out;
 		fsname[j] = '\0';
@@ -219,13 +220,13 @@ static struct dentry *romfs_lookup(struct inode *dir, struct dentry *dentry,
 	int len, ret;
 
 	offset = dir->i_ino & ROMFH_MASK;
-	ret = romfs_dev_read(dir->i_sb, offset, &ri, ROMFH_SIZE);
+	ret = romfs_dev_read(inode_sb(dir), offset, &ri, ROMFH_SIZE);
 	if (ret < 0)
 		goto error;
 
 	/* search all the file entries in the list starting from the one
 	 * pointed to by the directory's special data */
-	maxoff = romfs_maxsize(dir->i_sb);
+	maxoff = romfs_maxsize(inode_sb(dir));
 	offset = be32_to_cpu(ri.spec) & ROMFH_MASK;
 
 	name = dentry->d_name.name;
@@ -235,12 +236,13 @@ static struct dentry *romfs_lookup(struct inode *dir, struct dentry *dentry,
 		if (!offset || offset >= maxoff)
 			goto out0;
 
-		ret = romfs_dev_read(dir->i_sb, offset, &ri, sizeof(ri));
+		ret = romfs_dev_read(inode_sb(dir), offset, &ri, sizeof(ri));
 		if (ret < 0)
 			goto error;
 
 		/* try to match the first 16 bytes of name */
-		ret = romfs_dev_strcmp(dir->i_sb, offset + ROMFH_SIZE, name,
+		ret = romfs_dev_strcmp(inode_sb(dir), offset + ROMFH_SIZE,
+				       name,
 				       len);
 		if (ret < 0)
 			goto error;
@@ -255,7 +257,7 @@ static struct dentry *romfs_lookup(struct inode *dir, struct dentry *dentry,
 	if ((be32_to_cpu(ri.next) & ROMFH_TYPE) == ROMFH_HRD)
 		offset = be32_to_cpu(ri.spec) & ROMFH_MASK;
 
-	inode = romfs_iget(dir->i_sb, offset);
+	inode = romfs_iget(inode_sb(dir), offset);
 	if (IS_ERR(inode)) {
 		ret = PTR_ERR(inode);
 		goto error;

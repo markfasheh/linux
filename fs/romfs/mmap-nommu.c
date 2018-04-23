@@ -26,7 +26,7 @@ static unsigned long romfs_get_unmapped_area(struct file *file,
 					     unsigned long flags)
 {
 	struct inode *inode = file->f_mapping->host;
-	struct mtd_info *mtd = inode->i_sb->s_mtd;
+	struct mtd_info *mtd = inode_sb(inode)->s_mtd;
 	unsigned long isize, offset, maxpages, lpages;
 	int ret;
 
@@ -72,7 +72,7 @@ static int romfs_mmap(struct file *file, struct vm_area_struct *vma)
 
 static unsigned romfs_mmap_capabilities(struct file *file)
 {
-	struct mtd_info *mtd = file_inode(file)->i_sb->s_mtd;
+	struct mtd_info *mtd = inode_sb(file_inode(file))->s_mtd;
 
 	if (!mtd)
 		return NOMMU_MAP_COPY;
