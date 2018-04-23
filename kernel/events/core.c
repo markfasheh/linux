@@ -6713,7 +6713,7 @@ static void perf_fill_ns_link_info(struct perf_ns_link_info *ns_link_info,
 	error = ns_get_path(&ns_path, task, ns_ops);
 	if (!error) {
 		ns_inode = ns_path.dentry->d_inode;
-		ns_link_info->dev = new_encode_dev(ns_inode->i_sb->s_dev);
+		ns_link_info->dev = new_encode_dev(inode_sb(ns_inode)->s_dev);
 		ns_link_info->ino = ns_inode->i_ino;
 		path_put(&ns_path);
 	}
@@ -6918,7 +6918,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
 			goto cpy_name;
 		}
 		inode = file_inode(vma->vm_file);
-		dev = inode->i_sb->s_dev;
+		dev = inode_sb(inode)->s_dev;
 		ino = inode->i_ino;
 		gen = inode->i_generation;
 		maj = MAJOR(dev);

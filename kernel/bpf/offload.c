@@ -265,7 +265,7 @@ int bpf_prog_offload_info_fill(struct bpf_prog_info *info,
 	up_read(&bpf_devs_lock);
 
 	ns_inode = ns_path.dentry->d_inode;
-	info->netns_dev = new_encode_dev(ns_inode->i_sb->s_dev);
+	info->netns_dev = new_encode_dev(inode_sb(ns_inode)->s_dev);
 	info->netns_ino = ns_inode->i_ino;
 	path_put(&ns_path);
 
@@ -461,7 +461,7 @@ int bpf_map_offload_info_fill(struct bpf_map_info *info, struct bpf_map *map)
 	}
 
 	ns_inode = ns_path.dentry->d_inode;
-	info->netns_dev = new_encode_dev(ns_inode->i_sb->s_dev);
+	info->netns_dev = new_encode_dev(inode_sb(ns_inode)->s_dev);
 	info->netns_ino = ns_inode->i_ino;
 	path_put(&ns_path);
 
