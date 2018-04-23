@@ -74,7 +74,8 @@ void f2fs_trace_pid(struct page *page)
 	f2fs_radix_tree_insert(&pids, pid, current);
 
 	trace_printk("%3x:%3x %4x %-16s\n",
-			MAJOR(inode->i_sb->s_dev), MINOR(inode->i_sb->s_dev),
+			MAJOR(inode_sb(inode)->s_dev),
+			MINOR(inode_sb(inode)->s_dev),
 			pid, current->comm);
 out:
 	mutex_unlock(&pids_lock);
@@ -95,8 +96,8 @@ void f2fs_trace_ios(struct f2fs_io_info *fio, int flush)
 	inode = fio->page->mapping->host;
 	pid = page_private(fio->page);
 
-	major = MAJOR(inode->i_sb->s_dev);
-	minor = MINOR(inode->i_sb->s_dev);
+	major = MAJOR(inode_sb(inode)->s_dev);
+	minor = MINOR(inode_sb(inode)->s_dev);
 
 	if (last_io.major == major && last_io.minor == minor &&
 			last_io.pid == pid &&

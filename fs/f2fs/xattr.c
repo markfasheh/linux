@@ -29,7 +29,7 @@ static int f2fs_xattr_generic_get(const struct xattr_handler *handler,
 		struct dentry *unused, struct inode *inode,
 		const char *name, void *buffer, size_t size)
 {
-	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+	struct f2fs_sb_info *sbi = F2FS_SB(inode_sb(inode));
 
 	switch (handler->flags) {
 	case F2FS_XATTR_INDEX_USER:
@@ -54,7 +54,7 @@ static int f2fs_xattr_generic_set(const struct xattr_handler *handler,
 		const char *name, const void *value,
 		size_t size, int flags)
 {
-	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+	struct f2fs_sb_info *sbi = F2FS_SB(inode_sb(inode));
 
 	switch (handler->flags) {
 	case F2FS_XATTR_INDEX_USER:

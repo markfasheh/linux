@@ -32,7 +32,7 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 	int xattr_size = 0;
 	int err;
 
-	inode = new_inode(dir->i_sb);
+	inode = new_inode(inode_sb(dir));
 	if (!inode)
 		return ERR_PTR(-ENOMEM);
 
@@ -380,7 +380,7 @@ static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
 	f2fs_dentry_kunmap(dir, page);
 	f2fs_put_page(page, 0);
 
-	inode = f2fs_iget(dir->i_sb, ino);
+	inode = f2fs_iget(inode_sb(dir), ino);
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		goto out;
@@ -400,7 +400,7 @@ static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
 	if (f2fs_encrypted_inode(dir) &&
 	    (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode)) &&
 	    !fscrypt_has_permitted_context(dir, inode)) {
-		f2fs_msg(inode->i_sb, KERN_WARNING,
+		f2fs_msg(inode_sb(inode), KERN_WARNING,
 			 "Inconsistent encryption contexts: %lu/%lu",
 			 dir->i_ino, inode->i_ino);
 		err = -EPERM;
@@ -492,7 +492,8 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
 	if (unlikely(f2fs_cp_error(sbi)))
 		return -EIO;
 
-	err = fscrypt_prepare_symlink(dir, symname, len, dir->i_sb->s_blocksize,
+	err = fscrypt_prepare_symlink(dir, symname, len,
+				      inode_sb(dir)->s_blocksize,
 				      &disk_link);
 	if (err)
 		return err;
@@ -1125,7 +1126,7 @@ static const char *f2fs_encrypted_get_link(struct dentry *dentry,
 		return ERR_CAST(page);
 
 	target = fscrypt_get_symlink(inode, page_address(page),
-				     inode->i_sb->s_blocksize, done);
+				     inode_sb(inode)->s_blocksize, done);
 	put_page(page);
 	return target;
 }

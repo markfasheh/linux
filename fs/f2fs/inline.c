@@ -294,7 +294,7 @@ process_inline:
 struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
 			struct fscrypt_name *fname, struct page **res_page)
 {
-	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
+	struct f2fs_sb_info *sbi = F2FS_SB(inode_sb(dir));
 	struct qstr name = FSTR_TO_QSTR(&fname->disk_name);
 	struct f2fs_dir_entry *de;
 	struct f2fs_dentry_ptr d;
@@ -674,7 +674,7 @@ int f2fs_inline_data_fiemap(struct inode *inode,
 	ilen -= start;
 
 	get_node_info(F2FS_I_SB(inode), inode->i_ino, &ni);
-	byteaddr = (__u64)ni.blk_addr << inode->i_sb->s_blocksize_bits;
+	byteaddr = (__u64)ni.blk_addr << inode_sb(inode)->s_blocksize_bits;
 	byteaddr += (char *)inline_data_addr(inode, ipage) -
 					(char *)F2FS_INODE(ipage);
 	err = fiemap_fill_next_extent(fieinfo, start, byteaddr, ilen, flags);

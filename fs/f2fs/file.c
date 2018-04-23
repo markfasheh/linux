@@ -58,7 +58,7 @@ static int f2fs_vm_page_mkwrite(struct vm_fault *vmf)
 		goto err;
 	}
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 
 	f2fs_bug_on(sbi, f2fs_has_inline_data(inode));
 
@@ -117,7 +117,7 @@ mapped:
 out_sem:
 	up_read(&F2FS_I(inode)->i_mmap_sem);
 out:
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	f2fs_update_time(sbi, REQ_TIME);
 err:
 	return block_page_mkwrite_return(err);
@@ -211,7 +211,7 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 		.for_reclaim = 0,
 	};
 
-	if (unlikely(f2fs_readonly(inode->i_sb)))
+	if (unlikely(f2fs_readonly(inode_sb(inode))))
 		return 0;
 
 	trace_f2fs_sync_file_enter(inode);
@@ -259,7 +259,7 @@ go_write:
 
 	if (cp_reason) {
 		/* all the dirty node pages should be flushed for POR */
-		ret = f2fs_sync_fs(inode->i_sb, 1);
+		ret = f2fs_sync_fs(inode_sb(inode), 1);
 
 		/*
 		 * We've secured consistency through sync_fs. Following pino
@@ -365,7 +365,7 @@ static bool __found_offset(block_t blkaddr, pgoff_t dirty, pgoff_t pgofs,
 static loff_t f2fs_seek_block(struct file *file, loff_t offset, int whence)
 {
 	struct inode *inode = file->f_mapping->host;
-	loff_t maxbytes = inode->i_sb->s_maxbytes;
+	loff_t maxbytes = inode_sb(inode)->s_maxbytes;
 	struct dnode_of_data dn;
 	pgoff_t pgofs, end_offset, dirty;
 	loff_t data_ofs = offset;
@@ -437,7 +437,7 @@ fail:
 static loff_t f2fs_llseek(struct file *file, loff_t offset, int whence)
 {
 	struct inode *inode = file->f_mapping->host;
-	loff_t maxbytes = inode->i_sb->s_maxbytes;
+	loff_t maxbytes = inode_sb(inode)->s_maxbytes;
 
 	switch (whence) {
 	case SEEK_SET:
@@ -569,7 +569,7 @@ truncate_out:
 int truncate_blocks(struct inode *inode, u64 from, bool lock)
 {
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-	unsigned int blocksize = inode->i_sb->s_blocksize;
+	unsigned int blocksize = inode_sb(inode)->s_blocksize;
 	struct dnode_of_data dn;
 	pgoff_t free_from;
 	int count = 0, err = 0;
@@ -676,7 +676,7 @@ int f2fs_getattr(const struct path *path, struct kstat *stat,
 	unsigned int flags;
 
 	if (f2fs_has_extra_attr(inode) &&
-			f2fs_sb_has_inode_crtime(inode->i_sb) &&
+			f2fs_sb_has_inode_crtime(inode_sb(inode)) &&
 			F2FS_FITS_IN_INODE(ri, fi->i_extra_isize, i_crtime)) {
 		stat->result_mask |= STATX_BTIME;
 		stat->btime.tv_sec = fi->i_crtime.tv_sec;
@@ -722,13 +722,13 @@ static void __setattr_copy(struct inode *inode, const struct iattr *attr)
 		inode->i_gid = attr->ia_gid;
 	if (ia_valid & ATTR_ATIME)
 		inode->i_atime = timespec_trunc(attr->ia_atime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_MTIME)
 		inode->i_mtime = timespec_trunc(attr->ia_mtime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_CTIME)
 		inode->i_ctime = timespec_trunc(attr->ia_ctime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_MODE) {
 		umode_t mode = attr->ia_mode;
 
@@ -1891,7 +1891,7 @@ out:
 static int f2fs_ioc_fitrim(struct file *filp, unsigned long arg)
 {
 	struct inode *inode = file_inode(filp);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct request_queue *q = bdev_get_queue(sb->s_bdev);
 	struct fstrim_range range;
 	int ret;
@@ -1938,7 +1938,7 @@ static int f2fs_ioc_set_encryption_policy(struct file *filp, unsigned long arg)
 {
 	struct inode *inode = file_inode(filp);
 
-	if (!f2fs_sb_has_crypto(inode->i_sb))
+	if (!f2fs_sb_has_crypto(inode_sb(inode)))
 		return -EOPNOTSUPP;
 
 	f2fs_update_time(F2FS_I_SB(inode), REQ_TIME);
@@ -1948,7 +1948,7 @@ static int f2fs_ioc_set_encryption_policy(struct file *filp, unsigned long arg)
 
 static int f2fs_ioc_get_encryption_policy(struct file *filp, unsigned long arg)
 {
-	if (!f2fs_sb_has_crypto(file_inode(filp)->i_sb))
+	if (!f2fs_sb_has_crypto(inode_sb(file_inode(filp))))
 		return -EOPNOTSUPP;
 	return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
 }
@@ -1959,7 +1959,7 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	int err;
 
-	if (!f2fs_sb_has_crypto(inode->i_sb))
+	if (!f2fs_sb_has_crypto(inode_sb(inode)))
 		return -EOPNOTSUPP;
 
 	if (uuid_is_nonzero(sbi->raw_super->encrypt_pw_salt))
@@ -2290,10 +2290,10 @@ static int f2fs_move_file_range(struct file *file_in, loff_t pos_in,
 	int ret;
 
 	if (file_in->f_path.mnt != file_out->f_path.mnt ||
-				src->i_sb != dst->i_sb)
+				inode_sb(src) != inode_sb(dst))
 		return -EXDEV;
 
-	if (unlikely(f2fs_readonly(src->i_sb)))
+	if (unlikely(f2fs_readonly(inode_sb(src))))
 		return -EROFS;
 
 	if (!S_ISREG(src->i_mode) || !S_ISREG(dst->i_mode))
@@ -2644,7 +2644,7 @@ static int f2fs_ioc_fsgetxattr(struct file *filp, unsigned long arg)
 	fa.fsx_xflags = f2fs_iflags_to_xflags(fi->i_flags &
 				(FS_FL_USER_VISIBLE | FS_PROJINHERIT_FL));
 
-	if (f2fs_sb_has_project_quota(inode->i_sb))
+	if (f2fs_sb_has_project_quota(inode_sb(inode)))
 		fa.fsx_projid = (__u32)from_kprojid(&init_user_ns,
 							fi->i_projid);
 

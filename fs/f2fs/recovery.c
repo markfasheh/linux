@@ -147,7 +147,8 @@ retry:
 		goto out_unmap_put;
 
 	if (de) {
-		einode = f2fs_iget_retry(inode->i_sb, le32_to_cpu(de->ino));
+		einode = f2fs_iget_retry(inode_sb(inode),
+					 le32_to_cpu(de->ino));
 		if (IS_ERR(einode)) {
 			WARN_ON(1);
 			err = PTR_ERR(einode);
@@ -188,7 +189,7 @@ out:
 		name = "<encrypted>";
 	else
 		name = raw_inode->i_name;
-	f2fs_msg(inode->i_sb, KERN_NOTICE,
+	f2fs_msg(inode_sb(inode), KERN_NOTICE,
 			"%s: ino = %x, name = %s, dir = %lx, err = %d",
 			__func__, ino_of_node(ipage), name,
 			IS_ERR(dir) ? 0 : dir->i_ino, err);
@@ -232,9 +233,9 @@ static void recover_inode(struct inode *inode, struct page *page)
 	else
 		name = F2FS_INODE(page)->i_name;
 
-	f2fs_msg(inode->i_sb, KERN_NOTICE,
-		"recover_inode: ino = %x, name = %s, inline = %x",
-			ino_of_node(page), name, raw->i_inline);
+	f2fs_msg(inode_sb(inode), KERN_NOTICE,
+		 "recover_inode: ino = %x, name = %s, inline = %x",
+		 ino_of_node(page), name, raw->i_inline);
 }
 
 static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head,

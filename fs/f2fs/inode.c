@@ -195,7 +195,7 @@ static int do_read_inode(struct inode *inode)
 
 	/* Check if ino is within scope */
 	if (check_nid_range(sbi, inode->i_ino)) {
-		f2fs_msg(inode->i_sb, KERN_ERR, "bad inode number: %lu",
+		f2fs_msg(inode_sb(inode), KERN_ERR, "bad inode number: %lu",
 			 (unsigned long) inode->i_ino);
 		WARN_ON(1);
 		return -EINVAL;
@@ -522,7 +522,7 @@ void f2fs_evict_inode(struct inode *inode)
 	remove_ino_entry(sbi, inode->i_ino, UPDATE_INO);
 	remove_ino_entry(sbi, inode->i_ino, FLUSH_INO);
 
-	sb_start_intwrite(inode->i_sb);
+	sb_start_intwrite(inode_sb(inode));
 	set_inode_flag(inode, FI_NO_ALLOC);
 	i_size_write(inode, 0);
 retry:
@@ -552,7 +552,7 @@ retry:
 	if (err)
 		update_inode_page(inode);
 	dquot_free_inode(inode);
-	sb_end_intwrite(inode->i_sb);
+	sb_end_intwrite(inode_sb(inode));
 no_delete:
 	dquot_drop(inode);
 
