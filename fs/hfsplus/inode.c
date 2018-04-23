@@ -67,7 +67,7 @@ static sector_t hfsplus_bmap(struct address_space *mapping, sector_t block)
 static int hfsplus_releasepage(struct page *page, gfp_t mask)
 {
 	struct inode *inode = page->mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfs_btree *tree;
 	struct hfs_bnode *node;
 	u32 nidx;
@@ -182,7 +182,7 @@ const struct dentry_operations hfsplus_dentry_operations = {
 static void hfsplus_get_perms(struct inode *inode,
 		struct hfsplus_perm *perms, int dir)
 {
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(inode));
 	u16 mode;
 
 	mode = be16_to_cpu(perms->mode);
@@ -225,7 +225,7 @@ static int hfsplus_file_open(struct inode *inode, struct file *file)
 
 static int hfsplus_file_release(struct inode *inode, struct file *file)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	if (HFSPLUS_IS_RSRC(inode))
 		inode = HFSPLUS_I(inode)->rsrc_inode;
@@ -281,7 +281,7 @@ int hfsplus_file_fsync(struct file *file, loff_t start, loff_t end,
 {
 	struct inode *inode = file->f_mapping->host;
 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
-	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode_sb(inode));
 	int error = 0, error2;
 
 	error = file_write_and_wait_range(file, start, end);
@@ -326,7 +326,7 @@ int hfsplus_file_fsync(struct file *file, loff_t start, loff_t end,
 	}
 
 	if (!test_bit(HFSPLUS_SB_NOBARRIER, &sbi->flags))
-		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+		blkdev_issue_flush(inode_sb(inode)->s_bdev, GFP_KERNEL, NULL);
 
 	inode_unlock(inode);
 
@@ -415,7 +415,7 @@ struct inode *hfsplus_new_inode(struct super_block *sb, struct inode *dir,
 
 void hfsplus_delete_inode(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	if (S_ISDIR(inode->i_mode)) {
 		HFSPLUS_SB(sb)->folder_count--;
@@ -437,7 +437,7 @@ void hfsplus_delete_inode(struct inode *inode)
 
 void hfsplus_inode_read_fork(struct inode *inode, struct hfsplus_fork_raw *fork)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
 	u32 count;
@@ -554,11 +554,11 @@ int hfsplus_cat_write_inode(struct inode *inode)
 	if (!main_inode->i_nlink)
 		return 0;
 
-	if (hfs_find_init(HFSPLUS_SB(main_inode->i_sb)->cat_tree, &fd))
+	if (hfs_find_init(HFSPLUS_SB(inode_sb(main_inode))->cat_tree, &fd))
 		/* panic? */
 		return -EIO;
 
-	if (hfsplus_find_cat(main_inode->i_sb, main_inode->i_ino, &fd))
+	if (hfsplus_find_cat(inode_sb(main_inode), main_inode->i_ino, &fd))
 		/* panic? */
 		goto out;
 

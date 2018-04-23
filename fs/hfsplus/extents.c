@@ -129,7 +129,8 @@ static int hfsplus_ext_write_extent_locked(struct inode *inode)
 	if (HFSPLUS_I(inode)->extent_state & HFSPLUS_EXT_DIRTY) {
 		struct hfs_find_data fd;
 
-		res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
+		res = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->ext_tree,
+				    &fd);
 		if (res)
 			return res;
 		res = __hfsplus_ext_write_extent(inode, &fd);
@@ -209,7 +210,7 @@ static int hfsplus_ext_read_extent(struct inode *inode, u32 block)
 	    block < hip->cached_start + hip->cached_blocks)
 		return 0;
 
-	res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
+	res = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->ext_tree, &fd);
 	if (!res) {
 		res = __hfsplus_ext_cache_extent(&fd, inode, block);
 		hfs_find_exit(&fd);
@@ -221,7 +222,7 @@ static int hfsplus_ext_read_extent(struct inode *inode, u32 block)
 int hfsplus_get_block(struct inode *inode, sector_t iblock,
 		      struct buffer_head *bh_result, int create)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
 	int res = -EIO;
@@ -428,7 +429,7 @@ int hfsplus_free_fork(struct super_block *sb, u32 cnid,
 
 int hfsplus_file_extend(struct inode *inode, bool zeroout)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
 	u32 start, len, goal;
@@ -531,7 +532,7 @@ insert_extent:
 
 void hfsplus_file_truncate(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
 	struct hfs_find_data fd;
 	u32 alloc_cnt, blk_cnt, start;

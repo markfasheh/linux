@@ -281,13 +281,13 @@ int __hfsplus_setxattr(struct inode *inode, const char *name,
 	if (value == NULL)
 		return hfsplus_removexattr(inode, name);
 
-	err = hfs_find_init(HFSPLUS_SB(inode->i_sb)->cat_tree, &cat_fd);
+	err = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->cat_tree, &cat_fd);
 	if (err) {
 		pr_err("can't init xattr find struct\n");
 		return err;
 	}
 
-	err = hfsplus_find_cat(inode->i_sb, inode->i_ino, &cat_fd);
+	err = hfsplus_find_cat(inode_sb(inode), inode->i_ino, &cat_fd);
 	if (err) {
 		pr_err("catalog searching failed\n");
 		goto end_setxattr;
@@ -334,8 +334,8 @@ int __hfsplus_setxattr(struct inode *inode, const char *name,
 		goto end_setxattr;
 	}
 
-	if (!HFSPLUS_SB(inode->i_sb)->attr_tree) {
-		err = hfsplus_create_attributes_file(inode->i_sb);
+	if (!HFSPLUS_SB(inode_sb(inode))->attr_tree) {
+		err = hfsplus_create_attributes_file(inode_sb(inode));
 		if (unlikely(err))
 			goto end_setxattr;
 	}
@@ -456,12 +456,13 @@ static ssize_t hfsplus_getxattr_finder_info(struct inode *inode,
 	u8 file_finder_info[sizeof(struct FInfo) + sizeof(struct FXInfo)];
 
 	if (size >= record_len) {
-		res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->cat_tree, &fd);
+		res = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->cat_tree,
+				    &fd);
 		if (res) {
 			pr_err("can't init xattr find struct\n");
 			return res;
 		}
-		res = hfsplus_find_cat(inode->i_sb, inode->i_ino, &fd);
+		res = hfsplus_find_cat(inode_sb(inode), inode->i_ino, &fd);
 		if (res)
 			goto end_getxattr_finder_info;
 		entry_type = hfs_bnode_read_u16(fd.bnode, fd.entryoffset);
@@ -511,7 +512,7 @@ ssize_t __hfsplus_getxattr(struct inode *inode, const char *name,
 	if (!strcmp_xattr_finder_info(name))
 		return hfsplus_getxattr_finder_info(inode, value, size);
 
-	if (!HFSPLUS_SB(inode->i_sb)->attr_tree)
+	if (!HFSPLUS_SB(inode_sb(inode))->attr_tree)
 		return -EOPNOTSUPP;
 
 	entry = hfsplus_alloc_attr_entry();
@@ -520,13 +521,13 @@ ssize_t __hfsplus_getxattr(struct inode *inode, const char *name,
 		return -ENOMEM;
 	}
 
-	res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->attr_tree, &fd);
+	res = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->attr_tree, &fd);
 	if (res) {
 		pr_err("can't init xattr find struct\n");
 		goto failed_getxattr_init;
 	}
 
-	res = hfsplus_find_attr(inode->i_sb, inode->i_ino, name, &fd);
+	res = hfsplus_find_attr(inode_sb(inode), inode->i_ino, name, &fd);
 	if (res) {
 		if (res == -ENOENT)
 			res = -ENODATA;
@@ -622,13 +623,13 @@ static ssize_t hfsplus_listxattr_finder_info(struct dentry *dentry,
 	unsigned long len, found_bit;
 	int xattr_name_len, symbols_count;
 
-	res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->cat_tree, &fd);
+	res = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->cat_tree, &fd);
 	if (res) {
 		pr_err("can't init xattr find struct\n");
 		return res;
 	}
 
-	res = hfsplus_find_cat(inode->i_sb, inode->i_ino, &fd);
+	res = hfsplus_find_cat(inode_sb(inode), inode->i_ino, &fd);
 	if (res)
 		goto end_listxattr_finder_info;
 
@@ -697,10 +698,10 @@ ssize_t hfsplus_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	res = hfsplus_listxattr_finder_info(dentry, buffer, size);
 	if (res < 0)
 		return res;
-	else if (!HFSPLUS_SB(inode->i_sb)->attr_tree)
+	else if (!HFSPLUS_SB(inode_sb(inode))->attr_tree)
 		return (res == 0) ? -EOPNOTSUPP : res;
 
-	err = hfs_find_init(HFSPLUS_SB(inode->i_sb)->attr_tree, &fd);
+	err = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->attr_tree, &fd);
 	if (err) {
 		pr_err("can't init xattr find struct\n");
 		return err;
@@ -713,7 +714,7 @@ ssize_t hfsplus_listxattr(struct dentry *dentry, char *buffer, size_t size)
 		goto out;
 	}
 
-	err = hfsplus_find_attr(inode->i_sb, inode->i_ino, NULL, &fd);
+	err = hfsplus_find_attr(inode_sb(inode), inode->i_ino, NULL, &fd);
 	if (err) {
 		if (err == -ENOENT) {
 			if (res == 0)
@@ -740,9 +741,9 @@ ssize_t hfsplus_listxattr(struct dentry *dentry, char *buffer, size_t size)
 			goto end_listxattr;
 
 		xattr_name_len = NLS_MAX_CHARSET_SIZE * HFSPLUS_ATTR_MAX_STRLEN;
-		if (hfsplus_uni2asc(inode->i_sb,
-			(const struct hfsplus_unistr *)&fd.key->attr.key_name,
-					strbuf, &xattr_name_len)) {
+		if (hfsplus_uni2asc(inode_sb(inode),
+				    (const struct hfsplus_unistr *)&fd.key->attr.key_name,
+				    strbuf, &xattr_name_len)) {
 			pr_err("unicode conversion failed\n");
 			res = -EIO;
 			goto end_listxattr;
@@ -780,19 +781,19 @@ static int hfsplus_removexattr(struct inode *inode, const char *name)
 	int is_xattr_acl_deleted = 0;
 	int is_all_xattrs_deleted = 0;
 
-	if (!HFSPLUS_SB(inode->i_sb)->attr_tree)
+	if (!HFSPLUS_SB(inode_sb(inode))->attr_tree)
 		return -EOPNOTSUPP;
 
 	if (!strcmp_xattr_finder_info(name))
 		return -EOPNOTSUPP;
 
-	err = hfs_find_init(HFSPLUS_SB(inode->i_sb)->cat_tree, &cat_fd);
+	err = hfs_find_init(HFSPLUS_SB(inode_sb(inode))->cat_tree, &cat_fd);
 	if (err) {
 		pr_err("can't init xattr find struct\n");
 		return err;
 	}
 
-	err = hfsplus_find_cat(inode->i_sb, inode->i_ino, &cat_fd);
+	err = hfsplus_find_cat(inode_sb(inode), inode->i_ino, &cat_fd);
 	if (err) {
 		pr_err("catalog searching failed\n");
 		goto end_removexattr;

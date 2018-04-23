@@ -169,7 +169,7 @@ failed_find_attr:
 int hfsplus_attr_exists(struct inode *inode, const char *name)
 {
 	int err = 0;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfs_find_data fd;
 
 	if (!HFSPLUS_SB(sb)->attr_tree)
@@ -195,7 +195,7 @@ int hfsplus_create_attr(struct inode *inode,
 				const char *name,
 				const void *value, size_t size)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfs_find_data fd;
 	hfsplus_attr_entry *entry_ptr;
 	int entry_size;
@@ -298,7 +298,7 @@ static int __hfsplus_delete_attr(struct inode *inode, u32 cnid,
 int hfsplus_delete_attr(struct inode *inode, const char *name)
 {
 	int err = 0;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfs_find_data fd;
 
 	hfs_dbg(ATTR_MOD, "delete_attr: %s,%ld\n",
@@ -344,17 +344,17 @@ int hfsplus_delete_all_attrs(struct inode *dir, u32 cnid)
 
 	hfs_dbg(ATTR_MOD, "delete_all_attrs: %d\n", cnid);
 
-	if (!HFSPLUS_SB(dir->i_sb)->attr_tree) {
+	if (!HFSPLUS_SB(inode_sb(dir))->attr_tree) {
 		pr_err("attributes file doesn't exist\n");
 		return -EINVAL;
 	}
 
-	err = hfs_find_init(HFSPLUS_SB(dir->i_sb)->attr_tree, &fd);
+	err = hfs_find_init(HFSPLUS_SB(inode_sb(dir))->attr_tree, &fd);
 	if (err)
 		return err;
 
 	for (;;) {
-		err = hfsplus_find_attr(dir->i_sb, cnid, NULL, &fd);
+		err = hfsplus_find_attr(inode_sb(dir), cnid, NULL, &fd);
 		if (err) {
 			if (err != -ENOENT)
 				pr_err("xattr search failed\n");
