@@ -52,7 +52,7 @@ struct ext4_attr {
 static ssize_t session_write_kbytes_show(struct ext4_attr *a,
 					 struct ext4_sb_info *sbi, char *buf)
 {
-	struct super_block *sb = sbi->s_buddy_cache->i_sb;
+	struct super_block *sb = inode_sb(sbi->s_buddy_cache);
 
 	if (!sb->s_bdev->bd_part)
 		return snprintf(buf, PAGE_SIZE, "0\n");
@@ -64,7 +64,7 @@ static ssize_t session_write_kbytes_show(struct ext4_attr *a,
 static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
 					  struct ext4_sb_info *sbi, char *buf)
 {
-	struct super_block *sb = sbi->s_buddy_cache->i_sb;
+	struct super_block *sb = inode_sb(sbi->s_buddy_cache);
 
 	if (!sb->s_bdev->bd_part)
 		return snprintf(buf, PAGE_SIZE, "0\n");

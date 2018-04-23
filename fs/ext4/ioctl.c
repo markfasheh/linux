@@ -166,17 +166,17 @@ static long swap_inode_boot_loader(struct super_block *sb,
 
 	err = ext4_mark_inode_dirty(handle, inode);
 	if (err < 0) {
-		ext4_warning(inode->i_sb,
-			"couldn't mark inode #%lu dirty (err %d)",
-			inode->i_ino, err);
+		ext4_warning(inode_sb(inode),
+			     "couldn't mark inode #%lu dirty (err %d)",
+			     inode->i_ino, err);
 		/* Revert all changes: */
 		swap_inode_data(inode, inode_bl);
 	} else {
 		err = ext4_mark_inode_dirty(handle, inode_bl);
 		if (err < 0) {
-			ext4_warning(inode_bl->i_sb,
-				"couldn't mark inode #%lu dirty (err %d)",
-				inode_bl->i_ino, err);
+			ext4_warning(inode_sb(inode_bl),
+				     "couldn't mark inode #%lu dirty (err %d)",
+				     inode_bl->i_ino, err);
 			/* Revert all changes: */
 			swap_inode_data(inode, inode_bl);
 			ext4_mark_inode_dirty(handle, inode);
@@ -295,7 +295,7 @@ flags_err:
 		 * Changes to the journaling mode can cause unsafe changes to
 		 * S_DAX if we are using the DAX mount option.
 		 */
-		if (test_opt(inode->i_sb, DAX)) {
+		if (test_opt(inode_sb(inode), DAX)) {
 			err = -EBUSY;
 			goto flags_out;
 		}
@@ -319,7 +319,7 @@ flags_out:
 static int ext4_ioctl_setproject(struct file *filp, __u32 projid)
 {
 	struct inode *inode = file_inode(filp);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	int err, rc;
 	handle_t *handle;
@@ -596,7 +596,7 @@ static int ext4_ioc_getfsmap(struct super_block *sb,
 static long ext4_ioctl_group_add(struct file *file,
 				 struct ext4_new_group_data *input)
 {
-	struct super_block *sb = file_inode(file)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(file));
 	int err, err2=0;
 
 	err = ext4_resize_begin(sb);
@@ -634,7 +634,7 @@ group_add_out:
 long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct inode *inode = file_inode(filp);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	unsigned int flags;
 
@@ -690,7 +690,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (!inode_owner_or_capable(inode))
 			return -EPERM;
 
-		if (ext4_has_metadata_csum(inode->i_sb)) {
+		if (ext4_has_metadata_csum(inode_sb(inode))) {
 			ext4_warning(sb, "Setting inode version is not "
 				     "supported with metadata_csum enabled.");
 			return -ENOTTY;
@@ -995,7 +995,7 @@ resizefs_out:
 		memset(&fa, 0, sizeof(struct fsxattr));
 		fa.fsx_xflags = ext4_iflags_to_xflags(ei->i_flags & EXT4_FL_USER_VISIBLE);
 
-		if (ext4_has_feature_project(inode->i_sb)) {
+		if (ext4_has_feature_project(inode_sb(inode))) {
 			fa.fsx_projid = (__u32)from_kprojid(&init_user_ns,
 				EXT4_I(inode)->i_projid);
 		}

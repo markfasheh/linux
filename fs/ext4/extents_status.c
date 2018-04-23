@@ -299,7 +299,7 @@ out:
 static void ext4_es_list_add(struct inode *inode)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 
 	if (!list_empty(&ei->i_es_list))
 		return;
@@ -315,7 +315,7 @@ static void ext4_es_list_add(struct inode *inode)
 static void ext4_es_list_del(struct inode *inode)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 
 	spin_lock(&sbi->s_es_lock);
 	if (!list_empty(&ei->i_es_list)) {
@@ -344,12 +344,12 @@ ext4_es_alloc_extent(struct inode *inode, ext4_lblk_t lblk, ext4_lblk_t len,
 	if (!ext4_es_is_delayed(es)) {
 		if (!EXT4_I(inode)->i_es_shk_nr++)
 			ext4_es_list_add(inode);
-		percpu_counter_inc(&EXT4_SB(inode->i_sb)->
+		percpu_counter_inc(&EXT4_SB(inode_sb(inode))->
 					s_es_stats.es_stats_shk_cnt);
 	}
 
 	EXT4_I(inode)->i_es_all_nr++;
-	percpu_counter_inc(&EXT4_SB(inode->i_sb)->s_es_stats.es_stats_all_cnt);
+	percpu_counter_inc(&EXT4_SB(inode_sb(inode))->s_es_stats.es_stats_all_cnt);
 
 	return es;
 }
@@ -357,14 +357,14 @@ ext4_es_alloc_extent(struct inode *inode, ext4_lblk_t lblk, ext4_lblk_t len,
 static void ext4_es_free_extent(struct inode *inode, struct extent_status *es)
 {
 	EXT4_I(inode)->i_es_all_nr--;
-	percpu_counter_dec(&EXT4_SB(inode->i_sb)->s_es_stats.es_stats_all_cnt);
+	percpu_counter_dec(&EXT4_SB(inode_sb(inode))->s_es_stats.es_stats_all_cnt);
 
 	/* Decrease the shrink counter when this es is not delayed */
 	if (!ext4_es_is_delayed(es)) {
 		BUG_ON(EXT4_I(inode)->i_es_shk_nr == 0);
 		if (!--EXT4_I(inode)->i_es_shk_nr)
 			ext4_es_list_del(inode);
-		percpu_counter_dec(&EXT4_SB(inode->i_sb)->
+		percpu_counter_dec(&EXT4_SB(inode_sb(inode))->
 					s_es_stats.es_stats_shk_cnt);
 	}
 
@@ -706,7 +706,7 @@ int ext4_es_insert_extent(struct inode *inode, ext4_lblk_t lblk,
 
 	if ((status & EXTENT_STATUS_DELAYED) &&
 	    (status & EXTENT_STATUS_WRITTEN)) {
-		ext4_warning(inode->i_sb, "Inserting extent [%u/%u] as "
+		ext4_warning(inode_sb(inode), "Inserting extent [%u/%u] as "
 				" delayed and written which can potentially "
 				" cause data loss.", lblk, len);
 		WARN_ON(1);
@@ -725,7 +725,7 @@ int ext4_es_insert_extent(struct inode *inode, ext4_lblk_t lblk,
 		goto error;
 retry:
 	err = __es_insert_extent(inode, &newes);
-	if (err == -ENOMEM && __es_shrink(EXT4_SB(inode->i_sb),
+	if (err == -ENOMEM && __es_shrink(EXT4_SB(inode_sb(inode)),
 					  128, EXT4_I(inode)))
 		goto retry;
 	if (err == -ENOMEM && !ext4_es_is_delayed(&newes))
@@ -818,7 +818,7 @@ int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
 	}
 
 out:
-	stats = &EXT4_SB(inode->i_sb)->s_es_stats;
+	stats = &EXT4_SB(inode_sb(inode))->s_es_stats;
 	if (found) {
 		BUG_ON(!es1);
 		es->es_lblk = es1->es_lblk;
@@ -885,7 +885,7 @@ retry:
 				es->es_lblk = orig_es.es_lblk;
 				es->es_len = orig_es.es_len;
 				if ((err == -ENOMEM) &&
-				    __es_shrink(EXT4_SB(inode->i_sb),
+				    __es_shrink(EXT4_SB(inode_sb(inode)),
 							128, EXT4_I(inode)))
 					goto retry;
 				goto out;
@@ -1244,7 +1244,8 @@ static int es_reclaim_extents(struct ext4_inode_info *ei, int *nr_to_scan)
 
 	if (ext4_test_inode_state(inode, EXT4_STATE_EXT_PRECACHED) &&
 	    __ratelimit(&_rs))
-		ext4_warning(inode->i_sb, "forced shrink of precached extents");
+		ext4_warning(inode_sb(inode),
+			     "forced shrink of precached extents");
 
 	if (!es_do_reclaim_extents(ei, EXT_MAX_BLOCKS, nr_to_scan, &nr_shrunk) &&
 	    start != 0)

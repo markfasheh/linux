@@ -49,7 +49,7 @@ static __le32 ext4_extent_block_csum(struct inode *inode,
 				     struct ext4_extent_header *eh)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	__u32 csum;
 
 	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)eh,
@@ -62,7 +62,7 @@ static int ext4_extent_block_csum_verify(struct inode *inode,
 {
 	struct ext4_extent_tail *et;
 
-	if (!ext4_has_metadata_csum(inode->i_sb))
+	if (!ext4_has_metadata_csum(inode_sb(inode)))
 		return 1;
 
 	et = find_ext4_extent_tail(eh);
@@ -76,7 +76,7 @@ static void ext4_extent_block_csum_set(struct inode *inode,
 {
 	struct ext4_extent_tail *et;
 
-	if (!ext4_has_metadata_csum(inode->i_sb))
+	if (!ext4_has_metadata_csum(inode_sb(inode)))
 		return;
 
 	et = find_ext4_extent_tail(eh);
@@ -233,7 +233,7 @@ static inline int ext4_ext_space_block(struct inode *inode, int check)
 {
 	int size;
 
-	size = (inode->i_sb->s_blocksize - sizeof(struct ext4_extent_header))
+	size = (inode_sb(inode)->s_blocksize - sizeof(struct ext4_extent_header))
 			/ sizeof(struct ext4_extent);
 #ifdef AGGRESSIVE_TEST
 	if (!check && size > 6)
@@ -246,7 +246,7 @@ static inline int ext4_ext_space_block_idx(struct inode *inode, int check)
 {
 	int size;
 
-	size = (inode->i_sb->s_blocksize - sizeof(struct ext4_extent_header))
+	size = (inode_sb(inode)->s_blocksize - sizeof(struct ext4_extent_header))
 			/ sizeof(struct ext4_extent_idx);
 #ifdef AGGRESSIVE_TEST
 	if (!check && size > 5)
@@ -307,7 +307,7 @@ int ext4_ext_calc_metadata_amount(struct inode *inode, ext4_lblk_t lblock)
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	int idxs;
 
-	idxs = ((inode->i_sb->s_blocksize - sizeof(struct ext4_extent_header))
+	idxs = ((inode_sb(inode)->s_blocksize - sizeof(struct ext4_extent_header))
 		/ sizeof(struct ext4_extent_idx));
 
 	/*
@@ -377,7 +377,7 @@ static int ext4_valid_extent(struct inode *inode, struct ext4_extent *ext)
 	 */
 	if (lblock + len <= lblock)
 		return 0;
-	return ext4_data_block_valid(EXT4_SB(inode->i_sb), block, len);
+	return ext4_data_block_valid(EXT4_SB(inode_sb(inode)), block, len);
 }
 
 static int ext4_valid_extent_idx(struct inode *inode,
@@ -385,7 +385,7 @@ static int ext4_valid_extent_idx(struct inode *inode,
 {
 	ext4_fsblk_t block = ext4_idx_pblock(ext_idx);
 
-	return ext4_data_block_valid(EXT4_SB(inode->i_sb), block, 1);
+	return ext4_data_block_valid(EXT4_SB(inode_sb(inode)), block, 1);
 }
 
 static int ext4_valid_extent_entries(struct inode *inode,
@@ -401,7 +401,7 @@ static int ext4_valid_extent_entries(struct inode *inode,
 	if (depth == 0) {
 		/* leaf entries */
 		struct ext4_extent *ext = EXT_FIRST_EXTENT(eh);
-		struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
+		struct ext4_super_block *es = EXT4_SB(inode_sb(inode))->s_es;
 		ext4_fsblk_t pblock = 0;
 		ext4_lblk_t lblock = 0;
 		ext4_lblk_t prev = 0;
@@ -506,7 +506,7 @@ __read_extent_tree_block(const char *function, unsigned int line,
 	struct buffer_head		*bh;
 	int				err;
 
-	bh = sb_getblk_gfp(inode->i_sb, pblk, __GFP_MOVABLE | GFP_NOFS);
+	bh = sb_getblk_gfp(inode_sb(inode), pblk, __GFP_MOVABLE | GFP_NOFS);
 	if (unlikely(!bh))
 		return ERR_PTR(-ENOMEM);
 
@@ -1000,7 +1000,7 @@ static int ext4_ext_insert_index(handle_t *handle, struct inode *inode,
 	}
 
 	err = ext4_ext_dirty(handle, inode, curp);
-	ext4_std_error(inode->i_sb, err);
+	ext4_std_error(inode_sb(inode), err);
 
 	return err;
 }
@@ -1084,7 +1084,8 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
 		err = -EFSCORRUPTED;
 		goto cleanup;
 	}
-	bh = sb_getblk_gfp(inode->i_sb, newblock, __GFP_MOVABLE | GFP_NOFS);
+	bh = sb_getblk_gfp(inode_sb(inode), newblock,
+			   __GFP_MOVABLE | GFP_NOFS);
 	if (unlikely(!bh)) {
 		err = -ENOMEM;
 		goto cleanup;
@@ -1157,7 +1158,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
 	while (k--) {
 		oldblock = newblock;
 		newblock = ablocks[--a];
-		bh = sb_getblk(inode->i_sb, newblock);
+		bh = sb_getblk(inode_sb(inode), newblock);
 		if (unlikely(!bh)) {
 			err = -ENOMEM;
 			goto cleanup;
@@ -1262,7 +1263,7 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
 	struct ext4_extent_header *neh;
 	struct buffer_head *bh;
 	ext4_fsblk_t newblock, goal = 0;
-	struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
+	struct ext4_super_block *es = EXT4_SB(inode_sb(inode))->s_es;
 	int err = 0;
 
 	/* Try to prepend new index to old one */
@@ -1278,7 +1279,8 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
 	if (newblock == 0)
 		return err;
 
-	bh = sb_getblk_gfp(inode->i_sb, newblock, __GFP_MOVABLE | GFP_NOFS);
+	bh = sb_getblk_gfp(inode_sb(inode), newblock,
+			   __GFP_MOVABLE | GFP_NOFS);
 	if (unlikely(!bh))
 		return -ENOMEM;
 	lock_buffer(bh);
@@ -2154,7 +2156,7 @@ static int ext4_fill_fiemap_extents(struct inode *inode,
 	ext4_lblk_t last = block + num;
 	int exists, depth = 0, err = 0;
 	unsigned int flags = 0;
-	unsigned char blksize_bits = inode->i_sb->s_blocksize_bits;
+	unsigned char blksize_bits = inode_sb(inode)->s_blocksize_bits;
 
 	while (block < last && block != EXT_MAX_BLOCKS) {
 		num = last - block;
@@ -2438,7 +2440,7 @@ int ext4_ext_calc_credits_for_single_extent(struct inode *inode, int nrblocks,
 			 *  accounted.
 			 */
 			/* 1 bitmap, 1 block group descriptor */
-			ret = 2 + EXT4_META_TRANS_BLOCKS(inode->i_sb);
+			ret = 2 + EXT4_META_TRANS_BLOCKS(inode_sb(inode));
 			return ret;
 		}
 	}
@@ -2489,7 +2491,7 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
 			      long long *partial_cluster,
 			      ext4_lblk_t from, ext4_lblk_t to)
 {
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	unsigned short ee_len = ext4_ext_get_actual_len(ex);
 	ext4_fsblk_t pblk;
 	int flags = get_default_free_blocks_flags(inode);
@@ -2520,7 +2522,7 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
 
 #ifdef EXTENTS_STATS
 	{
-		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+		struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 		spin_lock(&sbi->s_ext_stats_lock);
 		sbi->s_ext_blocks += ee_len;
 		sbi->s_ext_extents++;
@@ -2605,7 +2607,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
 		 long long *partial_cluster,
 		 ext4_lblk_t start, ext4_lblk_t end)
 {
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	int err = 0, correct_index = 0;
 	int depth = ext_depth(inode), credits;
 	struct ext4_extent_header *eh;
@@ -2693,12 +2695,12 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
 		 * groups plus ex_ee_len/blocks_per_block_group for
 		 * the worst case
 		 */
-		credits = 7 + 2*(ex_ee_len/EXT4_BLOCKS_PER_GROUP(inode->i_sb));
+		credits = 7 + 2*(ex_ee_len/EXT4_BLOCKS_PER_GROUP(inode_sb(inode)));
 		if (ex == EXT_FIRST_EXTENT(eh)) {
 			correct_index = 1;
 			credits += (ext_depth(inode)) + 1;
 		}
-		credits += EXT4_MAXQUOTAS_TRANS_BLOCKS(inode->i_sb);
+		credits += EXT4_MAXQUOTAS_TRANS_BLOCKS(inode_sb(inode));
 
 		err = ext4_ext_truncate_extend_restart(handle, inode, credits);
 		if (err)
@@ -2810,7 +2812,7 @@ ext4_ext_more_to_rm(struct ext4_ext_path *path)
 int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
 			  ext4_lblk_t end)
 {
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	int depth = ext_depth(inode);
 	struct ext4_ext_path *path = NULL;
 	long long partial_cluster = 0;
@@ -3414,9 +3416,9 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
 		"block %llu, max_blocks %u\n", inode->i_ino,
 		(unsigned long long)map->m_lblk, map_len);
 
-	sbi = EXT4_SB(inode->i_sb);
-	eof_block = (inode->i_size + inode->i_sb->s_blocksize - 1) >>
-		inode->i_sb->s_blocksize_bits;
+	sbi = EXT4_SB(inode_sb(inode));
+	eof_block = (inode->i_size + inode_sb(inode)->s_blocksize - 1) >>
+		inode_sb(inode)->s_blocksize_bits;
 	if (eof_block < map->m_lblk + map_len)
 		eof_block = map->m_lblk + map_len;
 
@@ -3561,7 +3563,7 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
 
 	if (EXT4_EXT_MAY_ZEROOUT & split_flag)
 		max_zeroout = sbi->s_extent_max_zeroout_kb >>
-			(inode->i_sb->s_blocksize_bits - 10);
+			(inode_sb(inode)->s_blocksize_bits - 10);
 
 	if (ext4_encrypted_inode(inode))
 		max_zeroout = 0;
@@ -3671,8 +3673,8 @@ static int ext4_split_convert_extents(handle_t *handle,
 		  __func__, inode->i_ino,
 		  (unsigned long long)map->m_lblk, map->m_len);
 
-	eof_block = (inode->i_size + inode->i_sb->s_blocksize - 1) >>
-		inode->i_sb->s_blocksize_bits;
+	eof_block = (inode->i_size + inode_sb(inode)->s_blocksize - 1) >>
+		inode_sb(inode)->s_blocksize_bits;
 	if (eof_block < map->m_lblk + map->m_len)
 		eof_block = map->m_lblk + map->m_len;
 	/*
@@ -3838,7 +3840,7 @@ int ext4_find_delalloc_range(struct inode *inode,
 
 int ext4_find_delalloc_cluster(struct inode *inode, ext4_lblk_t lblk)
 {
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	ext4_lblk_t lblk_start, lblk_end;
 	lblk_start = EXT4_LBLK_CMASK(sbi, lblk);
 	lblk_end = lblk_start + sbi->s_cluster_ratio - 1;
@@ -3885,7 +3887,7 @@ static unsigned int
 get_reserved_cluster_alloc(struct inode *inode, ext4_lblk_t lblk_start,
 			   unsigned int num_blks)
 {
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	ext4_lblk_t alloc_cluster_start, alloc_cluster_end;
 	ext4_lblk_t lblk_from, lblk_to, c_offset;
 	unsigned int allocated_clusters = 0;
@@ -4096,7 +4098,8 @@ out:
 	 * new.
 	 */
 	if (allocated > map->m_len) {
-		clean_bdev_aliases(inode->i_sb->s_bdev, newblock + map->m_len,
+		clean_bdev_aliases(inode_sb(inode)->s_bdev,
+				   newblock + map->m_len,
 				   allocated - map->m_len);
 		allocated = map->m_len;
 	}
@@ -4263,7 +4266,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 {
 	struct ext4_ext_path *path = NULL;
 	struct ext4_extent newex, *ex, *ex2;
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	ext4_fsblk_t newblock = 0;
 	int free_on_err = 0, err = 0, depth, ret;
 	unsigned int allocated = 0, offset = 0;
@@ -4382,7 +4385,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 	 * by ext4_find_extent() implies a cluster we can use.
 	 */
 	if (cluster_offset && ex &&
-	    get_implied_cluster_alloc(inode->i_sb, map, ex, path)) {
+	    get_implied_cluster_alloc(inode_sb(inode), map, ex, path)) {
 		ar.len = allocated = map->m_len;
 		newblock = map->m_pblk;
 		map_from_cluster = true;
@@ -4403,7 +4406,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 	/* Check if the extent after searching to the right implies a
 	 * cluster we can use. */
 	if ((sbi->s_cluster_ratio > 1) && ex2 &&
-	    get_implied_cluster_alloc(inode->i_sb, map, ex2, path)) {
+	    get_implied_cluster_alloc(inode_sb(inode), map, ex2, path)) {
 		ar.len = allocated = map->m_len;
 		newblock = map->m_pblk;
 		map_from_cluster = true;
@@ -4607,7 +4610,7 @@ out2:
 
 int ext4_ext_truncate(handle_t *handle, struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	ext4_lblk_t last_block;
 	int err = 0;
 
@@ -4716,7 +4719,7 @@ retry:
 			break;
 	}
 	if (ret == -ENOSPC &&
-			ext4_should_retry_alloc(inode->i_sb, &retries)) {
+			ext4_should_retry_alloc(inode_sb(inode), &retries)) {
 		ret = 0;
 		goto retry;
 	}
@@ -4746,7 +4749,7 @@ static long ext4_zero_range(struct file *file, loff_t offset,
 
 	/* Call ext4_force_commit to flush all data in case of data=journal. */
 	if (ext4_should_journal_data(inode)) {
-		ret = ext4_force_commit(inode->i_sb);
+		ret = ext4_force_commit(inode_sb(inode));
 		if (ret)
 			return ret;
 	}
@@ -4849,7 +4852,7 @@ static long ext4_zero_range(struct file *file, loff_t offset,
 	handle = ext4_journal_start(inode, EXT4_HT_MISC, credits);
 	if (IS_ERR(handle)) {
 		ret = PTR_ERR(handle);
-		ext4_std_error(inode->i_sb, ret);
+		ext4_std_error(inode_sb(inode), ret);
 		goto out_dio;
 	}
 
@@ -4972,8 +4975,8 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 	if (ret)
 		goto out;
 
-	if (file->f_flags & O_SYNC && EXT4_SB(inode->i_sb)->s_journal) {
-		ret = jbd2_complete_transaction(EXT4_SB(inode->i_sb)->s_journal,
+	if (file->f_flags & O_SYNC && EXT4_SB(inode_sb(inode))->s_journal) {
+		ret = jbd2_complete_transaction(EXT4_SB(inode_sb(inode))->s_journal,
 						EXT4_I(inode)->i_sync_tid);
 	}
 out:
@@ -5035,7 +5038,7 @@ int ext4_convert_unwritten_extents(handle_t *handle, struct inode *inode,
 		ret = ext4_map_blocks(handle, inode, &map,
 				      EXT4_GET_BLOCKS_IO_CONVERT_EXT);
 		if (ret <= 0)
-			ext4_warning(inode->i_sb,
+			ext4_warning(inode_sb(inode),
 				     "inode #%lu: block %u: len %u: "
 				     "ext4_ext_map_blocks returned %d",
 				     inode->i_ino, map.m_lblk,
@@ -5106,7 +5109,7 @@ static int ext4_xattr_fiemap(struct inode *inode,
 	__u64 physical = 0;
 	__u64 length;
 	__u32 flags = FIEMAP_EXTENT_LAST;
-	int blockbits = inode->i_sb->s_blocksize_bits;
+	int blockbits = inode_sb(inode)->s_blocksize_bits;
 	int error = 0;
 
 	/* in-inode? */
@@ -5121,12 +5124,12 @@ static int ext4_xattr_fiemap(struct inode *inode,
 		offset = EXT4_GOOD_OLD_INODE_SIZE +
 				EXT4_I(inode)->i_extra_isize;
 		physical += offset;
-		length = EXT4_SB(inode->i_sb)->s_inode_size - offset;
+		length = EXT4_SB(inode_sb(inode))->s_inode_size - offset;
 		flags |= FIEMAP_EXTENT_DATA_INLINE;
 		brelse(iloc.bh);
 	} else { /* external block */
 		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
-		length = inode->i_sb->s_blocksize;
+		length = inode_sb(inode)->s_blocksize;
 	}
 
 	if (physical)
@@ -5171,8 +5174,8 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 		ext4_lblk_t len_blks;
 		__u64 last_blk;
 
-		start_blk = start >> inode->i_sb->s_blocksize_bits;
-		last_blk = (start + len - 1) >> inode->i_sb->s_blocksize_bits;
+		start_blk = start >> inode_sb(inode)->s_blocksize_bits;
+		last_blk = (start + len - 1) >> inode_sb(inode)->s_blocksize_bits;
 		if (last_blk >= EXT_MAX_BLOCKS)
 			last_blk = EXT_MAX_BLOCKS-1;
 		len_blks = ((ext4_lblk_t) last_blk) - start_blk + 1;
@@ -5433,7 +5436,7 @@ out:
  */
 int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	ext4_lblk_t punch_start, punch_stop;
 	handle_t *handle;
 	unsigned int credits;
@@ -5463,7 +5466,7 @@ int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len)
 
 	/* Call ext4_force_commit to flush all data in case of data=journal. */
 	if (ext4_should_journal_data(inode)) {
-		ret = ext4_force_commit(inode->i_sb);
+		ret = ext4_force_commit(inode_sb(inode));
 		if (ret)
 			return ret;
 	}
@@ -5578,7 +5581,7 @@ out_mutex:
  */
 int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	handle_t *handle;
 	struct ext4_ext_path *path;
 	struct ext4_extent *extent;
@@ -5610,7 +5613,7 @@ int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len)
 
 	/* Call ext4_force_commit to flush all data in case of data=journal */
 	if (ext4_should_journal_data(inode)) {
-		ret = ext4_force_commit(inode->i_sb);
+		ret = ext4_force_commit(inode_sb(inode));
 		if (ret)
 			return ret;
 	}
@@ -5623,7 +5626,7 @@ int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len)
 	}
 
 	/* Check for wrap through zero */
-	if (inode->i_size + len > inode->i_sb->s_maxbytes) {
+	if (inode->i_size + len > inode_sb(inode)->s_maxbytes) {
 		ret = -EFBIG;
 		goto out_mutex;
 	}

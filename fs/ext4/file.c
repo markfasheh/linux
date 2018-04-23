@@ -64,7 +64,7 @@ static ssize_t ext4_dax_read_iter(struct kiocb *iocb, struct iov_iter *to)
 
 static ssize_t ext4_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(file_inode(iocb->ki_filp)->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(file_inode(iocb->ki_filp))))))
 		return -EIO;
 
 	if (!iov_iter_count(to))
@@ -122,7 +122,7 @@ static void ext4_unwritten_wait(struct inode *inode)
 static int
 ext4_unaligned_aio(struct inode *inode, struct iov_iter *from, loff_t pos)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int blockmask = sb->s_blocksize - 1;
 
 	if (pos >= i_size_read(inode))
@@ -170,7 +170,7 @@ static ssize_t ext4_write_checks(struct kiocb *iocb, struct iov_iter *from)
 	 * is smaller than s_maxbytes, which is for extent-mapped files.
 	 */
 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
-		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+		struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 
 		if (iocb->ki_pos >= sbi->s_bitmap_maxbytes)
 			return -EFBIG;
@@ -219,7 +219,7 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	int overwrite = 0;
 	ssize_t ret;
 
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))))
 		return -EIO;
 
 #ifdef CONFIG_FS_DAX
@@ -284,7 +284,7 @@ static int ext4_dax_huge_fault(struct vm_fault *vmf,
 	int retries = 0;
 	handle_t *handle = NULL;
 	struct inode *inode = file_inode(vmf->vma->vm_file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	/*
 	 * We have to distinguish real writes from writes which will result in a
@@ -360,7 +360,7 @@ static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct inode *inode = file->f_mapping->host;
 
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))))
 		return -EIO;
 
 	/*
@@ -382,14 +382,14 @@ static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
 
 static int ext4_file_open(struct inode * inode, struct file * filp)
 {
-	struct super_block *sb = inode->i_sb;
-	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+	struct super_block *sb = inode_sb(inode);
+	struct ext4_sb_info *sbi = EXT4_SB(inode_sb(inode));
 	struct vfsmount *mnt = filp->f_path.mnt;
 	struct path path;
 	char buf[64], *cp;
 	int ret;
 
-	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode_sb(inode)))))
 		return -EIO;
 
 	if (unlikely(!(sbi->s_mount_flags & EXT4_MF_MNTDIR_SAMPLED) &&
@@ -454,9 +454,9 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int whence)
 	loff_t maxbytes;
 
 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
-		maxbytes = EXT4_SB(inode->i_sb)->s_bitmap_maxbytes;
+		maxbytes = EXT4_SB(inode_sb(inode))->s_bitmap_maxbytes;
 	else
-		maxbytes = inode->i_sb->s_maxbytes;
+		maxbytes = inode_sb(inode)->s_maxbytes;
 
 	switch (whence) {
 	default:

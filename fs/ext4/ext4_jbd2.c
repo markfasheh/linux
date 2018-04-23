@@ -207,7 +207,7 @@ int __ext4_forget(const char *where, unsigned int line, handle_t *handle,
 	jbd_debug(4, "forgetting bh %p: is_metadata = %d, mode %o, "
 		  "data mode %x\n",
 		  bh, is_metadata, inode->i_mode,
-		  test_opt(inode->i_sb, DATA_FLAGS));
+		  test_opt(inode_sb(inode), DATA_FLAGS));
 
 	/* In the no journal case, we can just do a bforget and return */
 	if (!ext4_handle_valid(handle)) {
@@ -220,7 +220,7 @@ int __ext4_forget(const char *where, unsigned int line, handle_t *handle,
 	 * support it.  Otherwise, only skip the revoke on un-journaled
 	 * data blocks. */
 
-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA ||
+	if (test_opt(inode_sb(inode), DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA ||
 	    (!is_metadata && !ext4_should_journal_data(inode))) {
 		if (bh) {
 			BUFFER_TRACE(bh, "call jbd2_journal_forget");
@@ -241,8 +241,8 @@ int __ext4_forget(const char *where, unsigned int line, handle_t *handle,
 	if (err) {
 		ext4_journal_abort_handle(where, line, __func__,
 					  bh, handle, err);
-		__ext4_abort(inode->i_sb, where, line,
-			   "error %d when attempting revoke", err);
+		__ext4_abort(inode_sb(inode), where, line,
+			     "error %d when attempting revoke", err);
 	}
 	BUFFER_TRACE(bh, "exit");
 	return err;
@@ -308,7 +308,7 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
 			if (buffer_req(bh) && !buffer_uptodate(bh)) {
 				struct ext4_super_block *es;
 
-				es = EXT4_SB(inode->i_sb)->s_es;
+				es = EXT4_SB(inode_sb(inode))->s_es;
 				es->s_last_error_block =
 					cpu_to_le64(bh->b_blocknr);
 				ext4_error_inode(inode, where, line,

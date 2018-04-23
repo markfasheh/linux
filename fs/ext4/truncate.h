@@ -25,7 +25,7 @@ static inline unsigned long ext4_blocks_for_truncate(struct inode *inode)
 {
 	ext4_lblk_t needed;
 
-	needed = inode->i_blocks >> (inode->i_sb->s_blocksize_bits - 9);
+	needed = inode->i_blocks >> (inode_sb(inode)->s_blocksize_bits - 9);
 
 	/* Give ourselves just enough room to cope with inodes in which
 	 * i_blocks is corrupt: we've seen disk corruptions in the past
@@ -41,6 +41,6 @@ static inline unsigned long ext4_blocks_for_truncate(struct inode *inode)
 	if (needed > EXT4_MAX_TRANS_DATA)
 		needed = EXT4_MAX_TRANS_DATA;
 
-	return EXT4_DATA_TRANS_BLOCKS(inode->i_sb) + needed;
+	return EXT4_DATA_TRANS_BLOCKS(inode_sb(inode)) + needed;
 }
 

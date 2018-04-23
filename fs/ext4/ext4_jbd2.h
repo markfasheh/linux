@@ -16,7 +16,7 @@
 #include <linux/jbd2.h>
 #include "ext4.h"
 
-#define EXT4_JOURNAL(inode)	(EXT4_SB((inode)->i_sb)->s_journal)
+#define EXT4_JOURNAL(inode)	(EXT4_SB(inode_sb((inode)))->s_journal)
 
 /* Define the number of blocks we need to account to a transaction to
  * modify one block of data.
@@ -308,7 +308,7 @@ static inline handle_t *__ext4_journal_start(struct inode *inode,
 					     unsigned int line, int type,
 					     int blocks, int rsv_blocks)
 {
-	return __ext4_journal_start_sb(inode->i_sb, line, type, blocks,
+	return __ext4_journal_start_sb(inode_sb(inode), line, type, blocks,
 				       rsv_blocks);
 }
 
@@ -407,17 +407,17 @@ static inline int ext4_inode_journal_mode(struct inode *inode)
 		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
 	/* We do not support data journalling with delayed allocation */
 	if (!S_ISREG(inode->i_mode) ||
-	    test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA ||
+	    test_opt(inode_sb(inode), DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA ||
 	    (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA) &&
-	    !test_opt(inode->i_sb, DELALLOC))) {
+	    !test_opt(inode_sb(inode), DELALLOC))) {
 		/* We do not support data journalling for encrypted data */
 		if (S_ISREG(inode->i_mode) && ext4_encrypted_inode(inode))
 			return EXT4_INODE_ORDERED_DATA_MODE;  /* ordered */
 		return EXT4_INODE_JOURNAL_DATA_MODE;	/* journal data */
 	}
-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
+	if (test_opt(inode_sb(inode), DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
 		return EXT4_INODE_ORDERED_DATA_MODE;	/* ordered */
-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
+	if (test_opt(inode_sb(inode), DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
 		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
 	BUG();
 }
@@ -448,7 +448,7 @@ static inline int ext4_should_writeback_data(struct inode *inode)
  */
 static inline int ext4_should_dioread_nolock(struct inode *inode)
 {
-	if (!test_opt(inode->i_sb, DIOREAD_NOLOCK))
+	if (!test_opt(inode_sb(inode), DIOREAD_NOLOCK))
 		return 0;
 	if (!S_ISREG(inode->i_mode))
 		return 0;

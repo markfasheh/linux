@@ -255,7 +255,7 @@ out:
  */
 void ext4_free_inode(handle_t *handle, struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int is_directory;
 	unsigned long ino;
 	struct buffer_head *bitmap_bh = NULL;
@@ -795,7 +795,7 @@ struct inode *__ext4_new_inode(handle_t *handle, struct inode *dir,
 	if (!dir || !dir->i_nlink)
 		return ERR_PTR(-EPERM);
 
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	sbi = EXT4_SB(sb);
 
 	if (unlikely(ext4_forced_shutdown(sbi)))
@@ -953,7 +953,8 @@ repeat_in_this_group:
 
 		if (!handle) {
 			BUG_ON(nblocks <= 0);
-			handle = __ext4_journal_start_sb(dir->i_sb, line_no,
+			handle = __ext4_journal_start_sb(inode_sb(dir),
+							 line_no,
 							 handle_type, nblocks,
 							 0);
 			if (IS_ERR(handle)) {

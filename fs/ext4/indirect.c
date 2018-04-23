@@ -58,7 +58,7 @@ static inline void add_chain(Indirect *p, struct buffer_head *bh, __le32 *v)
  *
  *	Note: function doesn't find node addresses, so no IO is needed. All
  *	we need to know is the capacity of indirect blocks (taken from the
- *	inode->i_sb).
+ *	inode_sb(inode)).
  */
 
 /*
@@ -75,8 +75,8 @@ static int ext4_block_to_path(struct inode *inode,
 			      ext4_lblk_t i_block,
 			      ext4_lblk_t offsets[4], int *boundary)
 {
-	int ptrs = EXT4_ADDR_PER_BLOCK(inode->i_sb);
-	int ptrs_bits = EXT4_ADDR_PER_BLOCK_BITS(inode->i_sb);
+	int ptrs = EXT4_ADDR_PER_BLOCK(inode_sb(inode));
+	int ptrs_bits = EXT4_ADDR_PER_BLOCK_BITS(inode_sb(inode));
 	const long direct_blocks = EXT4_NDIR_BLOCKS,
 		indirect_blocks = ptrs,
 		double_blocks = (1 << (ptrs_bits * 2));
@@ -102,7 +102,7 @@ static int ext4_block_to_path(struct inode *inode,
 		offsets[n++] = i_block & (ptrs - 1);
 		final = ptrs;
 	} else {
-		ext4_warning(inode->i_sb, "block %lu > max in inode %lu",
+		ext4_warning(inode_sb(inode), "block %lu > max in inode %lu",
 			     i_block + direct_blocks +
 			     indirect_blocks + double_blocks, inode->i_ino);
 	}
@@ -145,7 +145,7 @@ static Indirect *ext4_get_branch(struct inode *inode, int depth,
 				 ext4_lblk_t  *offsets,
 				 Indirect chain[4], int *err)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	Indirect *p = chain;
 	struct buffer_head *bh;
 	int ret = -EIO;
@@ -346,7 +346,8 @@ static int ext4_alloc_branch(handle_t *handle,
 		if (i == 0)
 			continue;
 
-		bh = branch[i].bh = sb_getblk(ar->inode->i_sb, new_blocks[i-1]);
+		bh = branch[i].bh = sb_getblk(inode_sb(ar->inode),
+					      new_blocks[i-1]);
 		if (unlikely(!bh)) {
 			err = -ENOMEM;
 			goto failed;
@@ -558,7 +559,7 @@ int ext4_ind_map_blocks(handle_t *handle, struct inode *inode,
 
 	/* Next simple case - plain lookup failed */
 	if ((flags & EXT4_GET_BLOCKS_CREATE) == 0) {
-		unsigned epb = inode->i_sb->s_blocksize / sizeof(u32);
+		unsigned epb = inode_sb(inode)->s_blocksize / sizeof(u32);
 		int i;
 
 		/* Count number blocks in a subtree under 'partial' */
@@ -578,7 +579,7 @@ int ext4_ind_map_blocks(handle_t *handle, struct inode *inode,
 	/*
 	 * Okay, we need to do block allocation.
 	*/
-	if (ext4_has_feature_bigalloc(inode->i_sb)) {
+	if (ext4_has_feature_bigalloc(inode_sb(inode))) {
 		EXT4_ERROR_INODE(inode, "Can't allocate blocks for "
 				 "non-extent mapped inodes with bigalloc");
 		return -EFSCORRUPTED;
@@ -656,7 +657,7 @@ out:
 int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
-	sector_t dind_mask = ~((sector_t)EXT4_ADDR_PER_BLOCK(inode->i_sb) - 1);
+	sector_t dind_mask = ~((sector_t)EXT4_ADDR_PER_BLOCK(inode_sb(inode)) - 1);
 	int blk_bits;
 
 	if (lblock < EXT4_NDIR_BLOCKS)
@@ -672,7 +673,7 @@ int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock)
 	ei->i_da_metadata_calc_last_lblock = lblock & dind_mask;
 	ei->i_da_metadata_calc_len = 1;
 	blk_bits = order_base_2(lblock);
-	return (blk_bits / EXT4_ADDR_PER_BLOCK_BITS(inode->i_sb)) + 1;
+	return (blk_bits / EXT4_ADDR_PER_BLOCK_BITS(inode_sb(inode))) + 1;
 }
 
 /*
@@ -683,10 +684,10 @@ int ext4_ind_trans_blocks(struct inode *inode, int nrblocks)
 {
 	/*
 	 * With N contiguous data blocks, we need at most
-	 * N/EXT4_ADDR_PER_BLOCK(inode->i_sb) + 1 indirect blocks,
+	 * N/EXT4_ADDR_PER_BLOCK(inode_sb(inode)) + 1 indirect blocks,
 	 * 2 dindirect blocks, and 1 tindirect block
 	 */
-	return DIV_ROUND_UP(nrblocks, EXT4_ADDR_PER_BLOCK(inode->i_sb)) + 4;
+	return DIV_ROUND_UP(nrblocks, EXT4_ADDR_PER_BLOCK(inode_sb(inode))) + 4;
 }
 
 /*
@@ -836,7 +837,7 @@ static int ext4_clear_blocks(handle_t *handle, struct inode *inode,
 	else if (ext4_should_journal_data(inode))
 		flags |= EXT4_FREE_BLOCKS_FORGET;
 
-	if (!ext4_data_block_valid(EXT4_SB(inode->i_sb), block_to_free,
+	if (!ext4_data_block_valid(EXT4_SB(inode_sb(inode)), block_to_free,
 				   count)) {
 		EXT4_ERROR_INODE(inode, "attempt to clear invalid "
 				 "blocks %llu len %lu",
@@ -872,7 +873,7 @@ static int ext4_clear_blocks(handle_t *handle, struct inode *inode,
 	ext4_free_blocks(handle, inode, NULL, block_to_free, count, flags);
 	return 0;
 out_err:
-	ext4_std_error(inode->i_sb, err);
+	ext4_std_error(inode_sb(inode), err);
 	return err;
 }
 
@@ -992,14 +993,14 @@ static void ext4_free_branches(handle_t *handle, struct inode *inode,
 
 	if (depth--) {
 		struct buffer_head *bh;
-		int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+		int addr_per_block = EXT4_ADDR_PER_BLOCK(inode_sb(inode));
 		p = last;
 		while (--p >= first) {
 			nr = le32_to_cpu(*p);
 			if (!nr)
 				continue;		/* A hole */
 
-			if (!ext4_data_block_valid(EXT4_SB(inode->i_sb),
+			if (!ext4_data_block_valid(EXT4_SB(inode_sb(inode)),
 						   nr, 1)) {
 				EXT4_ERROR_INODE(inode,
 						 "invalid indirect mapped "
@@ -1009,7 +1010,7 @@ static void ext4_free_branches(handle_t *handle, struct inode *inode,
 			}
 
 			/* Go read the buffer for the next level down */
-			bh = sb_bread(inode->i_sb, nr);
+			bh = sb_bread(inode_sb(inode), nr);
 
 			/*
 			 * A read failure? Report error and clear slot
@@ -1096,19 +1097,19 @@ void ext4_ind_truncate(handle_t *handle, struct inode *inode)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	__le32 *i_data = ei->i_data;
-	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode_sb(inode));
 	ext4_lblk_t offsets[4];
 	Indirect chain[4];
 	Indirect *partial;
 	__le32 nr = 0;
 	int n = 0;
 	ext4_lblk_t last_block, max_block;
-	unsigned blocksize = inode->i_sb->s_blocksize;
+	unsigned blocksize = inode_sb(inode)->s_blocksize;
 
 	last_block = (inode->i_size + blocksize-1)
-					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
-	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
-					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
+					>> EXT4_BLOCK_SIZE_BITS(inode_sb(inode));
+	max_block = (EXT4_SB(inode_sb(inode))->s_bitmap_maxbytes + blocksize-1)
+					>> EXT4_BLOCK_SIZE_BITS(inode_sb(inode));
 
 	if (last_block != max_block) {
 		n = ext4_block_to_path(inode, last_block, offsets, NULL);
@@ -1209,17 +1210,17 @@ int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	__le32 *i_data = ei->i_data;
-	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode_sb(inode));
 	ext4_lblk_t offsets[4], offsets2[4];
 	Indirect chain[4], chain2[4];
 	Indirect *partial, *partial2;
 	ext4_lblk_t max_block;
 	__le32 nr = 0, nr2 = 0;
 	int n = 0, n2 = 0;
-	unsigned blocksize = inode->i_sb->s_blocksize;
+	unsigned blocksize = inode_sb(inode)->s_blocksize;
 
-	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
-					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
+	max_block = (EXT4_SB(inode_sb(inode))->s_bitmap_maxbytes + blocksize-1)
+					>> EXT4_BLOCK_SIZE_BITS(inode_sb(inode));
 	if (end >= max_block)
 		end = max_block;
 	if ((start >= end) || (start > max_block))

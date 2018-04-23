@@ -40,9 +40,9 @@ static int ext4_dx_readdir(struct file *, struct dir_context *);
  */
 static int is_dx_dir(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
-	if (ext4_has_feature_dir_index(inode->i_sb) &&
+	if (ext4_has_feature_dir_index(inode_sb(inode)) &&
 	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
 	     ((inode->i_size >> sb->s_blocksize_bits) == 1) ||
 	     ext4_has_inline_data(inode)))
@@ -67,7 +67,7 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
 {
 	const char *error_msg = NULL;
 	const int rlen = ext4_rec_len_from_disk(de->rec_len,
-						dir->i_sb->s_blocksize);
+						inode_sb(dir)->s_blocksize);
 
 	if (unlikely(rlen < EXT4_DIR_REC_LEN(1)))
 		error_msg = "rec_len is smaller than minimal";
@@ -78,7 +78,7 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
 	else if (unlikely(((char *) de - buf) + rlen > size))
 		error_msg = "directory entry across range";
 	else if (unlikely(le32_to_cpu(de->inode) >
-			le32_to_cpu(EXT4_SB(dir->i_sb)->s_es->s_inodes_count)))
+			le32_to_cpu(EXT4_SB(inode_sb(dir))->s_es->s_inodes_count)))
 		error_msg = "inode out of bounds";
 	else
 		return 0;
@@ -108,7 +108,7 @@ static int ext4_readdir(struct file *file, struct dir_context *ctx)
 	struct ext4_dir_entry_2 *de;
 	int err;
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh = NULL;
 	int dir_has_error = 0;
 	struct fscrypt_str fstr = FSTR_INIT(NULL, 0);
@@ -502,7 +502,7 @@ static int call_filldir(struct file *file, struct dir_context *ctx,
 {
 	struct dir_private_info *info = file->private_data;
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	if (!fname) {
 		ext4_msg(sb, KERN_ERR, "%s:%d: inode #%lu: comm %s: "
