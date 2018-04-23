@@ -79,7 +79,7 @@ static int qnx6_get_block(struct inode *inode, sector_t iblock,
 	phys = qnx6_block_map(inode, iblock);
 	if (phys) {
 		/* logical block is before EOF */
-		map_bh(bh, inode->i_sb, phys);
+		map_bh(bh, inode_sb(inode), phys);
 	}
 	return 0;
 }
@@ -110,7 +110,7 @@ static int qnx6_readpages(struct file *file, struct address_space *mapping,
  */
 static unsigned qnx6_block_map(struct inode *inode, unsigned no)
 {
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	struct qnx6_sb_info *sbi = QNX6_SB(s);
 	struct qnx6_inode_info *ei = QNX6_I(inode);
 	unsigned block = 0;
