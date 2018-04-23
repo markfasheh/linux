@@ -331,7 +331,7 @@ static void inode_free_rcu(struct rcu_head *head)
 static void inode_free_security(struct inode *inode)
 {
 	struct inode_security_struct *isec = inode->i_security;
-	struct superblock_security_struct *sbsec = inode->i_sb->s_security;
+	struct superblock_security_struct *sbsec = inode_sb(inode)->s_security;
 
 	/*
 	 * As not all inode security structures are in a list, we check for
@@ -1500,7 +1500,7 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
 	if (isec->sclass == SECCLASS_FILE)
 		isec->sclass = inode_mode_to_security_class(inode->i_mode);
 
-	sbsec = inode->i_sb->s_security;
+	sbsec = inode_sb(inode)->s_security;
 	if (!(sbsec->flags & SE_SBINITIALIZED)) {
 		/* Defer initialization until selinux_complete_init,
 		   after the initial policy is loaded and the security
@@ -1581,7 +1581,8 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
 			if (rc != -ENODATA) {
 				printk(KERN_WARNING "SELinux: %s:  getxattr returned "
 				       "%d for dev=%s ino=%ld\n", __func__,
-				       -rc, inode->i_sb->s_id, inode->i_ino);
+				       -rc, inode_sb(inode)->s_id,
+				       inode->i_ino);
 				kfree(context);
 				goto out;
 			}
@@ -1593,7 +1594,7 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
 							     sbsec->def_sid,
 							     GFP_NOFS);
 			if (rc) {
-				char *dev = inode->i_sb->s_id;
+				char *dev = inode_sb(inode)->s_id;
 				unsigned long ino = inode->i_ino;
 
 				if (rc == -EINVAL) {
@@ -1873,7 +1874,7 @@ selinux_determine_inode_label(const struct task_security_struct *tsec,
 				 const struct qstr *name, u16 tclass,
 				 u32 *_new_isid)
 {
-	const struct superblock_security_struct *sbsec = dir->i_sb->s_security;
+	const struct superblock_security_struct *sbsec = inode_sb(dir)->s_security;
 
 	if ((sbsec->flags & SE_SBINITIALIZED) &&
 	    (sbsec->behavior == SECURITY_FS_USE_MNTPOINT)) {
@@ -1903,7 +1904,7 @@ static int may_create(struct inode *dir,
 	int rc;
 
 	dsec = inode_security(dir);
-	sbsec = dir->i_sb->s_security;
+	sbsec = inode_sb(dir)->s_security;
 
 	sid = tsec->sid;
 
@@ -2106,7 +2107,7 @@ static inline u32 open_file_to_av(struct file *file)
 	u32 av = file_to_av(file);
 	struct inode *inode = file_inode(file);
 
-	if (selinux_policycap_openperm && inode->i_sb->s_magic != SOCKFS_MAGIC)
+	if (selinux_policycap_openperm && inode_sb(inode)->s_magic != SOCKFS_MAGIC)
 		av |= FILE__OPEN;
 
 	return av;
@@ -2939,7 +2940,7 @@ static int selinux_inode_init_security(struct inode *inode, struct inode *dir,
 	int rc;
 	char *context;
 
-	sbsec = dir->i_sb->s_security;
+	sbsec = inode_sb(dir)->s_security;
 
 	newsid = tsec->create_sid;
 
@@ -3127,7 +3128,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
 		return dentry_has_perm(cred, dentry, FILE__SETATTR);
 
 	if (selinux_policycap_openperm &&
-	    inode->i_sb->s_magic != SOCKFS_MAGIC &&
+	    inode_sb(inode)->s_magic != SOCKFS_MAGIC &&
 	    (ia_valid & ATTR_SIZE) &&
 	    !(ia_valid & ATTR_FILE))
 		av |= FILE__OPEN;
@@ -3172,7 +3173,7 @@ static int selinux_inode_setxattr(struct dentry *dentry, const char *name,
 		return dentry_has_perm(current_cred(), dentry, FILE__SETATTR);
 	}
 
-	sbsec = inode->i_sb->s_security;
+	sbsec = inode_sb(inode)->s_security;
 	if (!(sbsec->flags & SBLABEL_MNT))
 		return -EOPNOTSUPP;
 
@@ -3253,7 +3254,7 @@ static void selinux_inode_post_setxattr(struct dentry *dentry, const char *name,
 	if (rc) {
 		printk(KERN_ERR "SELinux:  unable to map context to SID"
 		       "for (%s, %lu), rc=%d\n",
-		       inode->i_sb->s_id, inode->i_ino, -rc);
+		       inode_sb(inode)->s_id, inode->i_ino, -rc);
 		return;
 	}
 

@@ -400,7 +400,7 @@ int cap_inode_getsecurity(struct inode *inode, const char *name, void **buffer,
 	if (ret < 0)
 		return ret;
 
-	fs_ns = inode->i_sb->s_user_ns;
+	fs_ns = inode_sb(inode)->s_user_ns;
 	cap = (struct vfs_cap_data *) tmpbuf;
 	if (is_v2header((size_t) ret, cap)) {
 		/* If this is sizeof(vfs_cap_data) then we're ok with the
@@ -486,7 +486,7 @@ int cap_convert_nscap(struct dentry *dentry, void **ivalue, size_t size)
 	__u32 magic, nsmagic;
 	struct inode *inode = d_backing_inode(dentry);
 	struct user_namespace *task_ns = current_user_ns(),
-		*fs_ns = inode->i_sb->s_user_ns;
+		*fs_ns = inode_sb(inode)->s_user_ns;
 	kuid_t rootid;
 	size_t newsize;
 
@@ -497,7 +497,7 @@ int cap_convert_nscap(struct dentry *dentry, void **ivalue, size_t size)
 	if (!capable_wrt_inode_uidgid(inode, CAP_SETFCAP))
 		return -EPERM;
 	if (size == XATTR_CAPS_SZ_2)
-		if (ns_capable(inode->i_sb->s_user_ns, CAP_SETFCAP))
+		if (ns_capable(inode_sb(inode)->s_user_ns, CAP_SETFCAP))
 			/* user is privileged, just write the v2 */
 			return size;
 
@@ -589,7 +589,7 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data 
 	if (!inode)
 		return -ENODATA;
 
-	fs_ns = inode->i_sb->s_user_ns;
+	fs_ns = inode_sb(inode)->s_user_ns;
 	size = __vfs_getxattr((struct dentry *)dentry, inode,
 			      XATTR_NAME_CAPS, &data, XATTR_CAPS_SZ);
 	if (size == -ENODATA || size == -EOPNOTSUPP)

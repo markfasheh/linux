@@ -181,7 +181,7 @@ static int __aafs_setup_d_inode(struct inode *dir, struct dentry *dentry,
 			       const struct file_operations *fops,
 			       const struct inode_operations *iops)
 {
-	struct inode *inode = new_inode(dir->i_sb);
+	struct inode *inode = new_inode(inode_sb(dir));
 
 	AA_BUG(!dir);
 	AA_BUG(!dentry);
@@ -2349,7 +2349,7 @@ static int aa_mk_null_file(struct dentry *parent)
 		error = PTR_ERR(dentry);
 		goto out;
 	}
-	inode = new_inode(parent->d_inode->i_sb);
+	inode = new_inode(inode_sb(parent->d_inode));
 	if (!inode) {
 		error = -ENOMEM;
 		goto out1;

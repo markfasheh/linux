@@ -265,10 +265,10 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
 	    (!(rule->mask & mask) && func != POST_SETATTR))
 		return false;
 	if ((rule->flags & IMA_FSMAGIC)
-	    && rule->fsmagic != inode->i_sb->s_magic)
+	    && rule->fsmagic != inode_sb(inode)->s_magic)
 		return false;
 	if ((rule->flags & IMA_FSUUID) &&
-	    !uuid_equal(&rule->fsuuid, &inode->i_sb->s_uuid))
+	    !uuid_equal(&rule->fsuuid, &inode_sb(inode)->s_uuid))
 		return false;
 	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
 		return false;

@@ -170,7 +170,7 @@ static int smk_bu_inode(struct inode *inode, int mode, int rc)
 
 	if (isp->smk_flags & SMK_INODE_IMPURE)
 		pr_info("Smack Unconfined Corruption: inode=(%s %ld) %s\n",
-			inode->i_sb->s_id, inode->i_ino, current->comm);
+			inode_sb(inode)->s_id, inode->i_ino, current->comm);
 
 	if (rc <= 0)
 		return rc;
@@ -184,7 +184,7 @@ static int smk_bu_inode(struct inode *inode, int mode, int rc)
 
 	pr_info("Smack %s: (%s %s %s) inode=(%s %ld) %s\n", smk_bu_mess[rc],
 		tsp->smk_task->smk_known, isp->smk_inode->smk_known, acc,
-		inode->i_sb->s_id, inode->i_ino, current->comm);
+		inode_sb(inode)->s_id, inode->i_ino, current->comm);
 	return 0;
 }
 #else
@@ -202,7 +202,7 @@ static int smk_bu_file(struct file *file, int mode, int rc)
 
 	if (isp->smk_flags & SMK_INODE_IMPURE)
 		pr_info("Smack Unconfined Corruption: inode=(%s %ld) %s\n",
-			inode->i_sb->s_id, inode->i_ino, current->comm);
+			inode_sb(inode)->s_id, inode->i_ino, current->comm);
 
 	if (rc <= 0)
 		return rc;
@@ -212,7 +212,7 @@ static int smk_bu_file(struct file *file, int mode, int rc)
 	smk_bu_mode(mode, acc);
 	pr_info("Smack %s: (%s %s %s) file=(%s %ld %pD) %s\n", smk_bu_mess[rc],
 		sskp->smk_known, smk_of_inode(inode)->smk_known, acc,
-		inode->i_sb->s_id, inode->i_ino, file,
+		inode_sb(inode)->s_id, inode->i_ino, file,
 		current->comm);
 	return 0;
 }
@@ -232,7 +232,7 @@ static int smk_bu_credfile(const struct cred *cred, struct file *file,
 
 	if (isp->smk_flags & SMK_INODE_IMPURE)
 		pr_info("Smack Unconfined Corruption: inode=(%s %ld) %s\n",
-			inode->i_sb->s_id, inode->i_ino, current->comm);
+			inode_sb(inode)->s_id, inode->i_ino, current->comm);
 
 	if (rc <= 0)
 		return rc;
@@ -242,7 +242,7 @@ static int smk_bu_credfile(const struct cred *cred, struct file *file,
 	smk_bu_mode(mode, acc);
 	pr_info("Smack %s: (%s %s %s) file=(%s %ld %pD) %s\n", smk_bu_mess[rc],
 		sskp->smk_known, smk_of_inode(inode)->smk_known, acc,
-		inode->i_sb->s_id, inode->i_ino, file,
+		inode_sb(inode)->s_id, inode->i_ino, file,
 		current->comm);
 	return 0;
 }
@@ -924,7 +924,7 @@ static int smack_bprm_set_creds(struct linux_binprm *bprm)
 	if (isp->smk_task == NULL || isp->smk_task == bsp->smk_task)
 		return 0;
 
-	sbsp = inode->i_sb->s_security;
+	sbsp = inode_sb(inode)->s_security;
 	if ((sbsp->smk_flags & SMK_SB_UNTRUSTED) &&
 	    isp->smk_task != sbsp->smk_root)
 		return 0;
@@ -1213,7 +1213,7 @@ static int smack_inode_rename(struct inode *old_inode,
  */
 static int smack_inode_permission(struct inode *inode, int mask)
 {
-	struct superblock_smack *sbsp = inode->i_sb->s_security;
+	struct superblock_smack *sbsp = inode_sb(inode)->s_security;
 	struct smk_audit_info ad;
 	int no_block = mask & MAY_NOT_BLOCK;
 	int rc;
@@ -1493,7 +1493,7 @@ static int smack_inode_getsecurity(struct inode *inode,
 		/*
 		 * The rest of the Smack xattrs are only on sockets.
 		 */
-		sbp = ip->i_sb;
+		sbp = inode_sb(ip);
 		if (sbp->s_magic != SOCKFS_MAGIC)
 			return -EOPNOTSUPP;
 
@@ -1737,7 +1737,7 @@ static int smack_mmap_file(struct file *file,
 	isp = file_inode(file)->i_security;
 	if (isp->smk_mmap == NULL)
 		return 0;
-	sbsp = file_inode(file)->i_sb->s_security;
+	sbsp = inode_sb(file_inode(file))->s_security;
 	if (sbsp->smk_flags & SMK_SB_UNTRUSTED &&
 	    isp->smk_mmap != sbsp->smk_root)
 		return -EACCES;
@@ -1884,7 +1884,7 @@ static int smack_file_receive(struct file *file)
 	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_PATH);
 	smk_ad_setfield_u_fs_path(&ad, file->f_path);
 
-	if (inode->i_sb->s_magic == SOCKFS_MAGIC) {
+	if (inode_sb(inode)->s_magic == SOCKFS_MAGIC) {
 		sock = SOCKET_I(inode);
 		ssp = sock->sk->sk_security;
 		tsp = current_security();
@@ -2759,7 +2759,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
 	/*
 	 * The rest of the Smack xattrs are only on sockets.
 	 */
-	if (inode->i_sb->s_magic != SOCKFS_MAGIC)
+	if (inode_sb(inode)->s_magic != SOCKFS_MAGIC)
 		return -EOPNOTSUPP;
 
 	sock = SOCKET_I(inode);
@@ -3414,7 +3414,7 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
 	if (isp->smk_flags & SMK_INODE_INSTANT)
 		goto unlockandout;
 
-	sbp = inode->i_sb;
+	sbp = inode_sb(inode);
 	sbsp = sbp->s_security;
 	/*
 	 * We're going to use the superblock default label

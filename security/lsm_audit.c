@@ -240,7 +240,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		inode = d_backing_inode(a->u.path.dentry);
 		if (inode) {
 			audit_log_format(ab, " dev=");
-			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 			audit_log_format(ab, " ino=%lu", inode->i_ino);
 		}
 		break;
@@ -253,7 +253,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		inode = file_inode(a->u.file);
 		if (inode) {
 			audit_log_format(ab, " dev=");
-			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 			audit_log_format(ab, " ino=%lu", inode->i_ino);
 		}
 		break;
@@ -266,7 +266,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		inode = a->u.op->path.dentry->d_inode;
 		if (inode) {
 			audit_log_format(ab, " dev=");
-			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 			audit_log_format(ab, " ino=%lu", inode->i_ino);
 		}
 
@@ -282,7 +282,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		inode = d_backing_inode(a->u.dentry);
 		if (inode) {
 			audit_log_format(ab, " dev=");
-			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 			audit_log_format(ab, " ino=%lu", inode->i_ino);
 		}
 		break;
@@ -300,7 +300,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 			dput(dentry);
 		}
 		audit_log_format(ab, " dev=");
-		audit_log_untrustedstring(ab, inode->i_sb->s_id);
+		audit_log_untrustedstring(ab, inode_sb(inode)->s_id);
 		audit_log_format(ab, " ino=%lu", inode->i_ino);
 		break;
 	}
