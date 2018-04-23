@@ -127,7 +127,7 @@ static struct dentry *ovl_d_real(struct dentry *dentry,
 		return real;
 bug:
 	WARN(1, "ovl_d_real(%pd4, %s:%lu): real dentry not found\n", dentry,
-	     inode ? inode->i_sb->s_id : "NULL", inode ? inode->i_ino : 0);
+	     inode ? inode_sb(inode)->s_id : "NULL", inode ? inode->i_ino : 0);
 	return dentry;
 }
 
