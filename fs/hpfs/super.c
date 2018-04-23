@@ -212,7 +212,11 @@ long hpfs_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 				return -EPERM;
 			if (copy_from_user(&range, (struct fstrim_range __user *)arg, sizeof(range)))
 				return -EFAULT;
-			r = hpfs_trim_fs(file_inode(file)->i_sb, range.start >> 9, (range.start + range.len) >> 9, (range.minlen + 511) >> 9, &n_trimmed);
+			r = hpfs_trim_fs(inode_sb(file_inode(file)),
+					 range.start >> 9,
+					 (range.start + range.len) >> 9,
+					 (range.minlen + 511) >> 9,
+					 &n_trimmed);
 			if (r)
 				return r;
 			range.len = (u64)n_trimmed << 9;

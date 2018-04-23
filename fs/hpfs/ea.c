@@ -191,7 +191,7 @@ void hpfs_set_ea(struct inode *inode, struct fnode *fnode, const char *key,
 		 const char *data, int size)
 {
 	fnode_secno fno = inode->i_ino;
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	unsigned pos;
 	int ano, len;
 	secno a;
