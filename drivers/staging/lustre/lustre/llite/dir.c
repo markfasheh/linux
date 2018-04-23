@@ -448,7 +448,7 @@ static int ll_dir_setdirstripe(struct inode *parent, struct lmv_user_md *lump,
 			cfs_curproc_cap_pack(), 0, &request);
 	ll_finish_md_op_data(op_data);
 
-	err = ll_prep_inode(&inode, request, parent->i_sb, NULL);
+	err = ll_prep_inode(&inode, request, inode_sb(parent), NULL);
 	if (err)
 		goto err_exit;
 
@@ -470,7 +470,7 @@ int ll_dir_setstripe(struct inode *inode, struct lov_user_md *lump,
 	struct md_op_data *op_data;
 	struct ptlrpc_request *req = NULL;
 	int rc = 0;
-	struct lustre_sb_info *lsi = s2lsi(inode->i_sb);
+	struct lustre_sb_info *lsi = s2lsi(inode_sb(inode));
 	struct obd_device *mgc = lsi->lsi_mgc;
 	int lum_size;
 
@@ -544,7 +544,7 @@ int ll_dir_setstripe(struct inode *inode, struct lov_user_md *lump,
 
 		buf = param;
 		/* Get fsname and assume devname to be -MDT0000. */
-		ll_get_fsname(inode->i_sb, buf, MTI_NAME_MAXLEN);
+		ll_get_fsname(inode_sb(inode), buf, MTI_NAME_MAXLEN);
 		strcat(buf, "-MDT0000.lov");
 		buf += strlen(buf);
 
@@ -1093,7 +1093,8 @@ static long ll_dir_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rc = ll_get_fid_by_name(inode, filename, namelen, NULL, NULL);
 		if (rc < 0) {
 			CERROR("%s: lookup %.*s failed: rc = %d\n",
-			       ll_get_fsname(inode->i_sb, NULL, 0), namelen,
+			       ll_get_fsname(inode_sb(inode), NULL, 0),
+			       namelen,
 			       filename, rc);
 			goto out_free;
 		}
@@ -1363,7 +1364,7 @@ skip_lmm:
 			struct lov_user_mds_data __user *lmdp;
 			lstat_t st = { 0 };
 
-			st.st_dev     = inode->i_sb->s_dev;
+			st.st_dev     = inode_sb(inode)->s_dev;
 			st.st_mode    = body->mbo_mode;
 			st.st_nlink   = body->mbo_nlink;
 			st.st_uid     = body->mbo_uid;
@@ -1514,7 +1515,8 @@ out_quotactl:
 
 			for (i = 0; i < hur->hur_request.hr_itemcount; i++) {
 				fid = &hur->hur_user_item[i].hui_fid;
-				f = search_inode_for_lustre(inode->i_sb, fid);
+				f = search_inode_for_lustre(inode_sb(inode),
+							    fid);
 				if (IS_ERR(f)) {
 					rc = PTR_ERR(f);
 					break;
@@ -1571,7 +1573,7 @@ out_quotactl:
 		if (IS_ERR(copy))
 			return PTR_ERR(copy);
 
-		rc = ll_ioc_copy_start(inode->i_sb, copy);
+		rc = ll_ioc_copy_start(inode_sb(inode), copy);
 		if (copy_to_user((char __user *)arg, copy, sizeof(*copy)))
 			rc = -EFAULT;
 
@@ -1586,7 +1588,7 @@ out_quotactl:
 		if (IS_ERR(copy))
 			return PTR_ERR(copy);
 
-		rc = ll_ioc_copy_end(inode->i_sb, copy);
+		rc = ll_ioc_copy_end(inode_sb(inode), copy);
 		if (copy_to_user((char __user *)arg, copy, sizeof(*copy)))
 			rc = -EFAULT;
 

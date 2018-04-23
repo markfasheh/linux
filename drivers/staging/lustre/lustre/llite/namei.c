@@ -326,7 +326,7 @@ int ll_md_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
 				 * ->ilookup5()), because master inode state is
 				 *  NEW.
 				 */
-				master_inode = ilookup5_nowait(inode->i_sb,
+				master_inode = ilookup5_nowait(inode_sb(inode),
 							       hash,
 							       ll_test_inode_by_fid,
 							       (void *)&lli->lli_pfid);
@@ -340,7 +340,7 @@ int ll_md_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
 		}
 
 		if ((bits & (MDS_INODELOCK_LOOKUP | MDS_INODELOCK_PERM)) &&
-		    inode->i_sb->s_root &&
+		    inode_sb(inode)->s_root &&
 		    !is_root_inode(inode))
 			ll_invalidate_aliases(inode);
 
@@ -782,7 +782,7 @@ static struct inode *ll_create_node(struct inode *dir, struct lookup_intent *it)
 	LASSERT(it_disposition(it, DISP_ENQ_CREATE_REF));
 	request = it->it_request;
 	it_clear_disposition(it, DISP_ENQ_CREATE_REF);
-	rc = ll_prep_inode(&inode, request, dir->i_sb, it);
+	rc = ll_prep_inode(&inode, request, inode_sb(dir), it);
 	if (rc) {
 		inode = ERR_PTR(rc);
 		goto out;
@@ -925,7 +925,7 @@ again:
 
 	ll_update_times(request, dir);
 
-	err = ll_prep_inode(&inode, request, dir->i_sb, NULL);
+	err = ll_prep_inode(&inode, request, inode_sb(dir), NULL);
 	if (err)
 		goto err_exit;
 

@@ -325,7 +325,7 @@ static long __ncp_ioctl(struct inode *inode, unsigned int cmd, unsigned long arg
 		if (server->root_setuped)
 			result = -EBUSY;
 		else {
-			result = ncp_conn_logged_in(inode->i_sb);
+			result = ncp_conn_logged_in(inode_sb(inode));
 			if (result == 0)
 				server->root_setuped = 1;
 		}
@@ -375,7 +375,7 @@ static long __ncp_ioctl(struct inode *inode, unsigned int cmd, unsigned long arg
 			result = -EACCES;
 			mutex_lock(&server->root_setup_lock);
 			if (server->m.mounted_vol[0]) {
-				struct dentry* dentry = inode->i_sb->s_root;
+				struct dentry* dentry = inode_sb(inode)->s_root;
 
 				if (dentry) {
 					struct inode* s_inode = d_inode(dentry);
@@ -431,7 +431,7 @@ static long __ncp_ioctl(struct inode *inode, unsigned int cmd, unsigned long arg
 					result = 0;
 
 				if (result == 0) {
-					dentry = inode->i_sb->s_root;
+					dentry = inode_sb(inode)->s_root;
 					if (dentry) {
 						struct inode* s_inode = d_inode(dentry);
 

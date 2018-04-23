@@ -1146,7 +1146,7 @@ static int ll_init_lsm_md(struct inode *inode, struct lustre_md *md)
 			lsm->lsm_md_oinfo[i].lmo_root = inode;
 		else
 			lsm->lsm_md_oinfo[i].lmo_root =
-				ll_iget_anon_dir(inode->i_sb, fid, md);
+				ll_iget_anon_dir(inode_sb(inode), fid, md);
 		if (IS_ERR(lsm->lsm_md_oinfo[i].lmo_root)) {
 			int rc = PTR_ERR(lsm->lsm_md_oinfo[i].lmo_root);
 
@@ -1257,7 +1257,8 @@ static int ll_update_lsm_md(struct inode *inode, struct lustre_md *md)
 		int idx;
 
 		CERROR("%s: inode " DFID "(%p)'s lmv layout mismatch (%p)/(%p) magic:0x%x/0x%x stripe count: %d/%d master_mdt: %d/%d hash_type:0x%x/0x%x layout: 0x%x/0x%x pool:%s/%s\n",
-		       ll_get_fsname(inode->i_sb, NULL, 0), PFID(&lli->lli_fid),
+		       ll_get_fsname(inode_sb(inode), NULL, 0),
+		       PFID(&lli->lli_fid),
 		       inode, lsm, old_lsm,
 		       lsm->lsm_md_magic, old_lsm->lsm_md_magic,
 		       lsm->lsm_md_stripe_count,
@@ -1272,13 +1273,13 @@ static int ll_update_lsm_md(struct inode *inode, struct lustre_md *md)
 
 		for (idx = 0; idx < old_lsm->lsm_md_stripe_count; idx++) {
 			CERROR("%s: sub FIDs in old lsm idx %d, old: " DFID "\n",
-			       ll_get_fsname(inode->i_sb, NULL, 0), idx,
+			       ll_get_fsname(inode_sb(inode), NULL, 0), idx,
 			       PFID(&old_lsm->lsm_md_oinfo[idx].lmo_fid));
 		}
 
 		for (idx = 0; idx < lsm->lsm_md_stripe_count; idx++) {
 			CERROR("%s: sub FIDs in new lsm idx %d, new: " DFID "\n",
-			       ll_get_fsname(inode->i_sb, NULL, 0), idx,
+			       ll_get_fsname(inode_sb(inode), NULL, 0), idx,
 			       PFID(&lsm->lsm_md_oinfo[idx].lmo_fid));
 		}
 
@@ -1428,7 +1429,8 @@ int ll_setattr_raw(struct dentry *dentry, struct iattr *attr, bool hsm_import)
 	int rc = 0;
 
 	CDEBUG(D_VFSTRACE, "%s: setattr inode " DFID "(%p) from %llu to %llu, valid %x, hsm_import %d\n",
-	       ll_get_fsname(inode->i_sb, NULL, 0), PFID(&lli->lli_fid), inode,
+	       ll_get_fsname(inode_sb(inode), NULL, 0), PFID(&lli->lli_fid),
+	       inode,
 	       i_size_read(inode), attr->ia_size, attr->ia_valid, hsm_import);
 
 	if (attr->ia_valid & ATTR_SIZE) {
@@ -1776,7 +1778,7 @@ int ll_update_inode(struct inode *inode, struct lustre_md *md)
 		inode->i_blkbits = min(PTLRPC_MAX_BRW_BITS + 1,
 				       LL_MAX_BLKSIZE_BITS);
 	else
-		inode->i_blkbits = inode->i_sb->s_blocksize_bits;
+		inode->i_blkbits = inode_sb(inode)->s_blocksize_bits;
 	if (body->mbo_valid & OBD_MD_FLUID)
 		inode->i_uid = make_kuid(&init_user_ns, body->mbo_uid);
 	if (body->mbo_valid & OBD_MD_FLGID)
@@ -2182,7 +2184,7 @@ out:
 	md_free_lustre_md(sbi->ll_md_exp, &md);
 cleanup:
 	if (rc != 0 && it && it->it_op & IT_OPEN)
-		ll_open_cleanup(sb ? sb : (*inode)->i_sb, req);
+		ll_open_cleanup(sb ? sb : inode_sb((*inode)), req);
 
 	return rc;
 }
@@ -2452,8 +2454,8 @@ void ll_dirty_page_discard_warn(struct page *page, int ioret)
 
 	CDEBUG(D_WARNING,
 	       "%s: dirty page discard: %s/fid: " DFID "/%s may get corrupted (rc %d)\n",
-	       ll_get_fsname(page->mapping->host->i_sb, NULL, 0),
-	       s2lsi(page->mapping->host->i_sb)->lsi_lmd->lmd_dev,
+	       ll_get_fsname(inode_sb(page->mapping->host), NULL, 0),
+	       s2lsi(inode_sb(page->mapping->host))->lsi_lmd->lmd_dev,
 	       PFID(&obj->vob_header.coh_lu.loh_fid),
 	       (path && !IS_ERR(path)) ? path : "", ioret);
 

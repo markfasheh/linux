@@ -173,8 +173,8 @@ static void __loop_update_dio(struct loop_device *lo, bool dio)
 	unsigned dio_align = 0;
 	bool use_dio;
 
-	if (inode->i_sb->s_bdev) {
-		sb_bsize = bdev_logical_block_size(inode->i_sb->s_bdev);
+	if (inode_sb(inode)->s_bdev) {
+		sb_bsize = bdev_logical_block_size(inode_sb(inode)->s_bdev);
 		dio_align = sb_bsize - 1;
 	}
 
@@ -821,7 +821,7 @@ static void loop_config_discard(struct loop_device *lo)
 		return;
 	}
 
-	q->limits.discard_granularity = inode->i_sb->s_blocksize;
+	q->limits.discard_granularity = inode_sb(inode)->s_blocksize;
 	q->limits.discard_alignment = 0;
 
 	blk_queue_max_discard_sectors(q, UINT_MAX >> 9);
