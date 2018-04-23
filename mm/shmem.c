@@ -192,7 +192,7 @@ static inline void shmem_unacct_blocks(unsigned long flags, long pages)
 static inline bool shmem_inode_acct_block(struct inode *inode, long pages)
 {
 	struct shmem_inode_info *info = SHMEM_I(inode);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 
 	if (shmem_acct_block(info->flags, pages))
 		return false;
@@ -214,7 +214,7 @@ unacct:
 static inline void shmem_inode_unacct_blocks(struct inode *inode, long pages)
 {
 	struct shmem_inode_info *info = SHMEM_I(inode);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 
 	if (sbinfo->max_blocks)
 		percpu_counter_sub(&sbinfo->used_blocks, pages);
@@ -1002,7 +1002,7 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(dentry);
 	struct shmem_inode_info *info = SHMEM_I(inode);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 	int error;
 
 	error = setattr_prepare(dentry, attr);
@@ -1068,7 +1068,7 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
 static void shmem_evict_inode(struct inode *inode)
 {
 	struct shmem_inode_info *info = SHMEM_I(inode);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 
 	if (inode->i_mapping->a_ops == &shmem_aops) {
 		shmem_unacct_size(info->flags, inode->i_size);
@@ -1091,7 +1091,7 @@ static void shmem_evict_inode(struct inode *inode)
 
 	simple_xattrs_free(&info->xattrs);
 	WARN_ON(inode->i_blocks);
-	shmem_free_inode(inode->i_sb);
+	shmem_free_inode(inode_sb(inode));
 	clear_inode(inode);
 }
 
@@ -1654,7 +1654,7 @@ repeat:
 	 * Fast cache lookup did not find it:
 	 * bring it back from swap or allocate.
 	 */
-	sbinfo = SHMEM_SB(inode->i_sb);
+	sbinfo = SHMEM_SB(inode_sb(inode));
 	charge_mm = vma ? vma->vm_mm : current->mm;
 
 	if (swap.val) {
@@ -2056,7 +2056,7 @@ unsigned long shmem_get_unmapped_area(struct file *file,
 
 		if (file) {
 			VM_BUG_ON(file->f_op != &shmem_file_operations);
-			sb = file_inode(file)->i_sb;
+			sb = inode_sb(file_inode(file));
 		} else {
 			/*
 			 * Called directly from mm/mmap.c, or drivers/char/mem.c
@@ -2852,7 +2852,7 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
 							 loff_t len)
 {
 	struct inode *inode = file_inode(file);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 	struct shmem_inode_info *info = SHMEM_I(inode);
 	struct shmem_falloc shmem_falloc;
 	pgoff_t start, index, end;
@@ -3010,7 +3010,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = shmem_get_inode(dir->i_sb, dir, mode, dev, VM_NORESERVE);
+	inode = shmem_get_inode(inode_sb(dir), dir, mode, dev, VM_NORESERVE);
 	if (inode) {
 		error = simple_acl_create(dir, inode);
 		if (error)
@@ -3039,7 +3039,7 @@ shmem_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = shmem_get_inode(dir->i_sb, dir, mode, 0, VM_NORESERVE);
+	inode = shmem_get_inode(inode_sb(dir), dir, mode, 0, VM_NORESERVE);
 	if (inode) {
 		error = security_inode_init_security(inode, dir,
 						     NULL,
@@ -3086,7 +3086,7 @@ static int shmem_link(struct dentry *old_dentry, struct inode *dir, struct dentr
 	 * but each new link needs a new dentry, pinning lowmem, and
 	 * tmpfs dentries cannot be pruned until they are unlinked.
 	 */
-	ret = shmem_reserve_inode(inode->i_sb);
+	ret = shmem_reserve_inode(inode_sb(inode));
 	if (ret)
 		goto out;
 
@@ -3105,7 +3105,7 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
 	struct inode *inode = d_inode(dentry);
 
 	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
-		shmem_free_inode(inode->i_sb);
+		shmem_free_inode(inode_sb(inode));
 
 	dir->i_size -= BOGO_DIRENT_SIZE;
 	inode->i_ctime = dir->i_ctime = dir->i_mtime = current_time(inode);
@@ -3230,7 +3230,8 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
 	if (len > PAGE_SIZE)
 		return -ENAMETOOLONG;
 
-	inode = shmem_get_inode(dir->i_sb, dir, S_IFLNK|S_IRWXUGO, 0, VM_NORESERVE);
+	inode = shmem_get_inode(inode_sb(dir), dir, S_IFLNK|S_IRWXUGO, 0,
+				VM_NORESERVE);
 	if (!inode)
 		return -ENOSPC;
 
@@ -4093,7 +4094,7 @@ struct kobj_attribute shmem_enabled_attr =
 bool shmem_huge_enabled(struct vm_area_struct *vma)
 {
 	struct inode *inode = file_inode(vma->vm_file);
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+	struct shmem_sb_info *sbinfo = SHMEM_SB(inode_sb(inode));
 	loff_t i_size;
 	pgoff_t off;
 

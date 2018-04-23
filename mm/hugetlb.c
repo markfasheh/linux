@@ -209,7 +209,7 @@ static long hugepage_subpool_put_pages(struct hugepage_subpool *spool,
 
 static inline struct hugepage_subpool *subpool_inode(struct inode *inode)
 {
-	return HUGETLBFS_SB(inode->i_sb)->spool;
+	return HUGETLBFS_SB(inode_sb(inode))->spool;
 }
 
 static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)

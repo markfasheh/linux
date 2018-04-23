@@ -147,7 +147,7 @@ static int cleancache_get_key(struct inode *inode,
 {
 	int (*fhfn)(struct inode *, __u32 *fh, int *, struct inode *);
 	int len = 0, maxlen = CLEANCACHE_KEY_MAX;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	key->u.ino = inode->i_ino;
 	if (sb->s_export_op != NULL) {
@@ -186,7 +186,7 @@ int __cleancache_get_page(struct page *page)
 	}
 
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
-	pool_id = page->mapping->host->i_sb->cleancache_poolid;
+	pool_id = inode_sb(page->mapping->host)->cleancache_poolid;
 	if (pool_id < 0)
 		goto out;
 
@@ -224,7 +224,7 @@ void __cleancache_put_page(struct page *page)
 	}
 
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
-	pool_id = page->mapping->host->i_sb->cleancache_poolid;
+	pool_id = inode_sb(page->mapping->host)->cleancache_poolid;
 	if (pool_id >= 0 &&
 		cleancache_get_key(page->mapping->host, &key) >= 0) {
 		cleancache_ops->put_page(pool_id, key, page->index, page);
@@ -245,7 +245,7 @@ void __cleancache_invalidate_page(struct address_space *mapping,
 					struct page *page)
 {
 	/* careful... page->mapping is NULL sometimes when this is called */
-	int pool_id = mapping->host->i_sb->cleancache_poolid;
+	int pool_id = inode_sb(mapping->host)->cleancache_poolid;
 	struct cleancache_filekey key = { .u.key = { 0 } };
 
 	if (!cleancache_ops)
@@ -273,7 +273,7 @@ EXPORT_SYMBOL(__cleancache_invalidate_page);
  */
 void __cleancache_invalidate_inode(struct address_space *mapping)
 {
-	int pool_id = mapping->host->i_sb->cleancache_poolid;
+	int pool_id = inode_sb(mapping->host)->cleancache_poolid;
 	struct cleancache_filekey key = { .u.key = { 0 } };
 
 	if (!cleancache_ops)
