@@ -101,7 +101,7 @@ struct inode *ramfs_get_inode(struct super_block *sb,
 static int
 ramfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
-	struct inode * inode = ramfs_get_inode(dir->i_sb, dir, mode, dev);
+	struct inode * inode = ramfs_get_inode(inode_sb(dir), dir, mode, dev);
 	int error = -ENOSPC;
 
 	if (inode) {
@@ -131,7 +131,7 @@ static int ramfs_symlink(struct inode * dir, struct dentry *dentry, const char *
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = ramfs_get_inode(dir->i_sb, dir, S_IFLNK|S_IRWXUGO, 0);
+	inode = ramfs_get_inode(inode_sb(dir), dir, S_IFLNK|S_IRWXUGO, 0);
 	if (inode) {
 		int l = strlen(symname)+1;
 		error = page_symlink(inode, symname, l);
