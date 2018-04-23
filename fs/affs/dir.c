@@ -45,7 +45,7 @@ static int
 affs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode		*inode = file_inode(file);
-	struct super_block	*sb = inode->i_sb;
+	struct super_block	*sb = inode_sb(inode);
 	struct buffer_head	*dir_bh = NULL;
 	struct buffer_head	*fh_bh = NULL;
 	unsigned char		*name;

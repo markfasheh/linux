@@ -169,7 +169,7 @@ affs_hash_name(struct super_block *sb, const u8 *name, unsigned int len)
 static struct buffer_head *
 affs_find_entry(struct inode *dir, struct dentry *dentry)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct buffer_head *bh;
 	toupper_t toupper = affs_get_toupper(sb);
 	u32 key;
@@ -198,7 +198,7 @@ affs_find_entry(struct inode *dir, struct dentry *dentry)
 struct dentry *
 affs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct buffer_head *bh;
 	struct inode *inode = NULL;
 
@@ -241,7 +241,7 @@ affs_unlink(struct inode *dir, struct dentry *dentry)
 int
 affs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode	*inode;
 	int		 error;
 
@@ -310,7 +310,7 @@ affs_rmdir(struct inode *dir, struct dentry *dentry)
 int
 affs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
 {
-	struct super_block	*sb = dir->i_sb;
+	struct super_block	*sb = inode_sb(dir);
 	struct buffer_head	*bh;
 	struct inode		*inode;
 	char			*p;
@@ -399,7 +399,7 @@ static int
 affs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	    struct inode *new_dir, struct dentry *new_dentry)
 {
-	struct super_block *sb = old_dir->i_sb;
+	struct super_block *sb = inode_sb(old_dir);
 	struct buffer_head *bh = NULL;
 	int retval;
 
@@ -447,7 +447,7 @@ affs_xrename(struct inode *old_dir, struct dentry *old_dentry,
 	     struct inode *new_dir, struct dentry *new_dentry)
 {
 
-	struct super_block *sb = old_dir->i_sb;
+	struct super_block *sb = inode_sb(old_dir);
 	struct buffer_head *bh_old = NULL;
 	struct buffer_head *bh_new = NULL;
 	int retval;

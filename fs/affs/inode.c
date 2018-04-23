@@ -169,7 +169,7 @@ bad_inode:
 int
 affs_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
-	struct super_block	*sb = inode->i_sb;
+	struct super_block	*sb = inode_sb(inode);
 	struct buffer_head	*bh;
 	struct affs_tail	*tail;
 	uid_t			 uid;
@@ -228,13 +228,13 @@ affs_notify_change(struct dentry *dentry, struct iattr *attr)
 		goto out;
 
 	if (((attr->ia_valid & ATTR_UID) &&
-	      affs_test_opt(AFFS_SB(inode->i_sb)->s_flags, SF_SETUID)) ||
+	      affs_test_opt(AFFS_SB(inode_sb(inode))->s_flags, SF_SETUID)) ||
 	    ((attr->ia_valid & ATTR_GID) &&
-	      affs_test_opt(AFFS_SB(inode->i_sb)->s_flags, SF_SETGID)) ||
+	      affs_test_opt(AFFS_SB(inode_sb(inode))->s_flags, SF_SETGID)) ||
 	    ((attr->ia_valid & ATTR_MODE) &&
-	     (AFFS_SB(inode->i_sb)->s_flags &
+	     (AFFS_SB(inode_sb(inode))->s_flags &
 	      (AFFS_MOUNT_SF_SETMODE | AFFS_MOUNT_SF_IMMUTABLE)))) {
-		if (!affs_test_opt(AFFS_SB(inode->i_sb)->s_flags, SF_QUIET))
+		if (!affs_test_opt(AFFS_SB(inode_sb(inode))->s_flags, SF_QUIET))
 			error = -EPERM;
 		goto out;
 	}
@@ -286,13 +286,13 @@ affs_evict_inode(struct inode *inode)
 	AFFS_I(inode)->i_ext_bh = NULL;
 
 	if (!inode->i_nlink)
-		affs_free_block(inode->i_sb, inode->i_ino);
+		affs_free_block(inode_sb(inode), inode->i_ino);
 }
 
 struct inode *
 affs_new_inode(struct inode *dir)
 {
-	struct super_block	*sb = dir->i_sb;
+	struct super_block	*sb = inode_sb(dir);
 	struct inode		*inode;
 	u32			 block;
 	struct buffer_head	*bh;
@@ -349,7 +349,7 @@ err_inode:
 int
 affs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry, s32 type)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct buffer_head *inode_bh = NULL;
 	struct buffer_head *bh;
 	u32 block = 0;

@@ -23,7 +23,7 @@ static int affs_symlink_readpage(struct file *file, struct page *page)
 
 	pr_debug("get_link(ino=%lu)\n", inode->i_ino);
 
-	bh = affs_bread(inode->i_sb, inode->i_ino);
+	bh = affs_bread(inode_sb(inode), inode->i_ino);
 	if (!bh)
 		goto fail;
 	i  = 0;
@@ -32,7 +32,7 @@ static int affs_symlink_readpage(struct file *file, struct page *page)
 	lc = 0;
 
 	if (strchr(lf->symname,':')) {	/* Handle assign or volume name */
-		struct affs_sb_info *sbi = AFFS_SB(inode->i_sb);
+		struct affs_sb_info *sbi = AFFS_SB(inode_sb(inode));
 		char *pf;
 		spin_lock(&sbi->symlink_lock);
 		pf = sbi->s_prefix ? sbi->s_prefix : "/";
