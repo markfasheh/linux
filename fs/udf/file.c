@@ -151,7 +151,7 @@ static ssize_t udf_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
 		loff_t end = iocb->ki_pos + iov_iter_count(from);
 
-		if (inode->i_sb->s_blocksize <
+		if (inode_sb(inode)->s_blocksize <
 				(udf_file_entry_alloc_offset(inode) + end)) {
 			err = udf_expand_file_adinicb(inode);
 			if (err) {
@@ -198,7 +198,7 @@ long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case UDF_GETVOLIDENT:
 		if (copy_to_user((char __user *)arg,
-				 UDF_SB(inode->i_sb)->s_volume_ident, 32))
+				 UDF_SB(inode_sb(inode))->s_volume_ident, 32))
 			return -EFAULT;
 		return 0;
 	case UDF_RELOCATE_BLOCKS:
@@ -206,7 +206,7 @@ long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			return -EPERM;
 		if (get_user(old_block, (long __user *)arg))
 			return -EFAULT;
-		result = udf_relocate_blocks(inode->i_sb,
+		result = udf_relocate_blocks(inode_sb(inode),
 						old_block, &new_block);
 		if (result == 0)
 			result = put_user(new_block, (long __user *)arg);

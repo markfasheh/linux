@@ -2451,7 +2451,7 @@ static unsigned int udf_count_free_table(struct super_block *sb,
 	epos.bh = NULL;
 
 	while ((etype = udf_next_aext(table, &epos, &eloc, &elen, 1)) != -1)
-		accum += (elen >> table->i_sb->s_blocksize_bits);
+		accum += (elen >> inode_sb(table)->s_blocksize_bits);
 
 	brelse(epos.bh);
 	mutex_unlock(&UDF_SB(sb)->s_alloc_mutex);

@@ -112,7 +112,7 @@ static int udf_symlink_filler(struct file *file, struct page *page)
 	uint32_t pos;
 
 	/* We don't support symlinks longer than one block */
-	if (inode->i_size > inode->i_sb->s_blocksize) {
+	if (inode->i_size > inode_sb(inode)->s_blocksize) {
 		err = -ENAMETOOLONG;
 		goto out_unmap;
 	}
@@ -124,7 +124,7 @@ static int udf_symlink_filler(struct file *file, struct page *page)
 	if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
 		symlink = iinfo->i_ext.i_data + iinfo->i_lenEAttr;
 	} else {
-		bh = sb_bread(inode->i_sb, pos);
+		bh = sb_bread(inode_sb(inode), pos);
 
 		if (!bh) {
 			err = -EIO;
@@ -134,7 +134,8 @@ static int udf_symlink_filler(struct file *file, struct page *page)
 		symlink = bh->b_data;
 	}
 
-	err = udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p, PAGE_SIZE);
+	err = udf_pc_to_char(inode_sb(inode), symlink, inode->i_size, p,
+			     PAGE_SIZE);
 	brelse(bh);
 	if (err)
 		goto out_unlock_inode;

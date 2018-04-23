@@ -280,7 +280,7 @@ out:
 static uint32_t udf_try_read_meta(struct inode *inode, uint32_t block,
 					uint16_t partition, uint32_t offset)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct udf_part_map *map;
 	struct kernel_lb_addr eloc;
 	uint32_t elen;
