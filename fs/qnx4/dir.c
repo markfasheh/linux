@@ -31,7 +31,7 @@ static int qnx4_readdir(struct file *file, struct dir_context *ctx)
 
 	while (ctx->pos < inode->i_size) {
 		blknum = qnx4_block_map(inode, ctx->pos >> QNX4_BLOCK_SIZE_BITS);
-		bh = sb_bread(inode->i_sb, blknum);
+		bh = sb_bread(inode_sb(inode), blknum);
 		if (bh == NULL) {
 			printk(KERN_ERR "qnx4_readdir: bread failed (%ld)\n", blknum);
 			return 0;
