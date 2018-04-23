@@ -453,7 +453,7 @@ static int afs_lookup_filldir(struct dir_context *ctx, const char *name,
 static int afs_do_lookup(struct inode *dir, struct dentry *dentry,
 			 struct afs_fid *fid, struct key *key)
 {
-	struct afs_super_info *as = dir->i_sb->s_fs_info;
+	struct afs_super_info *as = inode_sb(dir)->s_fs_info;
 	struct afs_lookup_cookie cookie = {
 		.ctx.actor = afs_lookup_filldir,
 		.name = dentry->d_name,
@@ -533,7 +533,7 @@ static struct inode *afs_try_auto_mntpt(struct dentry *dentry,
 	if (ret < 0)
 		goto out;
 
-	inode = afs_iget_pseudo_dir(dir->i_sb, false);
+	inode = afs_iget_pseudo_dir(inode_sb(dir), false);
 	if (IS_ERR(inode)) {
 		ret = PTR_ERR(inode);
 		goto out;
@@ -614,7 +614,7 @@ static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
 	dentry->d_fsdata = (void *)(unsigned long) vnode->status.data_version;
 
 	/* instantiate the dentry */
-	inode = afs_iget(dir->i_sb, key, &fid, NULL, NULL, NULL);
+	inode = afs_iget(inode_sb(dir), key, &fid, NULL, NULL, NULL);
 	key_put(key);
 	if (IS_ERR(inode)) {
 		_leave(" = %ld", PTR_ERR(inode));
@@ -861,7 +861,7 @@ static void afs_vnode_new_inode(struct afs_fs_cursor *fc,
 
 	d_drop(new_dentry);
 
-	inode = afs_iget(fc->vnode->vfs_inode.i_sb, fc->key,
+	inode = afs_iget(fc->vnode->vfs_inode.i_view->v_sb, fc->key,
 			 newfid, newstatus, newcb, fc->cbi);
 	if (IS_ERR(inode)) {
 		/* ENOMEM or EINTR at a really inconvenient time - just abandon

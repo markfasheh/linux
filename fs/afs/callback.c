@@ -63,7 +63,7 @@ again:
 			return -ENOMEM;
 
 		refcount_set(&new->usage, 1);
-		new->sb = vnode->vfs_inode.i_sb;
+		new->sb = vnode->vfs_inode.i_view->v_sb;
 		new->vid = vnode->volume->vid;
 		new->server = afs_get_server(server);
 		INIT_LIST_HEAD(&new->cb_link);
