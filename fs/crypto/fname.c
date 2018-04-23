@@ -102,7 +102,7 @@ static int fname_decrypt(struct inode *inode,
 	char iv[FS_CRYPTO_BLOCK_SIZE];
 	unsigned lim;
 
-	lim = inode->i_sb->s_cop->max_namelen(inode);
+	lim = inode_sb(inode)->s_cop->max_namelen(inode);
 	if (iname->len <= 0 || iname->len > lim)
 		return -EIO;
 
@@ -346,7 +346,7 @@ int fscrypt_setup_filename(struct inode *dir, const struct qstr *iname,
 
 	if (dir->i_crypt_info) {
 		if (!fscrypt_fname_encrypted_size(dir, iname->len,
-						  dir->i_sb->s_cop->max_namelen(dir),
+						  inode_sb(dir)->s_cop->max_namelen(dir),
 						  &fname->crypto_buf.len))
 			return -ENAMETOOLONG;
 		fname->crypto_buf.name = kmalloc(fname->crypto_buf.len,

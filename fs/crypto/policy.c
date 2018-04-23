@@ -52,7 +52,7 @@ static int create_encryption_context_from_policy(struct inode *inode,
 	BUILD_BUG_ON(sizeof(ctx.nonce) != FS_KEY_DERIVATION_NONCE_SIZE);
 	get_random_bytes(ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
 
-	return inode->i_sb->s_cop->set_context(inode, &ctx, sizeof(ctx), NULL);
+	return inode_sb(inode)->s_cop->set_context(inode, &ctx, sizeof(ctx), NULL);
 }
 
 int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
@@ -77,11 +77,11 @@ int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
 
 	inode_lock(inode);
 
-	ret = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
+	ret = inode_sb(inode)->s_cop->get_context(inode, &ctx, sizeof(ctx));
 	if (ret == -ENODATA) {
 		if (!S_ISDIR(inode->i_mode))
 			ret = -ENOTDIR;
-		else if (!inode->i_sb->s_cop->empty_dir(inode))
+		else if (!inode_sb(inode)->s_cop->empty_dir(inode))
 			ret = -ENOTEMPTY;
 		else
 			ret = create_encryption_context_from_policy(inode,
@@ -113,7 +113,7 @@ int fscrypt_ioctl_get_policy(struct file *filp, void __user *arg)
 	if (!IS_ENCRYPTED(inode))
 		return -ENODATA;
 
-	res = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
+	res = inode_sb(inode)->s_cop->get_context(inode, &ctx, sizeof(ctx));
 	if (res < 0 && res != -ERANGE)
 		return res;
 	if (res != sizeof(ctx))
@@ -156,7 +156,7 @@ EXPORT_SYMBOL(fscrypt_ioctl_get_policy);
  */
 int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
 {
-	const struct fscrypt_operations *cops = parent->i_sb->s_cop;
+	const struct fscrypt_operations *cops = inode_sb(parent)->s_cop;
 	const struct fscrypt_info *parent_ci, *child_ci;
 	struct fscrypt_context parent_ctx, child_ctx;
 	int res;
@@ -258,7 +258,7 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
 	       FS_KEY_DESCRIPTOR_SIZE);
 	get_random_bytes(ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
 	BUILD_BUG_ON(sizeof(ctx) != FSCRYPT_SET_CONTEXT_MAX_SIZE);
-	res = parent->i_sb->s_cop->set_context(child, &ctx,
+	res = inode_sb(parent)->s_cop->set_context(child, &ctx,
 						sizeof(ctx), fs_data);
 	if (res)
 		return res;

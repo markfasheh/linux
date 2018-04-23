@@ -253,11 +253,11 @@ int fscrypt_get_encryption_info(struct inode *inode)
 	if (inode->i_crypt_info)
 		return 0;
 
-	res = fscrypt_initialize(inode->i_sb->s_cop->flags);
+	res = fscrypt_initialize(inode_sb(inode)->s_cop->flags);
 	if (res)
 		return res;
 
-	res = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
+	res = inode_sb(inode)->s_cop->get_context(inode, &ctx, sizeof(ctx));
 	if (res < 0) {
 		if (!fscrypt_dummy_context_enabled(inode) ||
 		    IS_ENCRYPTED(inode))
@@ -305,9 +305,9 @@ int fscrypt_get_encryption_info(struct inode *inode)
 
 	res = validate_user_key(crypt_info, &ctx, raw_key, FS_KEY_DESC_PREFIX,
 				keysize);
-	if (res && inode->i_sb->s_cop->key_prefix) {
+	if (res && inode_sb(inode)->s_cop->key_prefix) {
 		int res2 = validate_user_key(crypt_info, &ctx, raw_key,
-					     inode->i_sb->s_cop->key_prefix,
+					     inode_sb(inode)->s_cop->key_prefix,
 					     keysize);
 		if (res2) {
 			if (res2 == -ENOKEY)
