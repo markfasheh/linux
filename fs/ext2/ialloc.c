@@ -103,7 +103,7 @@ static void ext2_release_inode(struct super_block *sb, int group, int dir)
  */
 void ext2_free_inode (struct inode * inode)
 {
-	struct super_block * sb = inode->i_sb;
+	struct super_block * sb = inode_sb(inode);
 	int is_directory;
 	unsigned long ino;
 	struct buffer_head *bitmap_bh;
@@ -177,19 +177,19 @@ static void ext2_preread_inode(struct inode *inode)
 	if (bdi_write_congested(bdi))
 		return;
 
-	block_group = (inode->i_ino - 1) / EXT2_INODES_PER_GROUP(inode->i_sb);
-	gdp = ext2_get_group_desc(inode->i_sb, block_group, NULL);
+	block_group = (inode->i_ino - 1) / EXT2_INODES_PER_GROUP(inode_sb(inode));
+	gdp = ext2_get_group_desc(inode_sb(inode), block_group, NULL);
 	if (gdp == NULL)
 		return;
 
 	/*
 	 * Figure out the offset within the block group inode table
 	 */
-	offset = ((inode->i_ino - 1) % EXT2_INODES_PER_GROUP(inode->i_sb)) *
-				EXT2_INODE_SIZE(inode->i_sb);
+	offset = ((inode->i_ino - 1) % EXT2_INODES_PER_GROUP(inode_sb(inode))) *
+				EXT2_INODE_SIZE(inode_sb(inode));
 	block = le32_to_cpu(gdp->bg_inode_table) +
-				(offset >> EXT2_BLOCK_SIZE_BITS(inode->i_sb));
-	sb_breadahead(inode->i_sb, block);
+				(offset >> EXT2_BLOCK_SIZE_BITS(inode_sb(inode)));
+	sb_breadahead(inode_sb(inode), block);
 }
 
 /*
@@ -443,7 +443,7 @@ struct inode *ext2_new_inode(struct inode *dir, umode_t mode,
 	struct ext2_sb_info *sbi;
 	int err;
 
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	inode = new_inode(sb);
 	if (!inode)
 		return ERR_PTR(-ENOMEM);

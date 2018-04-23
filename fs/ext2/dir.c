@@ -63,7 +63,7 @@ static inline __le16 ext2_rec_len_to_disk(unsigned len)
  */
 static inline unsigned ext2_chunk_size(struct inode *inode)
 {
-	return inode->i_sb->s_blocksize;
+	return inode_sb(inode)->s_blocksize;
 }
 
 static inline void ext2_put_page(struct page *page)
@@ -115,7 +115,7 @@ static int ext2_commit_chunk(struct page *page, loff_t pos, unsigned len)
 static bool ext2_check_page(struct page *page, int quiet)
 {
 	struct inode *dir = page->mapping->host;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	unsigned chunk_size = ext2_chunk_size(dir);
 	char *kaddr = page_address(page);
 	u32 max_inumber = le32_to_cpu(EXT2_SB(sb)->s_es->s_inodes_count);
@@ -277,7 +277,7 @@ static unsigned char ext2_type_by_mode[S_IFMT >> S_SHIFT] = {
 static inline void ext2_set_de_type(ext2_dirent *de, struct inode *inode)
 {
 	umode_t mode = inode->i_mode;
-	if (EXT2_HAS_INCOMPAT_FEATURE(inode->i_sb, EXT2_FEATURE_INCOMPAT_FILETYPE))
+	if (EXT2_HAS_INCOMPAT_FEATURE(inode_sb(inode), EXT2_FEATURE_INCOMPAT_FILETYPE))
 		de->file_type = ext2_type_by_mode[(mode & S_IFMT)>>S_SHIFT];
 	else
 		de->file_type = 0;
@@ -288,7 +288,7 @@ ext2_readdir(struct file *file, struct dir_context *ctx)
 {
 	loff_t pos = ctx->pos;
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned int offset = pos & ~PAGE_MASK;
 	unsigned long n = pos >> PAGE_SHIFT;
 	unsigned long npages = dir_pages(inode);
@@ -392,8 +392,8 @@ struct ext2_dir_entry_2 *ext2_find_entry (struct inode *dir,
 			kaddr += ext2_last_byte(dir, n) - reclen;
 			while ((char *) de <= kaddr) {
 				if (de->rec_len == 0) {
-					ext2_error(dir->i_sb, __func__,
-						"zero-length directory entry");
+					ext2_error(inode_sb(dir), __func__,
+						   "zero-length directory entry");
 					ext2_put_page(page);
 					goto out;
 				}
@@ -409,10 +409,10 @@ struct ext2_dir_entry_2 *ext2_find_entry (struct inode *dir,
 			n = 0;
 		/* next page is past the blocks we've got */
 		if (unlikely(n > (dir->i_blocks >> (PAGE_SHIFT - 9)))) {
-			ext2_error(dir->i_sb, __func__,
-				"dir %lu size %lld exceeds block count %llu",
-				dir->i_ino, dir->i_size,
-				(unsigned long long)dir->i_blocks);
+			ext2_error(inode_sb(dir), __func__,
+				   "dir %lu size %lld exceeds block count %llu",
+				   dir->i_ino, dir->i_size,
+				   (unsigned long long)dir->i_blocks);
 			goto out;
 		}
 	} while (n != start);
@@ -524,8 +524,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
 				goto got_it;
 			}
 			if (de->rec_len == 0) {
-				ext2_error(dir->i_sb, __func__,
-					"zero-length directory entry");
+				ext2_error(inode_sb(dir), __func__,
+					   "zero-length directory entry");
 				err = -EIO;
 				goto out_unlock;
 			}
@@ -594,8 +594,8 @@ int ext2_delete_entry (struct ext2_dir_entry_2 * dir, struct page * page )
 
 	while ((char*)de < (char*)dir) {
 		if (de->rec_len == 0) {
-			ext2_error(inode->i_sb, __func__,
-				"zero-length directory entry");
+			ext2_error(inode_sb(inode), __func__,
+				   "zero-length directory entry");
 			err = -EIO;
 			goto out;
 		}
@@ -686,8 +686,8 @@ int ext2_empty_dir (struct inode * inode)
 
 		while ((char *)de <= kaddr) {
 			if (de->rec_len == 0) {
-				ext2_error(inode->i_sb, __func__,
-					"zero-length directory entry");
+				ext2_error(inode_sb(inode), __func__,
+					   "zero-length directory entry");
 				printk("kaddr=%p, de=%p\n", kaddr, de);
 				goto not_empty;
 			}

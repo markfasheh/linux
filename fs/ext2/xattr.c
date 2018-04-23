@@ -73,7 +73,8 @@
 #ifdef EXT2_XATTR_DEBUG
 # define ea_idebug(inode, f...) do { \
 		printk(KERN_DEBUG "inode %s:%ld: ", \
-			inode->i_sb->s_id, inode->i_ino); \
+			inode_sb(inode)->s_id,
+		       inode->i_ino); \
 		printk(f); \
 		printk("\n"); \
 	} while (0)
@@ -122,7 +123,7 @@ const struct xattr_handler *ext2_xattr_handlers[] = {
 	NULL
 };
 
-#define EA_BLOCK_CACHE(inode)	(EXT2_SB(inode->i_sb)->s_ea_block_cache)
+#define EA_BLOCK_CACHE(inode)	(EXT2_SB(inode_sb(inode))->s_ea_block_cache)
 
 static inline const struct xattr_handler *
 ext2_xattr_handler(int name_index)
@@ -169,7 +170,7 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
 	if (!EXT2_I(inode)->i_file_acl)
 		goto cleanup;
 	ea_idebug(inode, "reading block %d", EXT2_I(inode)->i_file_acl);
-	bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
+	bh = sb_bread(inode_sb(inode), EXT2_I(inode)->i_file_acl);
 	error = -EIO;
 	if (!bh)
 		goto cleanup;
@@ -178,9 +179,9 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
 	end = bh->b_data + bh->b_size;
 	if (HDR(bh)->h_magic != cpu_to_le32(EXT2_XATTR_MAGIC) ||
 	    HDR(bh)->h_blocks != cpu_to_le32(1)) {
-bad_block:	ext2_error(inode->i_sb, "ext2_xattr_get",
-			"inode %ld: bad block %d", inode->i_ino,
-			EXT2_I(inode)->i_file_acl);
+bad_block:	ext2_error(inode_sb(inode), "ext2_xattr_get",
+			     "inode %ld: bad block %d", inode->i_ino,
+			     EXT2_I(inode)->i_file_acl);
 		error = -EIO;
 		goto cleanup;
 	}
@@ -207,8 +208,8 @@ found:
 	if (entry->e_value_block != 0)
 		goto bad_block;
 	size = le32_to_cpu(entry->e_value_size);
-	if (size > inode->i_sb->s_blocksize ||
-	    le16_to_cpu(entry->e_value_offs) + size > inode->i_sb->s_blocksize)
+	if (size > inode_sb(inode)->s_blocksize ||
+	    le16_to_cpu(entry->e_value_offs) + size > inode_sb(inode)->s_blocksize)
 		goto bad_block;
 
 	if (ext2_xattr_cache_insert(ea_block_cache, bh))
@@ -259,7 +260,7 @@ ext2_xattr_list(struct dentry *dentry, char *buffer, size_t buffer_size)
 	if (!EXT2_I(inode)->i_file_acl)
 		goto cleanup;
 	ea_idebug(inode, "reading block %d", EXT2_I(inode)->i_file_acl);
-	bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
+	bh = sb_bread(inode_sb(inode), EXT2_I(inode)->i_file_acl);
 	error = -EIO;
 	if (!bh)
 		goto cleanup;
@@ -268,9 +269,9 @@ ext2_xattr_list(struct dentry *dentry, char *buffer, size_t buffer_size)
 	end = bh->b_data + bh->b_size;
 	if (HDR(bh)->h_magic != cpu_to_le32(EXT2_XATTR_MAGIC) ||
 	    HDR(bh)->h_blocks != cpu_to_le32(1)) {
-bad_block:	ext2_error(inode->i_sb, "ext2_xattr_list",
-			"inode %ld: bad block %d", inode->i_ino,
-			EXT2_I(inode)->i_file_acl);
+bad_block:	ext2_error(inode_sb(inode), "ext2_xattr_list",
+			     "inode %ld: bad block %d", inode->i_ino,
+			     EXT2_I(inode)->i_file_acl);
 		error = -EIO;
 		goto cleanup;
 	}
@@ -363,7 +364,7 @@ int
 ext2_xattr_set(struct inode *inode, int name_index, const char *name,
 	       const void *value, size_t value_len, int flags)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *bh = NULL;
 	struct ext2_xattr_header *header = NULL;
 	struct ext2_xattr_entry *here, *last;
@@ -627,7 +628,7 @@ static int
 ext2_xattr_set2(struct inode *inode, struct buffer_head *old_bh,
 		struct ext2_xattr_header *header)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *new_bh = NULL;
 	int error;
 	struct mb_cache *ea_block_cache = EA_BLOCK_CACHE(inode);
@@ -762,32 +763,32 @@ void
 ext2_xattr_delete_inode(struct inode *inode)
 {
 	struct buffer_head *bh = NULL;
-	struct ext2_sb_info *sbi = EXT2_SB(inode->i_sb);
+	struct ext2_sb_info *sbi = EXT2_SB(inode_sb(inode));
 
 	down_write(&EXT2_I(inode)->xattr_sem);
 	if (!EXT2_I(inode)->i_file_acl)
 		goto cleanup;
 
 	if (!ext2_data_block_valid(sbi, EXT2_I(inode)->i_file_acl, 0)) {
-		ext2_error(inode->i_sb, "ext2_xattr_delete_inode",
-			"inode %ld: xattr block %d is out of data blocks range",
-			inode->i_ino, EXT2_I(inode)->i_file_acl);
+		ext2_error(inode_sb(inode), "ext2_xattr_delete_inode",
+			   "inode %ld: xattr block %d is out of data blocks range",
+			   inode->i_ino, EXT2_I(inode)->i_file_acl);
 		goto cleanup;
 	}
 
-	bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
+	bh = sb_bread(inode_sb(inode), EXT2_I(inode)->i_file_acl);
 	if (!bh) {
-		ext2_error(inode->i_sb, "ext2_xattr_delete_inode",
-			"inode %ld: block %d read error", inode->i_ino,
-			EXT2_I(inode)->i_file_acl);
+		ext2_error(inode_sb(inode), "ext2_xattr_delete_inode",
+			   "inode %ld: block %d read error", inode->i_ino,
+			   EXT2_I(inode)->i_file_acl);
 		goto cleanup;
 	}
 	ea_bdebug(bh, "b_count=%d", atomic_read(&(bh->b_count)));
 	if (HDR(bh)->h_magic != cpu_to_le32(EXT2_XATTR_MAGIC) ||
 	    HDR(bh)->h_blocks != cpu_to_le32(1)) {
-		ext2_error(inode->i_sb, "ext2_xattr_delete_inode",
-			"inode %ld: bad block %d", inode->i_ino,
-			EXT2_I(inode)->i_file_acl);
+		ext2_error(inode_sb(inode), "ext2_xattr_delete_inode",
+			   "inode %ld: bad block %d", inode->i_ino,
+			   EXT2_I(inode)->i_file_acl);
 		goto cleanup;
 	}
 	lock_buffer(bh);
@@ -910,11 +911,11 @@ again:
 	while (ce) {
 		struct buffer_head *bh;
 
-		bh = sb_bread(inode->i_sb, ce->e_value);
+		bh = sb_bread(inode_sb(inode), ce->e_value);
 		if (!bh) {
-			ext2_error(inode->i_sb, "ext2_xattr_cache_find",
-				"inode %ld: block %ld read error",
-				inode->i_ino, (unsigned long) ce->e_value);
+			ext2_error(inode_sb(inode), "ext2_xattr_cache_find",
+				   "inode %ld: block %ld read error",
+				   inode->i_ino, (unsigned long) ce->e_value);
 		} else {
 			lock_buffer(bh);
 			/*

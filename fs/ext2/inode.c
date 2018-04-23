@@ -48,7 +48,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync);
 static inline int ext2_inode_is_fast_symlink(struct inode *inode)
 {
 	int ea_blocks = EXT2_I(inode)->i_file_acl ?
-		(inode->i_sb->s_blocksize >> 9) : 0;
+		(inode_sb(inode)->s_blocksize >> 9) : 0;
 
 	return (S_ISLNK(inode->i_mode) &&
 		inode->i_blocks - ea_blocks == 0);
@@ -84,7 +84,7 @@ void ext2_evict_inode(struct inode * inode)
 	truncate_inode_pages_final(&inode->i_data);
 
 	if (want_delete) {
-		sb_start_intwrite(inode->i_sb);
+		sb_start_intwrite(inode_sb(inode));
 		/* set dtime */
 		EXT2_I(inode)->i_dtime	= get_seconds();
 		mark_inode_dirty(inode);
@@ -107,7 +107,7 @@ void ext2_evict_inode(struct inode * inode)
 
 	if (want_delete) {
 		ext2_free_inode(inode);
-		sb_end_intwrite(inode->i_sb);
+		sb_end_intwrite(inode_sb(inode));
 	}
 }
 
@@ -147,7 +147,7 @@ static inline int verify_chain(Indirect *from, Indirect *to)
  *
  *	Note: function doesn't find node addresses, so no IO is needed. All
  *	we need to know is the capacity of indirect blocks (taken from the
- *	inode->i_sb).
+ *	inode_sb(inode)).
  */
 
 /*
@@ -163,8 +163,8 @@ static inline int verify_chain(Indirect *from, Indirect *to)
 static int ext2_block_to_path(struct inode *inode,
 			long i_block, int offsets[4], int *boundary)
 {
-	int ptrs = EXT2_ADDR_PER_BLOCK(inode->i_sb);
-	int ptrs_bits = EXT2_ADDR_PER_BLOCK_BITS(inode->i_sb);
+	int ptrs = EXT2_ADDR_PER_BLOCK(inode_sb(inode));
+	int ptrs_bits = EXT2_ADDR_PER_BLOCK_BITS(inode_sb(inode));
 	const long direct_blocks = EXT2_NDIR_BLOCKS,
 		indirect_blocks = ptrs,
 		double_blocks = (1 << (ptrs_bits * 2));
@@ -172,8 +172,8 @@ static int ext2_block_to_path(struct inode *inode,
 	int final = 0;
 
 	if (i_block < 0) {
-		ext2_msg(inode->i_sb, KERN_WARNING,
-			"warning: %s: block < 0", __func__);
+		ext2_msg(inode_sb(inode), KERN_WARNING,
+			 "warning: %s: block < 0", __func__);
 	} else if (i_block < direct_blocks) {
 		offsets[n++] = i_block;
 		final = direct_blocks;
@@ -193,8 +193,8 @@ static int ext2_block_to_path(struct inode *inode,
 		offsets[n++] = i_block & (ptrs - 1);
 		final = ptrs;
 	} else {
-		ext2_msg(inode->i_sb, KERN_WARNING,
-			"warning: %s: block is too big", __func__);
+		ext2_msg(inode_sb(inode), KERN_WARNING,
+			 "warning: %s: block is too big", __func__);
 	}
 	if (boundary)
 		*boundary = final - 1 - (i_block & (ptrs - 1));
@@ -237,7 +237,7 @@ static Indirect *ext2_get_branch(struct inode *inode,
 				 Indirect chain[4],
 				 int *err)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	Indirect *p = chain;
 	struct buffer_head *bh;
 
@@ -312,9 +312,10 @@ static ext2_fsblk_t ext2_find_near(struct inode *inode, Indirect *ind)
 	 * It is going to be referred from inode itself? OK, just put it into
 	 * the same cylinder group then.
 	 */
-	bg_start = ext2_group_first_block_no(inode->i_sb, ei->i_block_group);
+	bg_start = ext2_group_first_block_no(inode_sb(inode),
+					     ei->i_block_group);
 	colour = (current->pid % 16) *
-			(EXT2_BLOCKS_PER_GROUP(inode->i_sb) / 16);
+			(EXT2_BLOCKS_PER_GROUP(inode_sb(inode)) / 16);
 	return bg_start + colour;
 }
 
@@ -477,7 +478,7 @@ static int ext2_alloc_branch(struct inode *inode,
 			int indirect_blks, int *blks, ext2_fsblk_t goal,
 			int *offsets, Indirect *branch)
 {
-	int blocksize = inode->i_sb->s_blocksize;
+	int blocksize = inode_sb(inode)->s_blocksize;
 	int i, n = 0;
 	int err = 0;
 	struct buffer_head *bh;
@@ -500,7 +501,7 @@ static int ext2_alloc_branch(struct inode *inode,
 		 * and set the pointer to new one, then send
 		 * parent to disk.
 		 */
-		bh = sb_getblk(inode->i_sb, new_blocks[n-1]);
+		bh = sb_getblk(inode_sb(inode), new_blocks[n-1]);
 		if (unlikely(!bh)) {
 			err = -ENOMEM;
 			goto failed;
@@ -738,7 +739,7 @@ static int ext2_get_blocks(struct inode *inode,
 		 * We must unmap blocks before zeroing so that writeback cannot
 		 * overwrite zeros with stale data from block device page cache.
 		 */
-		clean_bdev_aliases(inode->i_sb->s_bdev,
+		clean_bdev_aliases(inode_sb(inode)->s_bdev,
 				   le32_to_cpu(chain[depth-1].key),
 				   count);
 		/*
@@ -746,9 +747,9 @@ static int ext2_get_blocks(struct inode *inode,
 		 * so that it's not found by another thread before it's
 		 * initialised
 		 */
-		err = sb_issue_zeroout(inode->i_sb,
-				le32_to_cpu(chain[depth-1].key), count,
-				GFP_NOFS);
+		err = sb_issue_zeroout(inode_sb(inode),
+				       le32_to_cpu(chain[depth-1].key), count,
+				       GFP_NOFS);
 		if (err) {
 			mutex_unlock(&ei->truncate_mutex);
 			goto cleanup;
@@ -787,7 +788,7 @@ int ext2_get_block(struct inode *inode, sector_t iblock,
 	if (ret <= 0)
 		return ret;
 
-	map_bh(bh_result, inode->i_sb, bno);
+	map_bh(bh_result, inode_sb(inode), bno);
 	bh_result->b_size = (ret << inode->i_blkbits);
 	if (new)
 		set_buffer_new(bh_result);
@@ -804,7 +805,7 @@ static int ext2_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
 	unsigned int blkbits = inode->i_blkbits;
 	unsigned long first_block = offset >> blkbits;
 	unsigned long max_blocks = (length + (1 << blkbits) - 1) >> blkbits;
-	struct ext2_sb_info *sbi = EXT2_SB(inode->i_sb);
+	struct ext2_sb_info *sbi = EXT2_SB(inode_sb(inode));
 	bool new = false, boundary = false;
 	u32 bno;
 	int ret;
@@ -815,7 +816,7 @@ static int ext2_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
 		return ret;
 
 	iomap->flags = 0;
-	iomap->bdev = inode->i_sb->s_bdev;
+	iomap->bdev = inode_sb(inode)->s_bdev;
 	iomap->offset = (u64)first_block << blkbits;
 	iomap->dax_dev = sbi->s_daxdev;
 
@@ -955,7 +956,7 @@ ext2_writepages(struct address_space *mapping, struct writeback_control *wbc)
 #ifdef CONFIG_FS_DAX
 	if (dax_mapping(mapping)) {
 		return dax_writeback_mapping_range(mapping,
-						   mapping->host->i_sb->s_bdev,
+						   inode_sb(mapping->host)->s_bdev,
 						   wbc);
 	}
 #endif
@@ -1142,21 +1143,22 @@ static void ext2_free_branches(struct inode *inode, __le32 *p, __le32 *q, int de
 	unsigned long nr;
 
 	if (depth--) {
-		int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
+		int addr_per_block = EXT2_ADDR_PER_BLOCK(inode_sb(inode));
 		for ( ; p < q ; p++) {
 			nr = le32_to_cpu(*p);
 			if (!nr)
 				continue;
 			*p = 0;
-			bh = sb_bread(inode->i_sb, nr);
+			bh = sb_bread(inode_sb(inode), nr);
 			/*
 			 * A read failure? Report error and clear slot
 			 * (should be rare).
 			 */ 
 			if (!bh) {
-				ext2_error(inode->i_sb, "ext2_free_branches",
-					"Read failure, inode=%ld, block=%ld",
-					inode->i_ino, nr);
+				ext2_error(inode_sb(inode),
+				           "ext2_free_branches",
+				           "Read failure, inode=%ld, block=%ld",
+				           inode->i_ino, nr);
 				continue;
 			}
 			ext2_free_branches(inode,
@@ -1176,7 +1178,7 @@ static void __ext2_truncate_blocks(struct inode *inode, loff_t offset)
 {
 	__le32 *i_data = EXT2_I(inode)->i_data;
 	struct ext2_inode_info *ei = EXT2_I(inode);
-	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
+	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode_sb(inode));
 	int offsets[4];
 	Indirect chain[4];
 	Indirect *partial;
@@ -1184,8 +1186,8 @@ static void __ext2_truncate_blocks(struct inode *inode, loff_t offset)
 	int n;
 	long iblock;
 	unsigned blocksize;
-	blocksize = inode->i_sb->s_blocksize;
-	iblock = (offset + blocksize-1) >> EXT2_BLOCK_SIZE_BITS(inode->i_sb);
+	blocksize = inode_sb(inode)->s_blocksize;
+	iblock = (offset + blocksize-1) >> EXT2_BLOCK_SIZE_BITS(inode_sb(inode));
 
 #ifdef CONFIG_FS_DAX
 	WARN_ON(!rwsem_is_locked(&ei->dax_sem));
@@ -1300,7 +1302,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
 		error = iomap_zero_range(inode, newsize,
 					 PAGE_ALIGN(newsize) - newsize, NULL,
 					 &ext2_iomap_ops);
-	} else if (test_opt(inode->i_sb, NOBH))
+	} else if (test_opt(inode_sb(inode), NOBH))
 		error = nobh_truncate_page(inode->i_mapping,
 				newsize, ext2_get_block);
 	else
@@ -1384,7 +1386,7 @@ void ext2_set_inode_flags(struct inode *inode)
 		inode->i_flags |= S_NOATIME;
 	if (flags & EXT2_DIRSYNC_FL)
 		inode->i_flags |= S_DIRSYNC;
-	if (test_opt(inode->i_sb, DAX) && S_ISREG(inode->i_mode))
+	if (test_opt(inode_sb(inode), DAX) && S_ISREG(inode->i_mode))
 		inode->i_flags |= S_DAX;
 }
 
@@ -1408,7 +1410,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	ei = EXT2_I(inode);
 	ei->i_block_alloc_info = NULL;
 
-	raw_inode = ext2_get_inode(inode->i_sb, ino, &bh);
+	raw_inode = ext2_get_inode(inode_sb(inode), ino, &bh);
 	if (IS_ERR(raw_inode)) {
 		ret = PTR_ERR(raw_inode);
  		goto bad_inode;
@@ -1417,7 +1419,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
 	i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
 	i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
-	if (!(test_opt (inode->i_sb, NO_UID32))) {
+	if (!(test_opt (inode_sb(inode), NO_UID32))) {
 		i_uid |= le16_to_cpu(raw_inode->i_uid_high) << 16;
 		i_gid |= le16_to_cpu(raw_inode->i_gid_high) << 16;
 	}
@@ -1469,7 +1471,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	ei->i_dtime = 0;
 	inode->i_generation = le32_to_cpu(raw_inode->i_generation);
 	ei->i_state = 0;
-	ei->i_block_group = (ino - 1) / EXT2_INODES_PER_GROUP(inode->i_sb);
+	ei->i_block_group = (ino - 1) / EXT2_INODES_PER_GROUP(inode_sb(inode));
 	ei->i_dir_start_lookup = 0;
 
 	/*
@@ -1481,7 +1483,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 
 	if (S_ISREG(inode->i_mode)) {
 		inode->i_op = &ext2_file_inode_operations;
-		if (test_opt(inode->i_sb, NOBH)) {
+		if (test_opt(inode_sb(inode), NOBH)) {
 			inode->i_mapping->a_ops = &ext2_nobh_aops;
 			inode->i_fop = &ext2_file_operations;
 		} else {
@@ -1491,7 +1493,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	} else if (S_ISDIR(inode->i_mode)) {
 		inode->i_op = &ext2_dir_inode_operations;
 		inode->i_fop = &ext2_dir_operations;
-		if (test_opt(inode->i_sb, NOBH))
+		if (test_opt(inode_sb(inode), NOBH))
 			inode->i_mapping->a_ops = &ext2_nobh_aops;
 		else
 			inode->i_mapping->a_ops = &ext2_aops;
@@ -1504,7 +1506,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 		} else {
 			inode->i_op = &ext2_symlink_inode_operations;
 			inode_nohighmem(inode);
-			if (test_opt(inode->i_sb, NOBH))
+			if (test_opt(inode_sb(inode), NOBH))
 				inode->i_mapping->a_ops = &ext2_nobh_aops;
 			else
 				inode->i_mapping->a_ops = &ext2_aops;
@@ -1531,7 +1533,7 @@ bad_inode:
 static int __ext2_write_inode(struct inode *inode, int do_sync)
 {
 	struct ext2_inode_info *ei = EXT2_I(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	ino_t ino = inode->i_ino;
 	uid_t uid = i_uid_read(inode);
 	gid_t gid = i_gid_read(inode);
