@@ -570,7 +570,7 @@ static int hostfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	char *name;
 	int error, fd;
 
-	inode = hostfs_iget(dir->i_sb);
+	inode = hostfs_iget(inode_sb(dir));
 	if (IS_ERR(inode)) {
 		error = PTR_ERR(inode);
 		goto out;
@@ -609,7 +609,7 @@ static struct dentry *hostfs_lookup(struct inode *ino, struct dentry *dentry,
 	char *name;
 	int err;
 
-	inode = hostfs_iget(ino->i_sb);
+	inode = hostfs_iget(inode_sb(ino));
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		goto out;
@@ -717,7 +717,7 @@ static int hostfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, 
 	char *name;
 	int err;
 
-	inode = hostfs_iget(dir->i_sb);
+	inode = hostfs_iget(inode_sb(dir));
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		goto out;
