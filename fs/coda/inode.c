@@ -218,7 +218,7 @@ static int coda_fill_super(struct super_block *sb, void *data, int silent)
 	} 
 
 	pr_info("%s: rootinode is %ld dev %s\n",
-		__func__, root->i_ino, root->i_sb->s_id);
+		__func__, root->i_ino, inode_sb(root)->s_id);
 	sb->s_root = d_make_root(root);
 	if (!sb->s_root) {
 		error = -EINVAL;
@@ -275,7 +275,7 @@ int coda_setattr(struct dentry *de, struct iattr *iattr)
 	vattr.va_type = C_VNON; /* cannot set type */
 
 	/* Venus is responsible for truncating the container-file!!! */
-	error = venus_setattr(inode->i_sb, coda_i2f(inode), &vattr);
+	error = venus_setattr(inode_sb(inode), coda_i2f(inode), &vattr);
 
 	if (!error) {
 	        coda_vattr_to_iattr(inode, &vattr); 
