@@ -75,7 +75,7 @@ static struct dentry *isofs_export_get_parent(struct dentry *child)
 	parent_block = e_child_inode->i_iget5_block;
 
 	/* Get the block in question. */
-	bh = sb_bread(child_inode->i_sb, parent_block);
+	bh = sb_bread(inode_sb(child_inode), parent_block);
 	if (bh == NULL) {
 		rv = ERR_PTR(-EACCES);
 		goto out;
@@ -99,8 +99,8 @@ static struct dentry *isofs_export_get_parent(struct dentry *child)
 	/* Normalize */
 	isofs_normalize_block_and_offset(de, &parent_block, &parent_offset);
 
-	rv = d_obtain_alias(isofs_iget(child_inode->i_sb, parent_block,
-				     parent_offset));
+	rv = d_obtain_alias(isofs_iget(inode_sb(child_inode), parent_block,
+				       parent_offset));
  out:
 	if (bh)
 		brelse(bh);

@@ -46,7 +46,7 @@ static int check_sp(struct rock_ridge *rr, struct inode *inode)
 		return -1;
 	if (rr->u.SP.magic[1] != 0xef)
 		return -1;
-	ISOFS_SB(inode->i_sb)->s_rock_offset = rr->u.SP.skip;
+	ISOFS_SB(inode_sb(inode))->s_rock_offset = rr->u.SP.skip;
 	return 0;
 }
 
@@ -61,9 +61,9 @@ static void setup_rock_ridge(struct iso_directory_record *de,
 	if (rs->len < 0)
 		rs->len = 0;
 
-	if (ISOFS_SB(inode->i_sb)->s_rock_offset != -1) {
-		rs->len -= ISOFS_SB(inode->i_sb)->s_rock_offset;
-		rs->chr += ISOFS_SB(inode->i_sb)->s_rock_offset;
+	if (ISOFS_SB(inode_sb(inode))->s_rock_offset != -1) {
+		rs->len -= ISOFS_SB(inode_sb(inode))->s_rock_offset;
+		rs->chr += ISOFS_SB(inode_sb(inode))->s_rock_offset;
 		if (rs->len < 0)
 			rs->len = 0;
 	}
@@ -112,7 +112,7 @@ static int rock_continue(struct rock_state *rs)
 		ret = -EIO;
 		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
 			goto out;
-		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
+		bh = sb_bread(inode_sb(rs->inode), rs->cont_extent);
 		if (bh) {
 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
 					rs->cont_size);
@@ -207,7 +207,7 @@ int get_rock_ridge_filename(struct iso_directory_record *de,
 	char *p;
 	int len;
 
-	if (!ISOFS_SB(inode->i_sb)->s_rock)
+	if (!ISOFS_SB(inode_sb(inode))->s_rock)
 		return 0;
 	*retname = 0;
 
@@ -318,7 +318,7 @@ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
 	struct rock_state rs;
 	int ret = 0;
 
-	if (!ISOFS_SB(inode->i_sb)->s_rock)
+	if (!ISOFS_SB(inode_sb(inode))->s_rock)
 		return 0;
 
 	init_rock_state(&rs, inode);
@@ -373,7 +373,7 @@ repeat:
 			/* Invalid length of ER tag id? */
 			if (rr->u.ER.len_id + offsetof(struct rock_ridge, u.ER.data) > rr->len)
 				goto out;
-			ISOFS_SB(inode->i_sb)->s_rock = 1;
+			ISOFS_SB(inode_sb(inode))->s_rock = 1;
 			printk(KERN_DEBUG "ISO 9660 Extensions: ");
 			{
 				int p;
@@ -521,7 +521,8 @@ repeat:
 				goto eio;
 			}
 			ISOFS_I(inode)->i_first_extent = reloc_block;
-			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
+			reloc = isofs_iget_reloc(inode_sb(inode), reloc_block,
+						 0);
 			if (IS_ERR(reloc)) {
 				ret = PTR_ERR(reloc);
 				goto out;
@@ -542,7 +543,7 @@ repeat:
 		case SIG('Z', 'F'): {
 			int algo;
 
-			if (ISOFS_SB(inode->i_sb)->s_nocompress)
+			if (ISOFS_SB(inode_sb(inode))->s_nocompress)
 				break;
 			algo = isonum_721(rr->u.ZF.algorithm);
 			if (algo == SIG('p', 'z')) {
@@ -678,8 +679,8 @@ int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
 	 * if rockridge flag was reset and we didn't look for attributes
 	 * behind eventual XA attributes, have a look there
 	 */
-	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
-	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
+	if ((ISOFS_SB(inode_sb(inode))->s_rock_offset == -1)
+	    && (ISOFS_SB(inode_sb(inode))->s_rock == 2)) {
 		result = parse_rock_ridge_inode_internal(de, inode,
 							 flags | RR_REGARD_XA);
 	}
@@ -694,7 +695,7 @@ static int rock_ridge_symlink_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
 	struct iso_inode_info *ei = ISOFS_I(inode);
-	struct isofs_sb_info *sbi = ISOFS_SB(inode->i_sb);
+	struct isofs_sb_info *sbi = ISOFS_SB(inode_sb(inode));
 	char *link = page_address(page);
 	unsigned long bufsize = ISOFS_BUFFER_SIZE(inode);
 	struct buffer_head *bh;
@@ -712,7 +713,7 @@ static int rock_ridge_symlink_readpage(struct file *file, struct page *page)
 
 	init_rock_state(&rs, inode);
 	block = ei->i_iget5_block;
-	bh = sb_bread(inode->i_sb, block);
+	bh = sb_bread(inode_sb(inode), block);
 	if (!bh)
 		goto out_noread;
 
