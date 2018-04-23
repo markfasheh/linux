@@ -251,7 +251,7 @@ spufs_mkdir(struct inode *dir, struct dentry *dentry, unsigned int flags,
 	struct inode *inode;
 	struct spu_context *ctx;
 
-	inode = spufs_new_inode(dir->i_sb, mode | S_IFDIR);
+	inode = spufs_new_inode(inode_sb(dir), mode | S_IFDIR);
 	if (!inode)
 		return -ENOSPC;
 
@@ -284,7 +284,7 @@ spufs_mkdir(struct inode *dir, struct dentry *dentry, unsigned int flags,
 	else
 		ret = spufs_fill_dir(dentry, spufs_dir_contents, mode, ctx);
 
-	if (!ret && spufs_get_sb_info(dir->i_sb)->debug)
+	if (!ret && spufs_get_sb_info(inode_sb(dir))->debug)
 		ret = spufs_fill_dir(dentry, spufs_dir_debug_contents,
 				mode, ctx);
 
@@ -484,7 +484,7 @@ spufs_mkgang(struct inode *dir, struct dentry *dentry, umode_t mode)
 	struct spu_gang *gang;
 
 	ret = -ENOSPC;
-	inode = spufs_new_inode(dir->i_sb, mode | S_IFDIR);
+	inode = spufs_new_inode(inode_sb(dir), mode | S_IFDIR);
 	if (!inode)
 		goto out;
 
