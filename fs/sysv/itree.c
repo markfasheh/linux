@@ -22,7 +22,7 @@ static inline void dirty_indirect(struct buffer_head *bh, struct inode *inode)
 
 static int block_to_path(struct inode *inode, long block, int offsets[DEPTH])
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct sysv_sb_info *sbi = SYSV_SB(sb);
 	int ptrs_bits = sbi->s_ind_per_block_bits;
 	unsigned long	indirect_blocks = sbi->s_ind_per_block,
@@ -91,7 +91,7 @@ static Indirect *get_branch(struct inode *inode,
 			    Indirect chain[],
 			    int *err)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	Indirect *p = chain;
 	struct buffer_head *bh;
 
@@ -127,24 +127,25 @@ static int alloc_branch(struct inode *inode,
 			int *offsets,
 			Indirect *branch)
 {
-	int blocksize = inode->i_sb->s_blocksize;
+	int blocksize = inode_sb(inode)->s_blocksize;
 	int n = 0;
 	int i;
 
-	branch[0].key = sysv_new_block(inode->i_sb);
+	branch[0].key = sysv_new_block(inode_sb(inode));
 	if (branch[0].key) for (n = 1; n < num; n++) {
 		struct buffer_head *bh;
 		int parent;
 		/* Allocate the next block */
-		branch[n].key = sysv_new_block(inode->i_sb);
+		branch[n].key = sysv_new_block(inode_sb(inode));
 		if (!branch[n].key)
 			break;
 		/*
 		 * Get buffer_head for parent block, zero it out and set 
 		 * the pointer to new one, then send parent to disk.
 		 */
-		parent = block_to_cpu(SYSV_SB(inode->i_sb), branch[n-1].key);
-		bh = sb_getblk(inode->i_sb, parent);
+		parent = block_to_cpu(SYSV_SB(inode_sb(inode)),
+				      branch[n-1].key);
+		bh = sb_getblk(inode_sb(inode), parent);
 		lock_buffer(bh);
 		memset(bh->b_data, 0, blocksize);
 		branch[n].bh = bh;
@@ -161,7 +162,7 @@ static int alloc_branch(struct inode *inode,
 	for (i = 1; i < n; i++)
 		bforget(branch[i].bh);
 	for (i = 0; i < n; i++)
-		sysv_free_block(inode->i_sb, branch[i].key);
+		sysv_free_block(inode_sb(inode), branch[i].key);
 	return -ENOSPC;
 }
 
@@ -196,7 +197,7 @@ changed:
 	for (i = 1; i < num; i++)
 		bforget(where[i].bh);
 	for (i = 0; i < num; i++)
-		sysv_free_block(inode->i_sb, where[i].key);
+		sysv_free_block(inode_sb(inode), where[i].key);
 	return -EAGAIN;
 }
 
@@ -205,7 +206,7 @@ static int get_block(struct inode *inode, sector_t iblock, struct buffer_head *b
 	int err = -EIO;
 	int offsets[DEPTH];
 	Indirect chain[DEPTH];
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	Indirect *partial;
 	int left;
 	int depth = block_to_path(inode, iblock, offsets);
@@ -329,7 +330,7 @@ static inline void free_data(struct inode *inode, sysv_zone_t *p, sysv_zone_t *q
 		sysv_zone_t nr = *p;
 		if (nr) {
 			*p = 0;
-			sysv_free_block(inode->i_sb, nr);
+			sysv_free_block(inode_sb(inode), nr);
 			mark_inode_dirty(inode);
 		}
 	}
@@ -338,7 +339,7 @@ static inline void free_data(struct inode *inode, sysv_zone_t *p, sysv_zone_t *q
 static void free_branches(struct inode *inode, sysv_zone_t *p, sysv_zone_t *q, int depth)
 {
 	struct buffer_head * bh;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	if (depth--) {
 		for ( ; p < q ; p++) {
@@ -376,9 +377,9 @@ void sysv_truncate (struct inode * inode)
 	    S_ISLNK(inode->i_mode)))
 		return;
 
-	blocksize = inode->i_sb->s_blocksize;
+	blocksize = inode_sb(inode)->s_blocksize;
 	iblock = (inode->i_size + blocksize-1)
-					>> inode->i_sb->s_blocksize_bits;
+					>> inode_sb(inode)->s_blocksize_bits;
 
 	block_truncate_page(inode->i_mapping, inode->i_size, get_block);
 

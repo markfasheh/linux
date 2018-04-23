@@ -53,7 +53,7 @@ static struct dentry *sysv_lookup(struct inode * dir, struct dentry * dentry, un
 	ino = sysv_inode_by_name(dentry);
 
 	if (ino) {
-		inode = sysv_iget(dir->i_sb, ino);
+		inode = sysv_iget(inode_sb(dir), ino);
 		if (IS_ERR(inode))
 			return ERR_CAST(inode);
 	}
@@ -92,7 +92,7 @@ static int sysv_symlink(struct inode * dir, struct dentry * dentry,
 	int l = strlen(symname)+1;
 	struct inode * inode;
 
-	if (l > dir->i_sb->s_blocksize)
+	if (l > inode_sb(dir)->s_blocksize)
 		goto out;
 
 	inode = sysv_new_inode(dir, S_IFLNK|0777);

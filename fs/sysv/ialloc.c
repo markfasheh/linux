@@ -100,14 +100,14 @@ out:
 
 void sysv_free_inode(struct inode * inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct sysv_sb_info *sbi = SYSV_SB(sb);
 	unsigned int ino;
 	struct buffer_head * bh;
 	struct sysv_inode * raw_inode;
 	unsigned count;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	ino = inode->i_ino;
 	if (ino <= SYSV_ROOT_INO || ino > sbi->s_ninodes) {
 		printk("sysv_free_inode: inode 0,1,2 or nonexistent inode\n");
@@ -116,7 +116,7 @@ void sysv_free_inode(struct inode * inode)
 	raw_inode = sysv_raw_inode(sb, ino, &bh);
 	if (!raw_inode) {
 		printk("sysv_free_inode: unable to read inode block on device "
-		       "%s\n", inode->i_sb->s_id);
+		       "%s\n", inode_sb(inode)->s_id);
 		return;
 	}
 	mutex_lock(&sbi->s_lock);
@@ -135,7 +135,7 @@ void sysv_free_inode(struct inode * inode)
 
 struct inode * sysv_new_inode(const struct inode * dir, umode_t mode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct sysv_sb_info *sbi = SYSV_SB(sb);
 	struct inode *inode;
 	sysv_ino_t ino;
