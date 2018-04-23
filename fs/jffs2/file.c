@@ -32,7 +32,7 @@ static int jffs2_readpage (struct file *filp, struct page *pg);
 int jffs2_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 {
 	struct inode *inode = filp->f_mapping->host;
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	int ret;
 
 	ret = file_write_and_wait_range(filp, start, end);
@@ -79,7 +79,7 @@ const struct address_space_operations jffs2_file_address_operations =
 static int jffs2_do_readpage_nolock (struct inode *inode, struct page *pg)
 {
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	unsigned char *pg_buf;
 	int ret;
 
@@ -148,7 +148,7 @@ static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
 
 	if (pageofs > inode->i_size) {
 		/* Make new hole frag from old EOF to new page */
-		struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+		struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 		struct jffs2_raw_inode ri;
 		struct jffs2_full_dnode *fn;
 		uint32_t alloc_len;
@@ -241,7 +241,7 @@ static int jffs2_write_end(struct file *filp, struct address_space *mapping,
 	 */
 	struct inode *inode = mapping->host;
 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode_sb(inode));
 	struct jffs2_raw_inode *ri;
 	unsigned start = pos & (PAGE_SIZE - 1);
 	unsigned end = start + copied;
