@@ -93,7 +93,7 @@ static void filelayout_reset_write(struct nfs_pgio_header *hdr)
 		dprintk("%s Reset task %5u for i/o through MDS "
 			"(req %s/%llu, %u bytes @ offset %llu)\n", __func__,
 			hdr->task.tk_pid,
-			hdr->inode->i_sb->s_id,
+			inode_sb(hdr->inode)->s_id,
 			(unsigned long long)NFS_FILEID(hdr->inode),
 			hdr->args.count,
 			(unsigned long long)hdr->args.offset);
@@ -110,7 +110,7 @@ static void filelayout_reset_read(struct nfs_pgio_header *hdr)
 		dprintk("%s Reset task %5u for i/o through MDS "
 			"(req %s/%llu, %u bytes @ offset %llu)\n", __func__,
 			hdr->task.tk_pid,
-			hdr->inode->i_sb->s_id,
+			inode_sb(hdr->inode)->s_id,
 			(unsigned long long)NFS_FILEID(hdr->inode),
 			hdr->args.count,
 			(unsigned long long)hdr->args.offset);

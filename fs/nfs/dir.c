@@ -1449,7 +1449,7 @@ int nfs_atomic_open(struct inode *dir, struct dentry *dentry,
 	BUG_ON(d_inode(dentry));
 
 	dfprintk(VFS, "NFS: atomic_open(%s/%lu), %pd\n",
-			dir->i_sb->s_id, dir->i_ino, dentry);
+			inode_sb(dir)->s_id, dir->i_ino, dentry);
 
 	err = nfs_check_flags(open_flags);
 	if (err)
@@ -1671,7 +1671,7 @@ int nfs_create(struct inode *dir, struct dentry *dentry,
 	int error;
 
 	dfprintk(VFS, "NFS: create(%s/%lu), %pd\n",
-			dir->i_sb->s_id, dir->i_ino, dentry);
+			inode_sb(dir)->s_id, dir->i_ino, dentry);
 
 	attr.ia_mode = mode;
 	attr.ia_valid = ATTR_MODE;
@@ -1698,7 +1698,7 @@ nfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
 	int status;
 
 	dfprintk(VFS, "NFS: mknod(%s/%lu), %pd\n",
-			dir->i_sb->s_id, dir->i_ino, dentry);
+			inode_sb(dir)->s_id, dir->i_ino, dentry);
 
 	attr.ia_mode = mode;
 	attr.ia_valid = ATTR_MODE;
@@ -1724,7 +1724,7 @@ int nfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 	int error;
 
 	dfprintk(VFS, "NFS: mkdir(%s/%lu), %pd\n",
-			dir->i_sb->s_id, dir->i_ino, dentry);
+			inode_sb(dir)->s_id, dir->i_ino, dentry);
 
 	attr.ia_valid = ATTR_MODE;
 	attr.ia_mode = mode | S_IFDIR;
@@ -1752,7 +1752,7 @@ int nfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int error;
 
 	dfprintk(VFS, "NFS: rmdir(%s/%lu), %pd\n",
-			dir->i_sb->s_id, dir->i_ino, dentry);
+			inode_sb(dir)->s_id, dir->i_ino, dentry);
 
 	trace_nfs_rmdir_enter(dir, dentry);
 	if (d_really_is_positive(dentry)) {
@@ -1821,8 +1821,8 @@ int nfs_unlink(struct inode *dir, struct dentry *dentry)
 	int error;
 	int need_rehash = 0;
 
-	dfprintk(VFS, "NFS: unlink(%s/%lu, %pd)\n", dir->i_sb->s_id,
-		dir->i_ino, dentry);
+	dfprintk(VFS, "NFS: unlink(%s/%lu, %pd)\n", inode_sb(dir)->s_id,
+		 dir->i_ino, dentry);
 
 	trace_nfs_unlink_enter(dir, dentry);
 	spin_lock(&dentry->d_lock);
@@ -1872,8 +1872,8 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
 	unsigned int pathlen = strlen(symname);
 	int error;
 
-	dfprintk(VFS, "NFS: symlink(%s/%lu, %pd, %s)\n", dir->i_sb->s_id,
-		dir->i_ino, dentry, symname);
+	dfprintk(VFS, "NFS: symlink(%s/%lu, %pd, %s)\n", inode_sb(dir)->s_id,
+		 dir->i_ino, dentry, symname);
 
 	if (pathlen > PAGE_SIZE)
 		return -ENAMETOOLONG;
@@ -1895,7 +1895,7 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
 	trace_nfs_symlink_exit(dir, dentry, error);
 	if (error != 0) {
 		dfprintk(VFS, "NFS: symlink(%s/%lu, %pd, %s) error %d\n",
-			dir->i_sb->s_id, dir->i_ino,
+			inode_sb(dir)->s_id, dir->i_ino,
 			dentry, symname, error);
 		d_drop(dentry);
 		__free_page(page);
@@ -2540,7 +2540,7 @@ out:
 		res = nfs_execute_ok(inode, mask);
 
 	dfprintk(VFS, "NFS: permission(%s/%lu), mask=0x%x, res=%d\n",
-		inode->i_sb->s_id, inode->i_ino, mask, res);
+		inode_sb(inode)->s_id, inode->i_ino, mask, res);
 	return res;
 out_notsup:
 	if (mask & MAY_NOT_BLOCK)

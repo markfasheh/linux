@@ -94,7 +94,7 @@ static void nfs_readpage_release(struct nfs_page *req)
 {
 	struct inode *inode = d_inode(req->wb_context->dentry);
 
-	dprintk("NFS: read done (%s/%llu %d@%lld)\n", inode->i_sb->s_id,
+	dprintk("NFS: read done (%s/%llu %d@%lld)\n", inode_sb(inode)->s_id,
 		(unsigned long long)NFS_FILEID(inode), req->wb_bytes,
 		(long long)req_offset(req));
 
@@ -398,7 +398,7 @@ int nfs_readpages(struct file *filp, struct address_space *mapping,
 	int ret = -ESTALE;
 
 	dprintk("NFS: nfs_readpages (%s/%Lu %d)\n",
-			inode->i_sb->s_id,
+			inode_sb(inode)->s_id,
 			(unsigned long long)NFS_FILEID(inode),
 			nr_pages);
 	nfs_inc_stats(inode, NFSIOS_VFSREADPAGES);

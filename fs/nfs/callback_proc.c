@@ -133,7 +133,7 @@ restart:
 			inode = igrab(lo->plh_inode);
 			if (!inode)
 				continue;
-			if (!nfs_sb_active(inode->i_sb)) {
+			if (!nfs_sb_active(inode_sb(inode))) {
 				rcu_read_unlock();
 				spin_unlock(&clp->cl_lock);
 				iput(inode);
@@ -173,7 +173,7 @@ restart:
 			inode = igrab(lo->plh_inode);
 			if (!inode)
 				continue;
-			if (!nfs_sb_active(inode->i_sb)) {
+			if (!nfs_sb_active(inode_sb(inode))) {
 				rcu_read_unlock();
 				spin_unlock(&clp->cl_lock);
 				iput(inode);

@@ -101,7 +101,7 @@ static void nfs_do_call_unlink(struct nfs_unlinkdata *data)
 	};
 	struct rpc_task *task;
 	struct inode *dir = d_inode(data->dentry->d_parent);
-	nfs_sb_active(dir->i_sb);
+	nfs_sb_active(inode_sb(dir));
 	data->args.fh = NFS_FH(dir);
 	nfs_fattr_init(data->res.dir_attr);
 
@@ -284,7 +284,7 @@ static void nfs_async_rename_done(struct rpc_task *task, void *calldata)
 static void nfs_async_rename_release(void *calldata)
 {
 	struct nfs_renamedata	*data = calldata;
-	struct super_block *sb = data->old_dir->i_sb;
+	struct super_block *sb = inode_sb(data->old_dir);
 
 	if (d_really_is_positive(data->old_dentry))
 		nfs_mark_for_revalidate(d_inode(data->old_dentry));
@@ -384,7 +384,7 @@ nfs_async_rename(struct inode *old_dir, struct inode *new_dir,
 	data->res.old_fattr = &data->old_fattr;
 	data->res.new_fattr = &data->new_fattr;
 
-	nfs_sb_active(old_dir->i_sb);
+	nfs_sb_active(inode_sb(old_dir));
 
 	NFS_PROTO(data->old_dir)->rename_setup(&msg, old_dir);
 

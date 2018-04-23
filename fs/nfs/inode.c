@@ -556,7 +556,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr, st
 		}
 	}
 	dprintk("NFS: nfs_fhget(%s/%Lu fh_crc=0x%08x ct=%d)\n",
-		inode->i_sb->s_id,
+		inode_sb(inode)->s_id,
 		(unsigned long long)NFS_FILEID(inode),
 		nfs_display_fhandle_hash(fh),
 		atomic_read(&inode->i_count));
@@ -1074,7 +1074,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	struct nfs_inode *nfsi = NFS_I(inode);
 
 	dfprintk(PAGECACHE, "NFS: revalidating (%s/%Lu)\n",
-		inode->i_sb->s_id, (unsigned long long)NFS_FILEID(inode));
+		inode_sb(inode)->s_id, (unsigned long long)NFS_FILEID(inode));
 
 	trace_nfs_revalidate_inode_enter(inode);
 
@@ -1106,7 +1106,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	status = NFS_PROTO(inode)->getattr(server, NFS_FH(inode), fattr, label);
 	if (status != 0) {
 		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Lu) getattr failed, error=%d\n",
-			 inode->i_sb->s_id,
+			 inode_sb(inode)->s_id,
 			 (unsigned long long)NFS_FILEID(inode), status);
 		if (status == -ESTALE) {
 			nfs_zap_caches(inode);
@@ -1119,7 +1119,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	status = nfs_refresh_inode(inode, fattr);
 	if (status) {
 		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Lu) refresh failed, error=%d\n",
-			 inode->i_sb->s_id,
+			 inode_sb(inode)->s_id,
 			 (unsigned long long)NFS_FILEID(inode), status);
 		goto err_out;
 	}
@@ -1130,7 +1130,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	nfs_setsecurity(inode, fattr, label);
 
 	dfprintk(PAGECACHE, "NFS: (%s/%Lu) revalidation complete\n",
-		inode->i_sb->s_id,
+		inode_sb(inode)->s_id,
 		(unsigned long long)NFS_FILEID(inode));
 
 err_out:
@@ -1187,7 +1187,7 @@ static int nfs_invalidate_mapping(struct inode *inode, struct address_space *map
 	nfs_fscache_wait_on_invalidate(inode);
 
 	dfprintk(PAGECACHE, "NFS: (%s/%Lu) data cache invalidated\n",
-			inode->i_sb->s_id,
+			inode_sb(inode)->s_id,
 			(unsigned long long)NFS_FILEID(inode));
 	return 0;
 }
@@ -1750,7 +1750,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	bool cache_revalidated = true;
 
 	dfprintk(VFS, "NFS: %s(%s/%lu fh_crc=0x%08x ct=%d info=0x%x)\n",
-			__func__, inode->i_sb->s_id, inode->i_ino,
+			__func__, inode_sb(inode)->s_id, inode->i_ino,
 			nfs_display_fhandle_hash(NFS_FH(inode)),
 			atomic_read(&inode->i_count), fattr->valid);
 
@@ -1758,7 +1758,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 		printk(KERN_ERR "NFS: server %s error: fileid changed\n"
 			"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
 			NFS_SERVER(inode)->nfs_client->cl_hostname,
-			inode->i_sb->s_id, (long long)nfsi->fileid,
+			inode_sb(inode)->s_id, (long long)nfsi->fileid,
 			(long long)fattr->fileid);
 		goto out_err;
 	}
@@ -1805,7 +1805,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	if (fattr->valid & NFS_ATTR_FATTR_CHANGE) {
 		if (!inode_eq_iversion_raw(inode, fattr->change_attr)) {
 			dprintk("NFS: change_attr change on server for file %s/%ld\n",
-					inode->i_sb->s_id, inode->i_ino);
+					inode_sb(inode)->s_id, inode->i_ino);
 			/* Could it be a race with writeback? */
 			if (!have_writers) {
 				invalid |= NFS_INO_INVALID_ATTR
@@ -1854,7 +1854,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 			}
 			dprintk("NFS: isize change on server for file %s/%ld "
 					"(%Ld to %Ld)\n",
-					inode->i_sb->s_id,
+					inode_sb(inode)->s_id,
 					inode->i_ino,
 					(long long)cur_isize,
 					(long long)new_isize);
