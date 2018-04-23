@@ -331,7 +331,7 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
 	int ret, ncps, nicps, nss, count, i;
 
 	if (unlikely(start == 0 || start > end)) {
-		nilfs_msg(cpfile->i_sb, KERN_ERR,
+		nilfs_msg(inode_sb(cpfile), KERN_ERR,
 			  "cannot delete checkpoints: invalid range [%llu, %llu)",
 			  (unsigned long long)start, (unsigned long long)end);
 		return -EINVAL;
@@ -385,7 +385,7 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
 								   cpfile, cno);
 					if (ret == 0)
 						continue;
-					nilfs_msg(cpfile->i_sb, KERN_ERR,
+					nilfs_msg(inode_sb(cpfile), KERN_ERR,
 						  "error %d deleting checkpoint block",
 						  ret);
 					break;
@@ -918,7 +918,7 @@ int nilfs_cpfile_change_cpmode(struct inode *cpfile, __u64 cno, int mode)
 
 	switch (mode) {
 	case NILFS_CHECKPOINT:
-		if (nilfs_checkpoint_is_mounted(cpfile->i_sb, cno))
+		if (nilfs_checkpoint_is_mounted(inode_sb(cpfile), cno))
 			/*
 			 * Current implementation does not have to protect
 			 * plain read-only mounts since they are exclusive

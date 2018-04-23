@@ -80,7 +80,7 @@ int nilfs_get_block(struct inode *inode, sector_t blkoff,
 		    struct buffer_head *bh_result, int create)
 {
 	struct nilfs_inode_info *ii = NILFS_I(inode);
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	__u64 blknum = 0;
 	int err = 0, ret;
 	unsigned int maxblocks = bh_result->b_size >> inode->i_blkbits;
@@ -89,7 +89,7 @@ int nilfs_get_block(struct inode *inode, sector_t blkoff,
 	ret = nilfs_bmap_lookup_contig(ii->i_bmap, blkoff, &blknum, maxblocks);
 	up_read(&NILFS_MDT(nilfs->ns_dat)->mi_sem);
 	if (ret >= 0) {	/* found */
-		map_bh(bh_result, inode->i_sb, blknum);
+		map_bh(bh_result, inode_sb(inode), blknum);
 		if (ret > 0)
 			bh_result->b_size = (ret << inode->i_blkbits);
 		goto out;
@@ -99,7 +99,7 @@ int nilfs_get_block(struct inode *inode, sector_t blkoff,
 		struct nilfs_transaction_info ti;
 
 		bh_result->b_blocknr = 0;
-		err = nilfs_transaction_begin(inode->i_sb, &ti, 1);
+		err = nilfs_transaction_begin(inode_sb(inode), &ti, 1);
 		if (unlikely(err))
 			goto out;
 		err = nilfs_bmap_insert(ii->i_bmap, blkoff,
@@ -112,21 +112,21 @@ int nilfs_get_block(struct inode *inode, sector_t blkoff,
 				 * However, the page having this block must
 				 * be locked in this case.
 				 */
-				nilfs_msg(inode->i_sb, KERN_WARNING,
+				nilfs_msg(inode_sb(inode), KERN_WARNING,
 					  "%s (ino=%lu): a race condition while inserting a data block at offset=%llu",
 					  __func__, inode->i_ino,
 					  (unsigned long long)blkoff);
 				err = 0;
 			}
-			nilfs_transaction_abort(inode->i_sb);
+			nilfs_transaction_abort(inode_sb(inode));
 			goto out;
 		}
 		nilfs_mark_inode_dirty_sync(inode);
-		nilfs_transaction_commit(inode->i_sb); /* never fails */
+		nilfs_transaction_commit(inode_sb(inode)); /* never fails */
 		/* Error handling should be detailed */
 		set_buffer_new(bh_result);
 		set_buffer_delay(bh_result);
-		map_bh(bh_result, inode->i_sb, 0);
+		map_bh(bh_result, inode_sb(inode), 0);
 		/* Disk block number must be changed to proper value */
 
 	} else if (ret == -ENOENT) {
@@ -174,13 +174,13 @@ static int nilfs_writepages(struct address_space *mapping,
 	struct inode *inode = mapping->host;
 	int err = 0;
 
-	if (sb_rdonly(inode->i_sb)) {
+	if (sb_rdonly(inode_sb(inode))) {
 		nilfs_clear_dirty_pages(mapping, false);
 		return -EROFS;
 	}
 
 	if (wbc->sync_mode == WB_SYNC_ALL)
-		err = nilfs_construct_dsync_segment(inode->i_sb, inode,
+		err = nilfs_construct_dsync_segment(inode_sb(inode), inode,
 						    wbc->range_start,
 						    wbc->range_end);
 	return err;
@@ -191,7 +191,7 @@ static int nilfs_writepage(struct page *page, struct writeback_control *wbc)
 	struct inode *inode = page->mapping->host;
 	int err;
 
-	if (sb_rdonly(inode->i_sb)) {
+	if (sb_rdonly(inode_sb(inode))) {
 		/*
 		 * It means that filesystem was remounted in read-only
 		 * mode because of error or metadata corruption. But we
@@ -207,11 +207,11 @@ static int nilfs_writepage(struct page *page, struct writeback_control *wbc)
 	unlock_page(page);
 
 	if (wbc->sync_mode == WB_SYNC_ALL) {
-		err = nilfs_construct_segment(inode->i_sb);
+		err = nilfs_construct_segment(inode_sb(inode));
 		if (unlikely(err))
 			return err;
 	} else if (wbc->for_reclaim)
-		nilfs_flush_segment(inode->i_sb, inode->i_ino);
+		nilfs_flush_segment(inode_sb(inode), inode->i_ino);
 
 	return 0;
 }
@@ -268,7 +268,7 @@ static int nilfs_write_begin(struct file *file, struct address_space *mapping,
 
 {
 	struct inode *inode = mapping->host;
-	int err = nilfs_transaction_begin(inode->i_sb, NULL, 1);
+	int err = nilfs_transaction_begin(inode_sb(inode), NULL, 1);
 
 	if (unlikely(err))
 		return err;
@@ -277,7 +277,7 @@ static int nilfs_write_begin(struct file *file, struct address_space *mapping,
 				nilfs_get_block);
 	if (unlikely(err)) {
 		nilfs_write_failed(mapping, pos + len);
-		nilfs_transaction_abort(inode->i_sb);
+		nilfs_transaction_abort(inode_sb(inode));
 	}
 	return err;
 }
@@ -296,7 +296,7 @@ static int nilfs_write_end(struct file *file, struct address_space *mapping,
 	copied = generic_write_end(file, mapping, pos, len, copied, page,
 				   fsdata);
 	nilfs_set_file_dirty(inode, nr_dirty);
-	err = nilfs_transaction_commit(inode->i_sb);
+	err = nilfs_transaction_commit(inode_sb(inode));
 	return err ? : copied;
 }
 
@@ -339,7 +339,7 @@ static int nilfs_insert_inode_locked(struct inode *inode,
 
 struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct the_nilfs *nilfs = sb->s_fs_info;
 	struct inode *inode;
 	struct nilfs_inode_info *ii;
@@ -651,7 +651,7 @@ void nilfs_write_inode_common(struct inode *inode,
 	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
 
 	if (NILFS_ROOT_METADATA_FILE(inode->i_ino)) {
-		struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+		struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 
 		/* zero-fill unused portion in the case of super root block */
 		raw_inode->i_xattr = 0;
@@ -717,13 +717,13 @@ repeat:
 
 	b -= min_t(__u64, NILFS_MAX_TRUNCATE_BLOCKS, b - from);
 	ret = nilfs_bmap_truncate(ii->i_bmap, b);
-	nilfs_relax_pressure_in_lock(ii->vfs_inode.i_sb);
+	nilfs_relax_pressure_in_lock(inode_sb(&ii->vfs_inode));
 	if (!ret || (ret == -ENOMEM &&
 		     nilfs_bmap_truncate(ii->i_bmap, b) == 0))
 		goto repeat;
 
 failed:
-	nilfs_msg(ii->vfs_inode.i_sb, KERN_WARNING,
+	nilfs_msg(inode_sb(&ii->vfs_inode), KERN_WARNING,
 		  "error %d truncating bmap (ino=%lu)", ret,
 		  ii->vfs_inode.i_ino);
 }
@@ -733,7 +733,7 @@ void nilfs_truncate(struct inode *inode)
 	unsigned long blkoff;
 	unsigned int blocksize;
 	struct nilfs_transaction_info ti;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct nilfs_inode_info *ii = NILFS_I(inode);
 
 	if (!test_bit(NILFS_I_BMAP, &ii->i_state))
@@ -788,7 +788,7 @@ static void nilfs_clear_inode(struct inode *inode)
 void nilfs_evict_inode(struct inode *inode)
 {
 	struct nilfs_transaction_info ti;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct nilfs_inode_info *ii = NILFS_I(inode);
 	int ret;
 
@@ -826,7 +826,7 @@ int nilfs_setattr(struct dentry *dentry, struct iattr *iattr)
 {
 	struct nilfs_transaction_info ti;
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int err;
 
 	err = setattr_prepare(dentry, iattr);
@@ -873,7 +873,7 @@ int nilfs_permission(struct inode *inode, int mask)
 
 int nilfs_load_inode_block(struct inode *inode, struct buffer_head **pbh)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	struct nilfs_inode_info *ii = NILFS_I(inode);
 	int err;
 
@@ -902,7 +902,7 @@ int nilfs_load_inode_block(struct inode *inode, struct buffer_head **pbh)
 int nilfs_inode_dirty(struct inode *inode)
 {
 	struct nilfs_inode_info *ii = NILFS_I(inode);
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	int ret = 0;
 
 	if (!list_empty(&ii->i_dirty)) {
@@ -917,7 +917,7 @@ int nilfs_inode_dirty(struct inode *inode)
 int nilfs_set_file_dirty(struct inode *inode, unsigned int nr_dirty)
 {
 	struct nilfs_inode_info *ii = NILFS_I(inode);
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 
 	atomic_add(nr_dirty, &nilfs->ns_ndirtyblks);
 
@@ -936,7 +936,7 @@ int nilfs_set_file_dirty(struct inode *inode, unsigned int nr_dirty)
 			 * This will happen when somebody is freeing
 			 * this inode.
 			 */
-			nilfs_msg(inode->i_sb, KERN_WARNING,
+			nilfs_msg(inode_sb(inode), KERN_WARNING,
 				  "cannot set file dirty (ino=%lu): the file is being freed",
 				  inode->i_ino);
 			spin_unlock(&nilfs->ns_inode_lock);
@@ -959,7 +959,7 @@ int __nilfs_mark_inode_dirty(struct inode *inode, int flags)
 
 	err = nilfs_load_inode_block(inode, &ibh);
 	if (unlikely(err)) {
-		nilfs_msg(inode->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(inode), KERN_WARNING,
 			  "cannot mark inode dirty (ino=%lu): error %d loading inode block",
 			  inode->i_ino, err);
 		return err;
@@ -987,7 +987,7 @@ void nilfs_dirty_inode(struct inode *inode, int flags)
 	struct nilfs_mdt_info *mdi = NILFS_MDT(inode);
 
 	if (is_bad_inode(inode)) {
-		nilfs_msg(inode->i_sb, KERN_WARNING,
+		nilfs_msg(inode_sb(inode), KERN_WARNING,
 			  "tried to mark bad_inode dirty. ignored.");
 		dump_stack();
 		return;
@@ -996,15 +996,15 @@ void nilfs_dirty_inode(struct inode *inode, int flags)
 		nilfs_mdt_mark_dirty(inode);
 		return;
 	}
-	nilfs_transaction_begin(inode->i_sb, &ti, 0);
+	nilfs_transaction_begin(inode_sb(inode), &ti, 0);
 	__nilfs_mark_inode_dirty(inode, flags);
-	nilfs_transaction_commit(inode->i_sb); /* never fails */
+	nilfs_transaction_commit(inode_sb(inode)); /* never fails */
 }
 
 int nilfs_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 		 __u64 start, __u64 len)
 {
-	struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+	struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 	__u64 logical = 0, phys = 0, size = 0;
 	__u32 flags = 0;
 	loff_t isize;

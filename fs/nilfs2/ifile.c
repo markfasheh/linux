@@ -141,7 +141,7 @@ int nilfs_ifile_delete_inode(struct inode *ifile, ino_t ino)
 int nilfs_ifile_get_inode_block(struct inode *ifile, ino_t ino,
 				struct buffer_head **out_bh)
 {
-	struct super_block *sb = ifile->i_sb;
+	struct super_block *sb = inode_sb(ifile);
 	int err;
 
 	if (unlikely(!NILFS_VALID_INODE(sb, ino))) {

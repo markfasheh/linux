@@ -349,7 +349,7 @@ int nilfs_dat_move(struct inode *dat, __u64 vblocknr, sector_t blocknr)
 	kaddr = kmap_atomic(entry_bh->b_page);
 	entry = nilfs_palloc_block_get_entry(dat, vblocknr, entry_bh, kaddr);
 	if (unlikely(entry->de_blocknr == cpu_to_le64(0))) {
-		nilfs_msg(dat->i_sb, KERN_CRIT,
+		nilfs_msg(inode_sb(dat), KERN_CRIT,
 			  "%s: invalid vblocknr = %llu, [%llu, %llu)",
 			  __func__, (unsigned long long)vblocknr,
 			  (unsigned long long)le64_to_cpu(entry->de_start),

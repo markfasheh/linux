@@ -79,7 +79,7 @@ int nilfs_gccache_submit_read_data(struct inode *inode, sector_t blkoff,
 		goto out;
 
 	if (pbn == 0) {
-		struct the_nilfs *nilfs = inode->i_sb->s_fs_info;
+		struct the_nilfs *nilfs = inode_sb(inode)->s_fs_info;
 
 		err = nilfs_dat_translate(nilfs->ns_dat, vbn, &pbn);
 		if (unlikely(err)) { /* -EIO, -ENOMEM, -ENOENT */
@@ -95,7 +95,7 @@ int nilfs_gccache_submit_read_data(struct inode *inode, sector_t blkoff,
 	}
 
 	if (!buffer_mapped(bh)) {
-		bh->b_bdev = inode->i_sb->s_bdev;
+		bh->b_bdev = inode_sb(inode)->s_bdev;
 		set_buffer_mapped(bh);
 	}
 	bh->b_blocknr = pbn;
@@ -151,7 +151,7 @@ int nilfs_gccache_wait_and_mark_dirty(struct buffer_head *bh)
 	if (!buffer_uptodate(bh)) {
 		struct inode *inode = bh->b_page->mapping->host;
 
-		nilfs_msg(inode->i_sb, KERN_ERR,
+		nilfs_msg(inode_sb(inode), KERN_ERR,
 			  "I/O error reading %s block for GC (ino=%lu, vblocknr=%llu)",
 			  buffer_nilfs_node(bh) ? "node" : "data",
 			  inode->i_ino, (unsigned long long)bh->b_blocknr);

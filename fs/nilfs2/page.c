@@ -397,7 +397,7 @@ void nilfs_clear_dirty_pages(struct address_space *mapping, bool silent)
 void nilfs_clear_dirty_page(struct page *page, bool silent)
 {
 	struct inode *inode = page->mapping->host;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	BUG_ON(!PageLocked(page));
 
