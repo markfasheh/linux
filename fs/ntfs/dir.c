@@ -1101,7 +1101,7 @@ static int ntfs_readdir(struct file *file, struct dir_context *actor)
 	s64 ia_pos, ia_start, prev_ia_pos, bmp_pos;
 	loff_t i_size;
 	struct inode *bmp_vi, *vdir = file_inode(file);
-	struct super_block *sb = vdir->i_sb;
+	struct super_block *sb = inode_sb(vdir);
 	ntfs_inode *ndir = NTFS_I(vdir);
 	ntfs_volume *vol = NTFS_SB(sb);
 	MFT_RECORD *m;
@@ -1517,20 +1517,22 @@ static int ntfs_dir_fsync(struct file *filp, loff_t start, loff_t end,
 	na.type = AT_BITMAP;
 	na.name = I30;
 	na.name_len = 4;
-	bmp_vi = ilookup5(vi->i_sb, vi->i_ino, (test_t)ntfs_test_inode, &na);
+	bmp_vi = ilookup5(inode_sb(vi), vi->i_ino, (test_t)ntfs_test_inode,
+			  &na);
 	if (bmp_vi) {
  		write_inode_now(bmp_vi, !datasync);
 		iput(bmp_vi);
 	}
 	ret = __ntfs_write_inode(vi, 1);
 	write_inode_now(vi, !datasync);
-	err = sync_blockdev(vi->i_sb->s_bdev);
+	err = sync_blockdev(inode_sb(vi)->s_bdev);
 	if (unlikely(err && !ret))
 		ret = err;
 	if (likely(!ret))
 		ntfs_debug("Done.");
 	else
-		ntfs_warning(vi->i_sb, "Failed to f%ssync inode 0x%lx.  Error "
+		ntfs_warning(inode_sb(vi),
+				"Failed to f%ssync inode 0x%lx.  Error "
 				"%u.", datasync ? "data" : "", vi->i_ino, -ret);
 	inode_unlock(vi);
 	return ret;

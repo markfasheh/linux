@@ -1400,14 +1400,16 @@ retry_writepage:
 			// TODO: Implement and replace this with
 			// return ntfs_write_compressed_block(page);
 			unlock_page(page);
-			ntfs_error(vi->i_sb, "Writing to compressed files is "
+			ntfs_error(inode_sb(vi),
+					"Writing to compressed files is "
 					"not supported yet.  Sorry.");
 			return -EOPNOTSUPP;
 		}
 		// TODO: Implement and remove this check.
 		if (NInoNonResident(ni) && NInoSparse(ni)) {
 			unlock_page(page);
-			ntfs_error(vi->i_sb, "Writing to sparse files is not "
+			ntfs_error(inode_sb(vi),
+					"Writing to sparse files is not "
 					"supported yet.  Sorry.");
 			return -EOPNOTSUPP;
 		}
@@ -1437,7 +1439,7 @@ retry_writepage:
 	BUG_ON(page_has_buffers(page));
 	BUG_ON(!PageUptodate(page));
 	if (unlikely(page->index > 0)) {
-		ntfs_error(vi->i_sb, "BUG()! page->index (0x%lx) > 0.  "
+		ntfs_error(inode_sb(vi), "BUG()! page->index (0x%lx) > 0.  "
 				"Aborting write.", page->index);
 		BUG_ON(PageWriteback(page));
 		set_page_writeback(page);
@@ -1514,7 +1516,8 @@ retry_writepage:
 	return 0;
 err_out:
 	if (err == -ENOMEM) {
-		ntfs_warning(vi->i_sb, "Error allocating memory. Redirtying "
+		ntfs_warning(inode_sb(vi),
+				"Error allocating memory. Redirtying "
 				"page so we try again later.");
 		/*
 		 * Put the page back on mapping->dirty_pages, but leave its
@@ -1523,7 +1526,8 @@ err_out:
 		redirty_page_for_writepage(wbc, page);
 		err = 0;
 	} else {
-		ntfs_error(vi->i_sb, "Resident attribute write failed with "
+		ntfs_error(inode_sb(vi),
+				"Resident attribute write failed with "
 				"error %i.", err);
 		SetPageError(page);
 		NVolSetErrors(ni->vol);
@@ -1735,7 +1739,7 @@ void mark_ntfs_record_dirty(struct page *page, const unsigned int ofs) {
 
 	BUG_ON(!PageUptodate(page));
 	end = ofs + ni->itype.index.block_size;
-	bh_size = VFS_I(ni)->i_sb->s_blocksize;
+	bh_size = inode_sb(VFS_I(ni))->s_blocksize;
 	spin_lock(&mapping->private_lock);
 	if (unlikely(!page_has_buffers(page))) {
 		spin_unlock(&mapping->private_lock);

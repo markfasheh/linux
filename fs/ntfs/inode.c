@@ -239,8 +239,9 @@ struct inode *ntfs_attr_iget(struct inode *base_vi, ATTR_TYPE type,
 	na.name = name;
 	na.name_len = name_len;
 
-	vi = iget5_locked(base_vi->i_sb, na.mft_no, (test_t)ntfs_test_inode,
-			(set_t)ntfs_init_locked_inode, &na);
+	vi = iget5_locked(inode_sb(base_vi), na.mft_no,
+			  (test_t)ntfs_test_inode,
+			  (set_t)ntfs_init_locked_inode, &na);
 	if (unlikely(!vi))
 		return ERR_PTR(-ENOMEM);
 
@@ -294,8 +295,9 @@ struct inode *ntfs_index_iget(struct inode *base_vi, ntfschar *name,
 	na.name = name;
 	na.name_len = name_len;
 
-	vi = iget5_locked(base_vi->i_sb, na.mft_no, (test_t)ntfs_test_inode,
-			(set_t)ntfs_init_locked_inode, &na);
+	vi = iget5_locked(inode_sb(base_vi), na.mft_no,
+			  (test_t)ntfs_test_inode,
+			  (set_t)ntfs_init_locked_inode, &na);
 	if (unlikely(!vi))
 		return ERR_PTR(-ENOMEM);
 
@@ -548,7 +550,7 @@ err_corrupt_attr:
  */
 static int ntfs_read_locked_inode(struct inode *vi)
 {
-	ntfs_volume *vol = NTFS_SB(vi->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(vi));
 	ntfs_inode *ni;
 	struct inode *bvi;
 	MFT_RECORD *m;
@@ -584,11 +586,11 @@ static int ntfs_read_locked_inode(struct inode *vi)
 	}
 
 	if (!(m->flags & MFT_RECORD_IN_USE)) {
-		ntfs_error(vi->i_sb, "Inode is not in use!");
+		ntfs_error(inode_sb(vi), "Inode is not in use!");
 		goto unm_err_out;
 	}
 	if (m->base_mft_record) {
-		ntfs_error(vi->i_sb, "Inode is an extent inode!");
+		ntfs_error(inode_sb(vi), "Inode is an extent inode!");
 		goto unm_err_out;
 	}
 
@@ -647,7 +649,8 @@ static int ntfs_read_locked_inode(struct inode *vi)
 			 * recover mount option is set) by creating a new
 			 * attribute.
 			 */
-			ntfs_error(vi->i_sb, "$STANDARD_INFORMATION attribute "
+			ntfs_error(inode_sb(vi),
+					"$STANDARD_INFORMATION attribute "
 					"is missing.");
 		}
 		goto unm_err_out;
@@ -685,7 +688,8 @@ static int ntfs_read_locked_inode(struct inode *vi)
 	err = ntfs_attr_lookup(AT_ATTRIBUTE_LIST, NULL, 0, 0, 0, NULL, 0, ctx);
 	if (err) {
 		if (unlikely(err != -ENOENT)) {
-			ntfs_error(vi->i_sb, "Failed to lookup attribute list "
+			ntfs_error(inode_sb(vi),
+					"Failed to lookup attribute list "
 					"attribute.");
 			goto unm_err_out;
 		}
@@ -696,19 +700,21 @@ static int ntfs_read_locked_inode(struct inode *vi)
 		NInoSetAttrList(ni);
 		a = ctx->attr;
 		if (a->flags & ATTR_COMPRESSION_MASK) {
-			ntfs_error(vi->i_sb, "Attribute list attribute is "
+			ntfs_error(inode_sb(vi),
+					"Attribute list attribute is "
 					"compressed.");
 			goto unm_err_out;
 		}
 		if (a->flags & ATTR_IS_ENCRYPTED ||
 				a->flags & ATTR_IS_SPARSE) {
 			if (a->non_resident) {
-				ntfs_error(vi->i_sb, "Non-resident attribute "
+				ntfs_error(inode_sb(vi),
+						"Non-resident attribute "
 						"list attribute is encrypted/"
 						"sparse.");
 				goto unm_err_out;
 			}
-			ntfs_warning(vi->i_sb, "Resident attribute list "
+			ntfs_warning(inode_sb(vi), "Resident attribute list "
 					"attribute in inode 0x%lx is marked "
 					"encrypted/sparse which is not true.  "
 					"However, Windows allows this and "
@@ -721,7 +727,8 @@ static int ntfs_read_locked_inode(struct inode *vi)
 		ni->attr_list_size = (u32)ntfs_attr_size(a);
 		ni->attr_list = ntfs_malloc_nofs(ni->attr_list_size);
 		if (!ni->attr_list) {
-			ntfs_error(vi->i_sb, "Not enough memory to allocate "
+			ntfs_error(inode_sb(vi),
+					"Not enough memory to allocate "
 					"buffer for attribute list.");
 			err = -ENOMEM;
 			goto unm_err_out;
@@ -729,7 +736,8 @@ static int ntfs_read_locked_inode(struct inode *vi)
 		if (a->non_resident) {
 			NInoSetAttrListNonResident(ni);
 			if (a->data.non_resident.lowest_vcn) {
-				ntfs_error(vi->i_sb, "Attribute list has non "
+				ntfs_error(inode_sb(vi),
+						"Attribute list has non "
 						"zero lowest_vcn.");
 				goto unm_err_out;
 			}
@@ -742,7 +750,7 @@ static int ntfs_read_locked_inode(struct inode *vi)
 			if (IS_ERR(ni->attr_list_rl.rl)) {
 				err = PTR_ERR(ni->attr_list_rl.rl);
 				ni->attr_list_rl.rl = NULL;
-				ntfs_error(vi->i_sb, "Mapping pairs "
+				ntfs_error(inode_sb(vi), "Mapping pairs "
 						"decompression failed.");
 				goto unm_err_out;
 			}
@@ -751,7 +759,7 @@ static int ntfs_read_locked_inode(struct inode *vi)
 					ni->attr_list, ni->attr_list_size,
 					sle64_to_cpu(a->data.non_resident.
 					initialized_size)))) {
-				ntfs_error(vi->i_sb, "Failed to load "
+				ntfs_error(inode_sb(vi), "Failed to load "
 						"attribute list attribute.");
 				goto unm_err_out;
 			}
@@ -760,7 +768,8 @@ static int ntfs_read_locked_inode(struct inode *vi)
 					+ le32_to_cpu(
 					a->data.resident.value_length) >
 					(u8*)ctx->mrec + vol->mft_record_size) {
-				ntfs_error(vi->i_sb, "Corrupt attribute list "
+				ntfs_error(inode_sb(vi),
+						"Corrupt attribute list "
 						"in inode.");
 				goto unm_err_out;
 			}
@@ -791,7 +800,8 @@ skip_attr_list_load:
 				// FIXME: File is corrupt! Hot-fix with empty
 				// index root attribute if recovery option is
 				// set.
-				ntfs_error(vi->i_sb, "$INDEX_ROOT attribute "
+				ntfs_error(inode_sb(vi),
+						"$INDEX_ROOT attribute "
 						"is missing.");
 			}
 			goto unm_err_out;
@@ -820,7 +830,8 @@ skip_attr_list_load:
 			NInoSetCompressed(ni);
 		if (a->flags & ATTR_IS_ENCRYPTED) {
 			if (a->flags & ATTR_COMPRESSION_MASK) {
-				ntfs_error(vi->i_sb, "Found encrypted and "
+				ntfs_error(inode_sb(vi),
+						"Found encrypted and "
 						"compressed attribute.");
 				goto unm_err_out;
 			}
@@ -832,23 +843,25 @@ skip_attr_list_load:
 				le16_to_cpu(a->data.resident.value_offset));
 		ir_end = (u8*)ir + le32_to_cpu(a->data.resident.value_length);
 		if (ir_end > (u8*)ctx->mrec + vol->mft_record_size) {
-			ntfs_error(vi->i_sb, "$INDEX_ROOT attribute is "
+			ntfs_error(inode_sb(vi), "$INDEX_ROOT attribute is "
 					"corrupt.");
 			goto unm_err_out;
 		}
 		index_end = (u8*)&ir->index +
 				le32_to_cpu(ir->index.index_length);
 		if (index_end > ir_end) {
-			ntfs_error(vi->i_sb, "Directory index is corrupt.");
+			ntfs_error(inode_sb(vi),
+				   "Directory index is corrupt.");
 			goto unm_err_out;
 		}
 		if (ir->type != AT_FILE_NAME) {
-			ntfs_error(vi->i_sb, "Indexed attribute is not "
+			ntfs_error(inode_sb(vi), "Indexed attribute is not "
 					"$FILE_NAME.");
 			goto unm_err_out;
 		}
 		if (ir->collation_rule != COLLATION_FILE_NAME) {
-			ntfs_error(vi->i_sb, "Index collation rule is not "
+			ntfs_error(inode_sb(vi),
+					"Index collation rule is not "
 					"COLLATION_FILE_NAME.");
 			goto unm_err_out;
 		}
@@ -856,13 +869,14 @@ skip_attr_list_load:
 		ni->itype.index.block_size = le32_to_cpu(ir->index_block_size);
 		if (ni->itype.index.block_size &
 				(ni->itype.index.block_size - 1)) {
-			ntfs_error(vi->i_sb, "Index block size (%u) is not a "
+			ntfs_error(inode_sb(vi),
+					"Index block size (%u) is not a "
 					"power of two.",
 					ni->itype.index.block_size);
 			goto unm_err_out;
 		}
 		if (ni->itype.index.block_size > PAGE_SIZE) {
-			ntfs_error(vi->i_sb, "Index block size (%u) > "
+			ntfs_error(inode_sb(vi), "Index block size (%u) > "
 					"PAGE_SIZE (%ld) is not "
 					"supported.  Sorry.",
 					ni->itype.index.block_size,
@@ -871,7 +885,7 @@ skip_attr_list_load:
 			goto unm_err_out;
 		}
 		if (ni->itype.index.block_size < NTFS_BLOCK_SIZE) {
-			ntfs_error(vi->i_sb, "Index block size (%u) < "
+			ntfs_error(inode_sb(vi), "Index block size (%u) < "
 					"NTFS_BLOCK_SIZE (%i) is not "
 					"supported.  Sorry.",
 					ni->itype.index.block_size,
@@ -914,18 +928,19 @@ skip_attr_list_load:
 				CASE_SENSITIVE, 0, NULL, 0, ctx);
 		if (unlikely(err)) {
 			if (err == -ENOENT)
-				ntfs_error(vi->i_sb, "$INDEX_ALLOCATION "
+				ntfs_error(inode_sb(vi), "$INDEX_ALLOCATION "
 						"attribute is not present but "
 						"$INDEX_ROOT indicated it is.");
 			else
-				ntfs_error(vi->i_sb, "Failed to lookup "
+				ntfs_error(inode_sb(vi), "Failed to lookup "
 						"$INDEX_ALLOCATION "
 						"attribute.");
 			goto unm_err_out;
 		}
 		a = ctx->attr;
 		if (!a->non_resident) {
-			ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute "
+			ntfs_error(inode_sb(vi),
+					"$INDEX_ALLOCATION attribute "
 					"is resident.");
 			goto unm_err_out;
 		}
@@ -942,22 +957,25 @@ skip_attr_list_load:
 			goto unm_err_out;
 		}
 		if (a->flags & ATTR_IS_ENCRYPTED) {
-			ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute "
+			ntfs_error(inode_sb(vi),
+					"$INDEX_ALLOCATION attribute "
 					"is encrypted.");
 			goto unm_err_out;
 		}
 		if (a->flags & ATTR_IS_SPARSE) {
-			ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute "
+			ntfs_error(inode_sb(vi),
+					"$INDEX_ALLOCATION attribute "
 					"is sparse.");
 			goto unm_err_out;
 		}
 		if (a->flags & ATTR_COMPRESSION_MASK) {
-			ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute "
+			ntfs_error(inode_sb(vi),
+					"$INDEX_ALLOCATION attribute "
 					"is compressed.");
 			goto unm_err_out;
 		}
 		if (a->data.non_resident.lowest_vcn) {
-			ntfs_error(vi->i_sb, "First extent of "
+			ntfs_error(inode_sb(vi), "First extent of "
 					"$INDEX_ALLOCATION attribute has non "
 					"zero lowest_vcn.");
 			goto unm_err_out;
@@ -978,14 +996,16 @@ skip_attr_list_load:
 		/* Get the index bitmap attribute inode. */
 		bvi = ntfs_attr_iget(vi, AT_BITMAP, I30, 4);
 		if (IS_ERR(bvi)) {
-			ntfs_error(vi->i_sb, "Failed to get bitmap attribute.");
+			ntfs_error(inode_sb(vi),
+				   "Failed to get bitmap attribute.");
 			err = PTR_ERR(bvi);
 			goto unm_err_out;
 		}
 		bni = NTFS_I(bvi);
 		if (NInoCompressed(bni) || NInoEncrypted(bni) ||
 				NInoSparse(bni)) {
-			ntfs_error(vi->i_sb, "$BITMAP attribute is compressed "
+			ntfs_error(inode_sb(vi),
+					"$BITMAP attribute is compressed "
 					"and/or encrypted and/or sparse.");
 			goto iput_unm_err_out;
 		}
@@ -993,7 +1013,8 @@ skip_attr_list_load:
 		bvi_size = i_size_read(bvi);
 		if ((bvi_size << 3) < (vi->i_size >>
 				ni->itype.index.block_size_bits)) {
-			ntfs_error(vi->i_sb, "Index bitmap too small (0x%llx) "
+			ntfs_error(inode_sb(vi),
+					"Index bitmap too small (0x%llx) "
 					"for index allocation (0x%llx).",
 					bvi_size << 3, vi->i_size);
 			goto iput_unm_err_out;
@@ -1020,7 +1041,8 @@ skip_large_dir_stuff:
 			vi->i_size = ni->initialized_size =
 					ni->allocated_size = 0;
 			if (err != -ENOENT) {
-				ntfs_error(vi->i_sb, "Failed to lookup $DATA "
+				ntfs_error(inode_sb(vi),
+						"Failed to lookup $DATA "
 						"attribute.");
 				goto unm_err_out;
 			}
@@ -1043,7 +1065,8 @@ skip_large_dir_stuff:
 				goto no_data_attr_special_case;
 			// FIXME: File is corrupt! Hot-fix with empty data
 			// attribute if recovery option is set.
-			ntfs_error(vi->i_sb, "$DATA attribute is missing.");
+			ntfs_error(inode_sb(vi),
+				   "$DATA attribute is missing.");
 			goto unm_err_out;
 		}
 		a = ctx->attr;
@@ -1052,7 +1075,7 @@ skip_large_dir_stuff:
 			if (a->flags & ATTR_COMPRESSION_MASK) {
 				NInoSetCompressed(ni);
 				if (vol->cluster_size > 4096) {
-					ntfs_error(vi->i_sb, "Found "
+					ntfs_error(inode_sb(vi), "Found "
 							"compressed data but "
 							"compression is "
 							"disabled due to "
@@ -1063,7 +1086,8 @@ skip_large_dir_stuff:
 				}
 				if ((a->flags & ATTR_COMPRESSION_MASK)
 						!= ATTR_IS_COMPRESSED) {
-					ntfs_error(vi->i_sb, "Found unknown "
+					ntfs_error(inode_sb(vi),
+							"Found unknown "
 							"compression method "
 							"or corrupt file.");
 					goto unm_err_out;
@@ -1074,7 +1098,8 @@ skip_large_dir_stuff:
 		}
 		if (a->flags & ATTR_IS_ENCRYPTED) {
 			if (NInoCompressed(ni)) {
-				ntfs_error(vi->i_sb, "Found encrypted and "
+				ntfs_error(inode_sb(vi),
+						"Found encrypted and "
 						"compressed data.");
 				goto unm_err_out;
 			}
@@ -1085,7 +1110,7 @@ skip_large_dir_stuff:
 			if (NInoCompressed(ni) || NInoSparse(ni)) {
 				if (NInoCompressed(ni) && a->data.non_resident.
 						compression_unit != 4) {
-					ntfs_error(vi->i_sb, "Found "
+					ntfs_error(inode_sb(vi), "Found "
 							"non-standard "
 							"compression unit (%u "
 							"instead of 4).  "
@@ -1120,7 +1145,8 @@ skip_large_dir_stuff:
 						compressed_size);
 			}
 			if (a->data.non_resident.lowest_vcn) {
-				ntfs_error(vi->i_sb, "First extent of $DATA "
+				ntfs_error(inode_sb(vi),
+						"First extent of $DATA "
 						"attribute has non zero "
 						"lowest_vcn.");
 				goto unm_err_out;
@@ -1138,7 +1164,8 @@ skip_large_dir_stuff:
 					le16_to_cpu(
 					a->data.resident.value_offset);
 			if (vi->i_size > ni->allocated_size) {
-				ntfs_error(vi->i_sb, "Resident data attribute "
+				ntfs_error(inode_sb(vi),
+						"Resident data attribute "
 						"is corrupt (size exceeds "
 						"allocation).");
 				goto unm_err_out;
@@ -1218,7 +1245,7 @@ err_out:
  */
 static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 {
-	ntfs_volume *vol = NTFS_SB(vi->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(vi));
 	ntfs_inode *ni, *base_ni;
 	MFT_RECORD *m;
 	ATTR_RECORD *a;
@@ -1265,7 +1292,7 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 			NInoSetCompressed(ni);
 			if ((ni->type != AT_DATA) || (ni->type == AT_DATA &&
 					ni->name_len)) {
-				ntfs_error(vi->i_sb, "Found compressed "
+				ntfs_error(inode_sb(vi), "Found compressed "
 						"non-data or named data "
 						"attribute.  Please report "
 						"you saw this message to "
@@ -1274,7 +1301,7 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 				goto unm_err_out;
 			}
 			if (vol->cluster_size > 4096) {
-				ntfs_error(vi->i_sb, "Found compressed "
+				ntfs_error(inode_sb(vi), "Found compressed "
 						"attribute but compression is "
 						"disabled due to cluster size "
 						"(%i) > 4kiB.",
@@ -1283,7 +1310,7 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 			}
 			if ((a->flags & ATTR_COMPRESSION_MASK) !=
 					ATTR_IS_COMPRESSED) {
-				ntfs_error(vi->i_sb, "Found unknown "
+				ntfs_error(inode_sb(vi), "Found unknown "
 						"compression method.");
 				goto unm_err_out;
 			}
@@ -1293,7 +1320,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 		 * to compress all files.
 		 */
 		if (NInoMstProtected(ni) && ni->type != AT_INDEX_ROOT) {
-			ntfs_error(vi->i_sb, "Found mst protected attribute "
+			ntfs_error(inode_sb(vi),
+					"Found mst protected attribute "
 					"but the attribute is %s.  Please "
 					"report you saw this message to "
 					"linux-ntfs-dev@lists.sourceforge.net",
@@ -1306,7 +1334,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 	}
 	if (a->flags & ATTR_IS_ENCRYPTED) {
 		if (NInoCompressed(ni)) {
-			ntfs_error(vi->i_sb, "Found encrypted and compressed "
+			ntfs_error(inode_sb(vi),
+					"Found encrypted and compressed "
 					"data.");
 			goto unm_err_out;
 		}
@@ -1315,7 +1344,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 		 * encrypt all files.
 		 */
 		if (NInoMstProtected(ni) && ni->type != AT_INDEX_ROOT) {
-			ntfs_error(vi->i_sb, "Found mst protected attribute "
+			ntfs_error(inode_sb(vi),
+					"Found mst protected attribute "
 					"but the attribute is encrypted.  "
 					"Please report you saw this message "
 					"to linux-ntfs-dev@lists.sourceforge."
@@ -1323,7 +1353,7 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 			goto unm_err_out;
 		}
 		if (ni->type != AT_DATA) {
-			ntfs_error(vi->i_sb, "Found encrypted non-data "
+			ntfs_error(inode_sb(vi), "Found encrypted non-data "
 					"attribute.");
 			goto unm_err_out;
 		}
@@ -1338,7 +1368,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 			goto unm_err_out;
 		}
 		if (NInoMstProtected(ni)) {
-			ntfs_error(vi->i_sb, "Found mst protected attribute "
+			ntfs_error(inode_sb(vi),
+					"Found mst protected attribute "
 					"but the attribute is resident.  "
 					"Please report you saw this message to "
 					"linux-ntfs-dev@lists.sourceforge.net");
@@ -1349,7 +1380,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 		ni->allocated_size = le32_to_cpu(a->length) -
 				le16_to_cpu(a->data.resident.value_offset);
 		if (vi->i_size > ni->allocated_size) {
-			ntfs_error(vi->i_sb, "Resident attribute is corrupt "
+			ntfs_error(inode_sb(vi),
+					"Resident attribute is corrupt "
 					"(size exceeds allocation).");
 			goto unm_err_out;
 		}
@@ -1369,7 +1401,7 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 		if (NInoCompressed(ni) || NInoSparse(ni)) {
 			if (NInoCompressed(ni) && a->data.non_resident.
 					compression_unit != 4) {
-				ntfs_error(vi->i_sb, "Found non-standard "
+				ntfs_error(inode_sb(vi), "Found non-standard "
 						"compression unit (%u instead "
 						"of 4).  Cannot handle this.",
 						a->data.non_resident.
@@ -1397,7 +1429,8 @@ static int ntfs_read_locked_attr_inode(struct inode *base_vi, struct inode *vi)
 					a->data.non_resident.compressed_size);
 		}
 		if (a->data.non_resident.lowest_vcn) {
-			ntfs_error(vi->i_sb, "First extent of attribute has "
+			ntfs_error(inode_sb(vi),
+					"First extent of attribute has "
 					"non-zero lowest_vcn.");
 			goto unm_err_out;
 		}
@@ -1484,7 +1517,7 @@ err_out:
 static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 {
 	loff_t bvi_size;
-	ntfs_volume *vol = NTFS_SB(vi->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(vi));
 	ntfs_inode *ni, *base_ni, *bni;
 	struct inode *bvi;
 	MFT_RECORD *m;
@@ -1524,7 +1557,7 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 			CASE_SENSITIVE, 0, NULL, 0, ctx);
 	if (unlikely(err)) {
 		if (err == -ENOENT)
-			ntfs_error(vi->i_sb, "$INDEX_ROOT attribute is "
+			ntfs_error(inode_sb(vi), "$INDEX_ROOT attribute is "
 					"missing.");
 		goto unm_err_out;
 	}
@@ -1547,23 +1580,25 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 	 */
 	if (a->flags & (ATTR_COMPRESSION_MASK | ATTR_IS_ENCRYPTED |
 			ATTR_IS_SPARSE)) {
-		ntfs_error(vi->i_sb, "Found compressed/encrypted/sparse index "
+		ntfs_error(inode_sb(vi),
+				"Found compressed/encrypted/sparse index "
 				"root attribute.");
 		goto unm_err_out;
 	}
 	ir = (INDEX_ROOT*)((u8*)a + le16_to_cpu(a->data.resident.value_offset));
 	ir_end = (u8*)ir + le32_to_cpu(a->data.resident.value_length);
 	if (ir_end > (u8*)ctx->mrec + vol->mft_record_size) {
-		ntfs_error(vi->i_sb, "$INDEX_ROOT attribute is corrupt.");
+		ntfs_error(inode_sb(vi), "$INDEX_ROOT attribute is corrupt.");
 		goto unm_err_out;
 	}
 	index_end = (u8*)&ir->index + le32_to_cpu(ir->index.index_length);
 	if (index_end > ir_end) {
-		ntfs_error(vi->i_sb, "Index is corrupt.");
+		ntfs_error(inode_sb(vi), "Index is corrupt.");
 		goto unm_err_out;
 	}
 	if (ir->type) {
-		ntfs_error(vi->i_sb, "Index type is not 0 (type is 0x%x).",
+		ntfs_error(inode_sb(vi),
+				"Index type is not 0 (type is 0x%x).",
 				le32_to_cpu(ir->type));
 		goto unm_err_out;
 	}
@@ -1572,19 +1607,21 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 			le32_to_cpu(ir->collation_rule));
 	ni->itype.index.block_size = le32_to_cpu(ir->index_block_size);
 	if (!is_power_of_2(ni->itype.index.block_size)) {
-		ntfs_error(vi->i_sb, "Index block size (%u) is not a power of "
+		ntfs_error(inode_sb(vi),
+				"Index block size (%u) is not a power of "
 				"two.", ni->itype.index.block_size);
 		goto unm_err_out;
 	}
 	if (ni->itype.index.block_size > PAGE_SIZE) {
-		ntfs_error(vi->i_sb, "Index block size (%u) > PAGE_SIZE "
+		ntfs_error(inode_sb(vi), "Index block size (%u) > PAGE_SIZE "
 				"(%ld) is not supported.  Sorry.",
 				ni->itype.index.block_size, PAGE_SIZE);
 		err = -EOPNOTSUPP;
 		goto unm_err_out;
 	}
 	if (ni->itype.index.block_size < NTFS_BLOCK_SIZE) {
-		ntfs_error(vi->i_sb, "Index block size (%u) < NTFS_BLOCK_SIZE "
+		ntfs_error(inode_sb(vi),
+				"Index block size (%u) < NTFS_BLOCK_SIZE "
 				"(%i) is not supported.  Sorry.",
 				ni->itype.index.block_size, NTFS_BLOCK_SIZE);
 		err = -EOPNOTSUPP;
@@ -1617,17 +1654,18 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 			CASE_SENSITIVE, 0, NULL, 0, ctx);
 	if (unlikely(err)) {
 		if (err == -ENOENT)
-			ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute is "
+			ntfs_error(inode_sb(vi),
+					"$INDEX_ALLOCATION attribute is "
 					"not present but $INDEX_ROOT "
 					"indicated it is.");
 		else
-			ntfs_error(vi->i_sb, "Failed to lookup "
+			ntfs_error(inode_sb(vi), "Failed to lookup "
 					"$INDEX_ALLOCATION attribute.");
 		goto unm_err_out;
 	}
 	a = ctx->attr;
 	if (!a->non_resident) {
-		ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute is "
+		ntfs_error(inode_sb(vi), "$INDEX_ALLOCATION attribute is "
 				"resident.");
 		goto unm_err_out;
 	}
@@ -1642,21 +1680,22 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 		goto unm_err_out;
 	}
 	if (a->flags & ATTR_IS_ENCRYPTED) {
-		ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute is "
+		ntfs_error(inode_sb(vi), "$INDEX_ALLOCATION attribute is "
 				"encrypted.");
 		goto unm_err_out;
 	}
 	if (a->flags & ATTR_IS_SPARSE) {
-		ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute is sparse.");
+		ntfs_error(inode_sb(vi),
+			   "$INDEX_ALLOCATION attribute is sparse.");
 		goto unm_err_out;
 	}
 	if (a->flags & ATTR_COMPRESSION_MASK) {
-		ntfs_error(vi->i_sb, "$INDEX_ALLOCATION attribute is "
+		ntfs_error(inode_sb(vi), "$INDEX_ALLOCATION attribute is "
 				"compressed.");
 		goto unm_err_out;
 	}
 	if (a->data.non_resident.lowest_vcn) {
-		ntfs_error(vi->i_sb, "First extent of $INDEX_ALLOCATION "
+		ntfs_error(inode_sb(vi), "First extent of $INDEX_ALLOCATION "
 				"attribute has non zero lowest_vcn.");
 		goto unm_err_out;
 	}
@@ -1675,21 +1714,23 @@ static int ntfs_read_locked_index_inode(struct inode *base_vi, struct inode *vi)
 	/* Get the index bitmap attribute inode. */
 	bvi = ntfs_attr_iget(base_vi, AT_BITMAP, ni->name, ni->name_len);
 	if (IS_ERR(bvi)) {
-		ntfs_error(vi->i_sb, "Failed to get bitmap attribute.");
+		ntfs_error(inode_sb(vi), "Failed to get bitmap attribute.");
 		err = PTR_ERR(bvi);
 		goto unm_err_out;
 	}
 	bni = NTFS_I(bvi);
 	if (NInoCompressed(bni) || NInoEncrypted(bni) ||
 			NInoSparse(bni)) {
-		ntfs_error(vi->i_sb, "$BITMAP attribute is compressed and/or "
+		ntfs_error(inode_sb(vi),
+				"$BITMAP attribute is compressed and/or "
 				"encrypted and/or sparse.");
 		goto iput_unm_err_out;
 	}
 	/* Consistency check bitmap size vs. index allocation size. */
 	bvi_size = i_size_read(bvi);
 	if ((bvi_size << 3) < (vi->i_size >> ni->itype.index.block_size_bits)) {
-		ntfs_error(vi->i_sb, "Index bitmap too small (0x%llx) for "
+		ntfs_error(inode_sb(vi),
+				"Index bitmap too small (0x%llx) for "
 				"index allocation (0x%llx).", bvi_size << 3,
 				vi->i_size);
 		goto iput_unm_err_out;
@@ -1719,7 +1760,8 @@ unm_err_out:
 	if (m)
 		unmap_mft_record(base_ni);
 err_out:
-	ntfs_error(vi->i_sb, "Failed with error code %i while reading index "
+	ntfs_error(inode_sb(vi),
+			"Failed with error code %i while reading index "
 			"inode (mft_no 0x%lx, name_len %i.", err, vi->i_ino,
 			ni->name_len);
 	make_bad_inode(vi);
@@ -1767,7 +1809,7 @@ int ntfs_read_inode_mount(struct inode *vi)
 {
 	VCN next_vcn, last_vcn, highest_vcn;
 	s64 block;
-	struct super_block *sb = vi->i_sb;
+	struct super_block *sb = inode_sb(vi);
 	ntfs_volume *vol = NTFS_SB(sb);
 	struct buffer_head *bh;
 	ntfs_inode *ni;
@@ -2261,7 +2303,8 @@ void ntfs_evict_big_inode(struct inode *vi)
 		ntfs_commit_inode(vi);
 
 		if (!was_bad && (is_bad_inode(vi) || NInoDirty(ni))) {
-			ntfs_error(vi->i_sb, "Failed to commit dirty inode "
+			ntfs_error(inode_sb(vi),
+					"Failed to commit dirty inode "
 					"0x%lx.  Losing data!", vi->i_ino);
 			// FIXME:  Do something!!!
 		}
@@ -2383,7 +2426,8 @@ retry_truncate:
 	m = map_mft_record(base_ni);
 	if (IS_ERR(m)) {
 		err = PTR_ERR(m);
-		ntfs_error(vi->i_sb, "Failed to map mft record for inode 0x%lx "
+		ntfs_error(inode_sb(vi),
+				"Failed to map mft record for inode 0x%lx "
 				"(error code %d).%s", vi->i_ino, err, te);
 		ctx = NULL;
 		m = NULL;
@@ -2391,7 +2435,8 @@ retry_truncate:
 	}
 	ctx = ntfs_attr_get_search_ctx(base_ni, m);
 	if (unlikely(!ctx)) {
-		ntfs_error(vi->i_sb, "Failed to allocate a search context for "
+		ntfs_error(inode_sb(vi),
+				"Failed to allocate a search context for "
 				"inode 0x%lx (not enough memory).%s",
 				vi->i_ino, te);
 		err = -ENOMEM;
@@ -2401,12 +2446,14 @@ retry_truncate:
 			CASE_SENSITIVE, 0, NULL, 0, ctx);
 	if (unlikely(err)) {
 		if (err == -ENOENT) {
-			ntfs_error(vi->i_sb, "Open attribute is missing from "
+			ntfs_error(inode_sb(vi),
+					"Open attribute is missing from "
 					"mft record.  Inode 0x%lx is corrupt.  "
 					"Run chkdsk.%s", vi->i_ino, te);
 			err = -EIO;
 		} else
-			ntfs_error(vi->i_sb, "Failed to lookup attribute in "
+			ntfs_error(inode_sb(vi),
+					"Failed to lookup attribute in "
 					"inode 0x%lx (error code %d).%s",
 					vi->i_ino, err, te);
 		goto old_bad_out;
@@ -2480,7 +2527,7 @@ retry_truncate:
 		}
 	}
 	if (NInoCompressed(ni) || NInoEncrypted(ni)) {
-		ntfs_warning(vi->i_sb, "Changes in inode size are not "
+		ntfs_warning(inode_sb(vi), "Changes in inode size are not "
 				"supported yet for %s files, ignoring.",
 				NInoCompressed(ni) ? "compressed" :
 				"encrypted");
@@ -2889,7 +2936,8 @@ int ntfs_setattr(struct dentry *dentry, struct iattr *attr)
 		goto out;
 	/* We do not support NTFS ACLs yet. */
 	if (ia_valid & (ATTR_UID | ATTR_GID | ATTR_MODE)) {
-		ntfs_warning(vi->i_sb, "Changes in user/group/mode are not "
+		ntfs_warning(inode_sb(vi),
+				"Changes in user/group/mode are not "
 				"supported yet, ignoring.");
 		err = -EOPNOTSUPP;
 		goto out;
@@ -2902,7 +2950,8 @@ int ntfs_setattr(struct dentry *dentry, struct iattr *attr)
 			 * compressed or encrypted files yet.
 			 */
 			if (NInoCompressed(ni) || NInoEncrypted(ni)) {
-				ntfs_warning(vi->i_sb, "Changes in inode size "
+				ntfs_warning(inode_sb(vi),
+						"Changes in inode size "
 						"are not supported yet for "
 						"%s files, ignoring.",
 						NInoCompressed(ni) ?
@@ -2924,13 +2973,13 @@ int ntfs_setattr(struct dentry *dentry, struct iattr *attr)
 	}
 	if (ia_valid & ATTR_ATIME)
 		vi->i_atime = timespec_trunc(attr->ia_atime,
-				vi->i_sb->s_time_gran);
+				inode_sb(vi)->s_time_gran);
 	if (ia_valid & ATTR_MTIME)
 		vi->i_mtime = timespec_trunc(attr->ia_mtime,
-				vi->i_sb->s_time_gran);
+				inode_sb(vi)->s_time_gran);
 	if (ia_valid & ATTR_CTIME)
 		vi->i_ctime = timespec_trunc(attr->ia_ctime,
-				vi->i_sb->s_time_gran);
+				inode_sb(vi)->s_time_gran);
 	mark_inode_dirty(vi);
 out:
 	return err;
@@ -3088,12 +3137,14 @@ unm_err_out:
 	unmap_mft_record(ni);
 err_out:
 	if (err == -ENOMEM) {
-		ntfs_warning(vi->i_sb, "Not enough memory to write inode.  "
+		ntfs_warning(inode_sb(vi),
+				"Not enough memory to write inode.  "
 				"Marking the inode dirty again, so the VFS "
 				"retries later.");
 		mark_inode_dirty(vi);
 	} else {
-		ntfs_error(vi->i_sb, "Failed (error %i):  Run chkdsk.", -err);
+		ntfs_error(inode_sb(vi), "Failed (error %i):  Run chkdsk.",
+			   -err);
 		NVolSetErrors(ni->vol);
 	}
 	return err;

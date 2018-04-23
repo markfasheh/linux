@@ -288,7 +288,7 @@ static inline void ntfs_init_big_inode(struct inode *vi)
 	ntfs_inode *ni = NTFS_I(vi);
 
 	ntfs_debug("Entering.");
-	__ntfs_init_inode(vi->i_sb, ni);
+	__ntfs_init_inode(inode_sb(vi), ni);
 	ni->mft_no = vi->i_ino;
 }
 

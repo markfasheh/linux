@@ -103,7 +103,7 @@
 static struct dentry *ntfs_lookup(struct inode *dir_ino, struct dentry *dent,
 		unsigned int flags)
 {
-	ntfs_volume *vol = NTFS_SB(dir_ino->i_sb);
+	ntfs_volume *vol = NTFS_SB(inode_sb(dir_ino));
 	struct inode *dent_inode;
 	ntfschar *uname;
 	ntfs_name *name = NULL;
@@ -326,7 +326,8 @@ try_next:
 		ntfs_attr_put_search_ctx(ctx);
 		unmap_mft_record(ni);
 		if (err == -ENOENT)
-			ntfs_error(vi->i_sb, "Inode 0x%lx does not have a "
+			ntfs_error(inode_sb(vi),
+					"Inode 0x%lx does not have a "
 					"file name attribute.  Run chkdsk.",
 					vi->i_ino);
 		return ERR_PTR(err);
@@ -345,7 +346,7 @@ try_next:
 	ntfs_attr_put_search_ctx(ctx);
 	unmap_mft_record(ni);
 
-	return d_obtain_alias(ntfs_iget(vi->i_sb, parent_ino));
+	return d_obtain_alias(ntfs_iget(inode_sb(vi), parent_ino));
 }
 
 static struct inode *ntfs_nfs_get_inode(struct super_block *sb,
