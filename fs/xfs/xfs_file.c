@@ -821,7 +821,7 @@ xfs_file_fallocate(
 		}
 
 		/* check the new inode size does not wrap through zero */
-		if (new_size > inode->i_sb->s_maxbytes) {
+		if (new_size > inode_sb(inode)->s_maxbytes) {
 			error = -EFBIG;
 			goto out_unlock;
 		}
@@ -926,7 +926,7 @@ xfs_file_open(
 {
 	if (!(file->f_flags & O_LARGEFILE) && i_size_read(inode) > MAX_NON_LFS)
 		return -EFBIG;
-	if (XFS_FORCED_SHUTDOWN(XFS_M(inode->i_sb)))
+	if (XFS_FORCED_SHUTDOWN(XFS_M(inode_sb(inode))))
 		return -EIO;
 	file->f_mode |= FMODE_NOWAIT;
 	return 0;
@@ -1014,7 +1014,7 @@ xfs_file_llseek(
 
 	if (offset < 0)
 		return offset;
-	return vfs_setpos(file, offset, inode->i_sb->s_maxbytes);
+	return vfs_setpos(file, offset, inode_sb(inode)->s_maxbytes);
 }
 
 /*
@@ -1040,7 +1040,7 @@ __xfs_filemap_fault(
 	trace_xfs_filemap_fault(ip, pe_size, write_fault);
 
 	if (write_fault) {
-		sb_start_pagefault(inode->i_sb);
+		sb_start_pagefault(inode_sb(inode));
 		file_update_time(vmf->vma->vm_file);
 	}
 
@@ -1060,7 +1060,7 @@ __xfs_filemap_fault(
 	xfs_iunlock(XFS_I(inode), XFS_MMAPLOCK_SHARED);
 
 	if (write_fault)
-		sb_end_pagefault(inode->i_sb);
+		sb_end_pagefault(inode_sb(inode));
 	return ret;
 }
 
