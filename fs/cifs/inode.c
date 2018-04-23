@@ -39,7 +39,7 @@
 
 static void cifs_set_ops(struct inode *inode)
 {
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 
 	switch (inode->i_mode & S_IFMT) {
 	case S_IFREG:
@@ -157,7 +157,7 @@ void
 cifs_fattr_to_inode(struct inode *inode, struct cifs_fattr *fattr)
 {
 	struct cifsInodeInfo *cifs_i = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 
 	cifs_revalidate_cache(inode, fattr);
 
@@ -340,7 +340,7 @@ cifs_get_file_info_unix(struct file *filp)
 	FILE_UNIX_BASIC_INFO find_data;
 	struct cifs_fattr fattr;
 	struct inode *inode = file_inode(filp);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifsFileInfo *cfile = filp->private_data;
 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
 
@@ -349,7 +349,7 @@ cifs_get_file_info_unix(struct file *filp)
 	if (!rc) {
 		cifs_unix_basic_to_fattr(&fattr, &find_data, cifs_sb);
 	} else if (rc == -EREMOTE) {
-		cifs_create_dfs_fattr(&fattr, inode->i_sb);
+		cifs_create_dfs_fattr(&fattr, inode_sb(inode));
 		rc = 0;
 	}
 
@@ -675,11 +675,12 @@ cifs_get_file_info(struct file *filp)
 	rc = server->ops->query_file_info(xid, tcon, &cfile->fid, &find_data);
 	switch (rc) {
 	case 0:
-		cifs_all_info_to_fattr(&fattr, &find_data, inode->i_sb, false,
+		cifs_all_info_to_fattr(&fattr, &find_data, inode_sb(inode),
+				       false,
 				       false);
 		break;
 	case -EREMOTE:
-		cifs_create_dfs_fattr(&fattr, inode->i_sb);
+		cifs_create_dfs_fattr(&fattr, inode_sb(inode));
 		rc = 0;
 		break;
 	case -EOPNOTSUPP:
@@ -1078,7 +1079,7 @@ cifs_set_file_info(struct inode *inode, struct iattr *attrs, unsigned int xid,
 		   char *full_path, __u32 dosattr)
 {
 	bool set_time = false;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct TCP_Server_Info *server;
 	FILE_BASIC_INFO	info_buf;
 
@@ -1137,7 +1138,7 @@ cifs_rename_pending_delete(const char *full_path, struct dentry *dentry,
 	struct cifs_open_parms oparms;
 	struct inode *inode = d_inode(dentry);
 	struct cifsInodeInfo *cifsInode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink;
 	struct cifs_tcon *tcon;
 	__u32 dosattr, origattr;
@@ -1277,7 +1278,7 @@ int cifs_unlink(struct inode *dir, struct dentry *dentry)
 	char *full_path = NULL;
 	struct inode *inode = d_inode(dentry);
 	struct cifsInodeInfo *cifs_inode;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
 	struct tcon_link *tlink;
 	struct cifs_tcon *tcon;
@@ -1389,10 +1390,12 @@ cifs_mkdir_qinfo(struct inode *parent, struct dentry *dentry, umode_t mode,
 	struct inode *inode = NULL;
 
 	if (tcon->unix_ext)
-		rc = cifs_get_inode_info_unix(&inode, full_path, parent->i_sb,
+		rc = cifs_get_inode_info_unix(&inode, full_path,
+					      inode_sb(parent),
 					      xid);
 	else
-		rc = cifs_get_inode_info(&inode, full_path, NULL, parent->i_sb,
+		rc = cifs_get_inode_info(&inode, full_path, NULL,
+					 inode_sb(parent),
 					 xid, NULL);
 
 	if (rc)
@@ -1490,8 +1493,8 @@ cifs_posix_mkdir(struct inode *inode, struct dentry *dentry, umode_t mode,
 	 */
 
 	cifs_unix_basic_to_fattr(&fattr, info, cifs_sb);
-	cifs_fill_uniqueid(inode->i_sb, &fattr);
-	newinode = cifs_iget(inode->i_sb, &fattr);
+	cifs_fill_uniqueid(inode_sb(inode), &fattr);
+	newinode = cifs_iget(inode_sb(inode), &fattr);
 	if (!newinode)
 		goto posix_mkdir_get_info;
 
@@ -1528,7 +1531,7 @@ int cifs_mkdir(struct inode *inode, struct dentry *direntry, umode_t mode)
 	cifs_dbg(FYI, "In cifs_mkdir, mode = 0x%hx inode = 0x%p\n",
 		 mode, inode);
 
-	cifs_sb = CIFS_SB(inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(inode));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink))
 		return PTR_ERR(tlink);
@@ -1600,7 +1603,7 @@ int cifs_rmdir(struct inode *inode, struct dentry *direntry)
 		goto rmdir_exit;
 	}
 
-	cifs_sb = CIFS_SB(inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(inode));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink)) {
 		rc = PTR_ERR(tlink);
@@ -1722,7 +1725,7 @@ cifs_rename2(struct inode *source_dir, struct dentry *source_dentry,
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
 
-	cifs_sb = CIFS_SB(source_dir->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(source_dir));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink))
 		return PTR_ERR(tlink);
@@ -1825,7 +1828,7 @@ static bool
 cifs_inode_needs_reval(struct inode *inode)
 {
 	struct cifsInodeInfo *cifs_i = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 
 	if (CIFS_CACHE_READ(cifs_i))
 		return false;
@@ -2088,7 +2091,7 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
 	int rc;
 	struct cifsFileInfo *open_file;
 	struct cifsInodeInfo *cifsInode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink = NULL;
 	struct cifs_tcon *tcon = NULL;
 	struct TCP_Server_Info *server;
@@ -2160,7 +2163,7 @@ cifs_setattr_unix(struct dentry *direntry, struct iattr *attrs)
 	char *full_path = NULL;
 	struct inode *inode = d_inode(direntry);
 	struct cifsInodeInfo *cifsInode = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink;
 	struct cifs_tcon *pTcon;
 	struct cifs_unix_set_info_args *args = NULL;
@@ -2299,7 +2302,7 @@ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
 	kuid_t uid = INVALID_UID;
 	kgid_t gid = INVALID_GID;
 	struct inode *inode = d_inode(direntry);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifsInodeInfo *cifsInode = CIFS_I(inode);
 	char *full_path = NULL;
 	int rc = -EACCES;

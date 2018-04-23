@@ -231,7 +231,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
 	int rc = -ENOENT;
 	int create_options = CREATE_NOT_DIR;
 	int desired_access;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifs_tcon *tcon = tlink_tcon(tlink);
 	char *full_path = NULL;
 	FILE_ALL_INFO *buf = NULL;
@@ -253,7 +253,8 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
 	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
 			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
-		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
+		rc = cifs_posix_open(full_path, &newinode, inode_sb(inode),
+				     mode,
 				     oflags, oplock, &fid->netfid, xid);
 		switch (rc) {
 		case 0:
@@ -414,10 +415,12 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
 cifs_create_get_file_info:
 	/* server might mask mode so we have to query for it */
 	if (tcon->unix_ext)
-		rc = cifs_get_inode_info_unix(&newinode, full_path, inode->i_sb,
+		rc = cifs_get_inode_info_unix(&newinode, full_path,
+					      inode_sb(inode),
 					      xid);
 	else {
-		rc = cifs_get_inode_info(&newinode, full_path, buf, inode->i_sb,
+		rc = cifs_get_inode_info(&newinode, full_path, buf,
+					 inode_sb(inode),
 					 xid, fid);
 		if (newinode) {
 			if (server->ops->set_lease_key)
@@ -511,7 +514,7 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
 	cifs_dbg(FYI, "parent inode = 0x%p name is: %pd and dentry = 0x%p\n",
 		 inode, direntry, direntry);
 
-	tlink = cifs_sb_tlink(CIFS_SB(inode->i_sb));
+	tlink = cifs_sb_tlink(CIFS_SB(inode_sb(inode)));
 	if (IS_ERR(tlink)) {
 		rc = PTR_ERR(tlink);
 		goto out_free_xid;
@@ -550,8 +553,8 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
 	}
 
 	if (file->f_flags & O_DIRECT &&
-	    CIFS_SB(inode->i_sb)->mnt_cifs_flags & CIFS_MOUNT_STRICT_IO) {
-		if (CIFS_SB(inode->i_sb)->mnt_cifs_flags & CIFS_MOUNT_NO_BRL)
+	    CIFS_SB(inode_sb(inode))->mnt_cifs_flags & CIFS_MOUNT_STRICT_IO) {
+		if (CIFS_SB(inode_sb(inode))->mnt_cifs_flags & CIFS_MOUNT_NO_BRL)
 			file->f_op = &cifs_file_direct_nobrl_ops;
 		else
 			file->f_op = &cifs_file_direct_ops;
@@ -595,7 +598,7 @@ int cifs_create(struct inode *inode, struct dentry *direntry, umode_t mode,
 	cifs_dbg(FYI, "cifs_create parent inode = 0x%p name is: %pd and dentry = 0x%p\n",
 		 inode, direntry, direntry);
 
-	tlink = cifs_sb_tlink(CIFS_SB(inode->i_sb));
+	tlink = cifs_sb_tlink(CIFS_SB(inode_sb(inode)));
 	rc = PTR_ERR(tlink);
 	if (IS_ERR(tlink))
 		goto out_free_xid;
@@ -640,7 +643,7 @@ int cifs_mknod(struct inode *inode, struct dentry *direntry, umode_t mode,
 	if (!old_valid_dev(device_number))
 		return -EINVAL;
 
-	cifs_sb = CIFS_SB(inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(inode));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink))
 		return PTR_ERR(tlink);
@@ -677,7 +680,7 @@ int cifs_mknod(struct inode *inode, struct dentry *direntry, umode_t mode,
 			goto mknod_out;
 
 		rc = cifs_get_inode_info_unix(&newinode, full_path,
-						inode->i_sb, xid);
+						inode_sb(inode), xid);
 
 		if (rc == 0)
 			d_instantiate(direntry, newinode);
@@ -775,7 +778,7 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
 
 	/* check whether path exists */
 
-	cifs_sb = CIFS_SB(parent_dir_inode->i_sb);
+	cifs_sb = CIFS_SB(inode_sb(parent_dir_inode));
 	tlink = cifs_sb_tlink(cifs_sb);
 	if (IS_ERR(tlink)) {
 		free_xid(xid);
@@ -806,10 +809,10 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
 
 	if (pTcon->unix_ext) {
 		rc = cifs_get_inode_info_unix(&newInode, full_path,
-					      parent_dir_inode->i_sb, xid);
+					      inode_sb(parent_dir_inode), xid);
 	} else {
 		rc = cifs_get_inode_info(&newInode, full_path, NULL,
-				parent_dir_inode->i_sb, xid, NULL);
+				inode_sb(parent_dir_inode), xid, NULL);
 	}
 
 	if ((rc == 0) && (newInode != NULL)) {

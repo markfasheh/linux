@@ -689,7 +689,7 @@ static int cifs_filldir(char *find_entry, struct file *file,
 		char *scratch_buf, unsigned int max_len)
 {
 	struct cifsFileInfo *file_info = file->private_data;
-	struct super_block *sb = file_inode(file)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(file));
 	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
 	struct cifs_dirent de = { NULL, };
 	struct cifs_fattr fattr;

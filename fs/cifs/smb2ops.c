@@ -1608,7 +1608,7 @@ set_smb2_acl(struct cifs_ntsd *pnntsd, __u32 acllen,
 	unsigned int xid;
 	int rc, access_flags = 0;
 	struct cifs_tcon *tcon;
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct tcon_link *tlink = cifs_sb_tlink(cifs_sb);
 	struct cifs_fid fid;
 	struct cifs_open_parms oparms;
@@ -2039,7 +2039,7 @@ smb3_parse_lease_buf(void *buf, unsigned int *epoch)
 static unsigned int
 smb2_wp_retry_size(struct inode *inode)
 {
-	return min_t(unsigned int, CIFS_SB(inode->i_sb)->wsize,
+	return min_t(unsigned int, CIFS_SB(inode_sb(inode))->wsize,
 		     SMB2_MAX_BUFFER_SIZE);
 }
 

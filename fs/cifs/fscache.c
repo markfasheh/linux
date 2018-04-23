@@ -61,7 +61,7 @@ void cifs_fscache_release_super_cookie(struct cifs_tcon *tcon)
 static void cifs_fscache_enable_inode_cookie(struct inode *inode)
 {
 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct cifs_tcon *tcon = cifs_sb_master_tcon(cifs_sb);
 
 	if (cifsi->fscache)
@@ -109,7 +109,7 @@ void cifs_fscache_set_inode_cookie(struct inode *inode, struct file *filp)
 void cifs_fscache_reset_inode_cookie(struct inode *inode)
 {
 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode_sb(inode));
 	struct fscache_cookie *old = cifsi->fscache;
 
 	if (cifsi->fscache) {
