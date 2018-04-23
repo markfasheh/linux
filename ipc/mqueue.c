@@ -106,7 +106,7 @@ static inline struct mqueue_inode_info *MQUEUE_I(struct inode *inode)
  */
 static inline struct ipc_namespace *__get_ns_from_inode(struct inode *inode)
 {
-	return get_ipc_ns(inode->i_sb->s_fs_info);
+	return get_ipc_ns(inode_sb(inode)->s_fs_info);
 }
 
 static struct ipc_namespace *get_ns_from_inode(struct inode *inode)
@@ -456,7 +456,7 @@ static int mqueue_create_attr(struct dentry *dentry, umode_t mode, void *arg)
 	ipc_ns->mq_queues_count++;
 	spin_unlock(&mq_lock);
 
-	inode = mqueue_get_inode(dir->i_sb, ipc_ns, mode, attr);
+	inode = mqueue_get_inode(inode_sb(dir), ipc_ns, mode, attr);
 	if (IS_ERR(inode)) {
 		error = PTR_ERR(inode);
 		spin_lock(&mq_lock);
