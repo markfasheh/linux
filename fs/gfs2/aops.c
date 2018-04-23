@@ -189,7 +189,8 @@ static int __gfs2_jdata_writepage(struct page *page, struct writeback_control *w
 	if (PageChecked(page)) {
 		ClearPageChecked(page);
 		if (!page_has_buffers(page)) {
-			create_empty_buffers(page, inode->i_sb->s_blocksize,
+			create_empty_buffers(page,
+					     inode_sb(inode)->s_blocksize,
 					     BIT(BH_Dirty)|BIT(BH_Uptodate));
 		}
 		gfs2_page_add_databufs(ip, page, 0, sdp->sd_vfs->s_blocksize);
@@ -271,7 +272,7 @@ static int gfs2_write_jdata_pagevec(struct address_space *mapping,
 {
 	struct inode *inode = mapping->host;
 	struct gfs2_sbd *sdp = GFS2_SB(inode);
-	unsigned nrblocks = nr_pages * (PAGE_SIZE/inode->i_sb->s_blocksize);
+	unsigned nrblocks = nr_pages * (PAGE_SIZE/inode_sb(inode)->s_blocksize);
 	int i;
 	int ret;
 
@@ -776,7 +777,7 @@ out_uninit:
  */
 static void adjust_fs_space(struct inode *inode)
 {
-	struct gfs2_sbd *sdp = inode->i_sb->s_fs_info;
+	struct gfs2_sbd *sdp = inode_sb(inode)->s_fs_info;
 	struct gfs2_inode *m_ip = GFS2_I(sdp->sd_statfs_inode);
 	struct gfs2_inode *l_ip = GFS2_I(sdp->sd_sc_inode);
 	struct gfs2_statfs_change_host *m_sc = &sdp->sd_statfs_master;
@@ -1112,7 +1113,7 @@ static ssize_t gfs2_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
 			truncate_inode_pages_range(mapping, lstart, end);
 	}
 
-	rv = __blockdev_direct_IO(iocb, inode, inode->i_sb->s_bdev, iter,
+	rv = __blockdev_direct_IO(iocb, inode, inode_sb(inode)->s_bdev, iter,
 				  gfs2_get_block_direct, NULL, NULL, 0);
 out:
 	gfs2_glock_dq(&gh);

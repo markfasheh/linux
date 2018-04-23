@@ -401,7 +401,7 @@ static int gfs2_page_mkwrite(struct vm_fault *vmf)
 	loff_t size;
 	int ret;
 
-	sb_start_pagefault(inode->i_sb);
+	sb_start_pagefault(inode_sb(inode));
 
 	ret = gfs2_rsqa_alloc(ip);
 	if (ret)
@@ -492,7 +492,7 @@ out_uninit:
 		wait_for_stable_page(page);
 	}
 out:
-	sb_end_pagefault(inode->i_sb);
+	sb_end_pagefault(inode_sb(inode));
 	return block_page_mkwrite_return(ret);
 }
 

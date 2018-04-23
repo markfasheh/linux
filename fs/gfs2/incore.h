@@ -424,7 +424,7 @@ static inline struct gfs2_inode *GFS2_I(struct inode *inode)
 
 static inline struct gfs2_sbd *GFS2_SB(const struct inode *inode)
 {
-	return inode->i_sb->s_fs_info;
+	return inode_sb(inode)->s_fs_info;
 }
 
 struct gfs2_file {

@@ -86,7 +86,7 @@ static int gfs2_unstuffer_page(struct gfs2_inode *ip, struct buffer_head *dibh,
 	bh = page_buffers(page);
 
 	if (!buffer_mapped(bh))
-		map_bh(bh, inode->i_sb, block);
+		map_bh(bh, inode_sb(inode), block);
 
 	set_buffer_uptodate(bh);
 	if (!gfs2_is_jdata(ip))
@@ -856,7 +856,8 @@ int gfs2_block_map(struct inode *inode, sector_t lblock,
 		iomap.flags &= ~IOMAP_F_BOUNDARY;
 	}
 	if (iomap.addr != IOMAP_NULL_ADDR)
-		map_bh(bh_map, inode->i_sb, iomap.addr >> inode->i_blkbits);
+		map_bh(bh_map, inode_sb(inode),
+		       iomap.addr >> inode->i_blkbits);
 	bh_map->b_size = iomap.length;
 	if (iomap.flags & IOMAP_F_BOUNDARY)
 		set_buffer_boundary(bh_map);
@@ -913,8 +914,8 @@ static int gfs2_block_zero_range(struct inode *inode, loff_t from,
 	if (!page)
 		return 0;
 
-	blocksize = inode->i_sb->s_blocksize;
-	iblock = index << (PAGE_SHIFT - inode->i_sb->s_blocksize_bits);
+	blocksize = inode_sb(inode)->s_blocksize;
+	iblock = index << (PAGE_SHIFT - inode_sb(inode)->s_blocksize_bits);
 
 	if (!page_has_buffers(page))
 		create_empty_buffers(page, blocksize, 0);

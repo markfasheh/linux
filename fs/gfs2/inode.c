@@ -280,7 +280,7 @@ struct inode *gfs2_lookup_simple(struct inode *dip, const char *name)
 struct inode *gfs2_lookupi(struct inode *dir, const struct qstr *name,
 			   int is_root)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct gfs2_inode *dip = GFS2_I(dir);
 	struct gfs2_holder d_gh;
 	int error = 0;
@@ -1279,7 +1279,7 @@ skip_lookup:
 static int gfs2_ok_to_move(struct gfs2_inode *this, struct gfs2_inode *to)
 {
 	struct inode *dir = &to->i_inode;
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct inode *tmp;
 	int error = 0;
 
@@ -2056,7 +2056,7 @@ loff_t gfs2_seek_data(struct file *file, loff_t offset)
 
 	if (ret < 0)
 		return ret;
-	return vfs_setpos(file, ret, inode->i_sb->s_maxbytes);
+	return vfs_setpos(file, ret, inode_sb(inode)->s_maxbytes);
 }
 
 loff_t gfs2_seek_hole(struct file *file, loff_t offset)
@@ -2075,7 +2075,7 @@ loff_t gfs2_seek_hole(struct file *file, loff_t offset)
 
 	if (ret < 0)
 		return ret;
-	return vfs_setpos(file, ret, inode->i_sb->s_maxbytes);
+	return vfs_setpos(file, ret, inode_sb(inode)->s_maxbytes);
 }
 
 const struct inode_operations gfs2_file_iops = {
