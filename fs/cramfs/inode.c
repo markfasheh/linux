@@ -294,7 +294,7 @@ static void *cramfs_read(struct super_block *sb, unsigned int offset,
  */
 static u32 cramfs_get_block_range(struct inode *inode, u32 pgoff, u32 *pages)
 {
-	struct cramfs_sb_info *sbi = CRAMFS_SB(inode->i_sb);
+	struct cramfs_sb_info *sbi = CRAMFS_SB(inode_sb(inode));
 	int i;
 	u32 *blockptrs, first_block_addr;
 
@@ -335,7 +335,7 @@ static u32 cramfs_get_block_range(struct inode *inode, u32 pgoff, u32 *pages)
  */
 static bool cramfs_last_page_is_shared(struct inode *inode)
 {
-	struct cramfs_sb_info *sbi = CRAMFS_SB(inode->i_sb);
+	struct cramfs_sb_info *sbi = CRAMFS_SB(inode_sb(inode));
 	u32 partial, last_page, blockaddr, *blockptrs;
 	char *tail_data;
 
@@ -353,7 +353,7 @@ static bool cramfs_last_page_is_shared(struct inode *inode)
 static int cramfs_physmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct inode *inode = file_inode(file);
-	struct cramfs_sb_info *sbi = CRAMFS_SB(inode->i_sb);
+	struct cramfs_sb_info *sbi = CRAMFS_SB(inode_sb(inode));
 	unsigned int pages, max_pages, offset;
 	unsigned long address, pgoff = vma->vm_pgoff;
 	char *bailout_reason;
@@ -451,7 +451,7 @@ static unsigned long cramfs_physmem_get_unmapped_area(struct file *file,
 			unsigned long pgoff, unsigned long flags)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct cramfs_sb_info *sbi = CRAMFS_SB(sb);
 	unsigned int pages, block_pages, max_pages, offset;
 
@@ -696,7 +696,7 @@ static int cramfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 static int cramfs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	char *buf;
 	unsigned int offset;
 
@@ -763,14 +763,15 @@ static struct dentry *cramfs_lookup(struct inode *dir, struct dentry *dentry, un
 	int sorted;
 
 	mutex_lock(&read_mutex);
-	sorted = CRAMFS_SB(dir->i_sb)->flags & CRAMFS_FLAG_SORTED_DIRS;
+	sorted = CRAMFS_SB(inode_sb(dir))->flags & CRAMFS_FLAG_SORTED_DIRS;
 	while (offset < dir->i_size) {
 		struct cramfs_inode *de;
 		char *name;
 		int namelen, retval;
 		int dir_off = OFFSET(dir) + offset;
 
-		de = cramfs_read(dir->i_sb, dir_off, sizeof(*de)+CRAMFS_MAXPATHLEN);
+		de = cramfs_read(inode_sb(dir), dir_off,
+				 sizeof(*de)+CRAMFS_MAXPATHLEN);
 		name = (char *)(de+1);
 
 		/* Try to take advantage of sorted directories */
@@ -799,7 +800,7 @@ static struct dentry *cramfs_lookup(struct inode *dir, struct dentry *dentry, un
 		if (retval > 0)
 			continue;
 		if (!retval) {
-			inode = get_cramfs_inode(dir->i_sb, de, dir_off);
+			inode = get_cramfs_inode(inode_sb(dir), de, dir_off);
 			break;
 		}
 		/* else (retval < 0) */
@@ -826,7 +827,7 @@ static int cramfs_readpage(struct file *file, struct page *page)
 	pgdata = kmap(page);
 
 	if (page->index < maxblock) {
-		struct super_block *sb = inode->i_sb;
+		struct super_block *sb = inode_sb(inode);
 		u32 blkptr_offset = OFFSET(inode) + page->index * 4;
 		u32 block_ptr, block_start, block_len;
 		bool uncompressed, direct;
