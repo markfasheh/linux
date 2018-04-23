@@ -23,9 +23,9 @@ adfs_get_block(struct inode *inode, sector_t block, struct buffer_head *bh,
 		if (block >= inode->i_blocks)
 			goto abort_toobig;
 
-		block = __adfs_block_map(inode->i_sb, inode->i_ino, block);
+		block = __adfs_block_map(inode_sb(inode), inode->i_ino, block);
 		if (block)
-			map_bh(bh, inode->i_sb, block);
+			map_bh(bh, inode_sb(inode), block);
 		return 0;
 	}
 	/* don't support allocation of blocks yet */
@@ -299,7 +299,7 @@ int
 adfs_notify_change(struct dentry *dentry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(dentry);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned int ia_valid = attr->ia_valid;
 	int error;
 	
@@ -354,7 +354,7 @@ out:
  */
 int adfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct object_info obj;
 	int ret;
 
