@@ -66,7 +66,7 @@ static int bfs_get_block(struct inode *inode, sector_t block,
 {
 	unsigned long phys;
 	int err;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct bfs_sb_info *info = BFS_SB(sb);
 	struct bfs_inode_info *bi = BFS_I(inode);
 
@@ -122,7 +122,7 @@ static int bfs_get_block(struct inode *inode, sector_t block,
 	}
 
 	if (bi->i_sblock) {
-		err = bfs_move_blocks(inode->i_sb, bi->i_sblock, 
+		err = bfs_move_blocks(inode_sb(inode), bi->i_sblock, 
 						bi->i_eblock, phys);
 		if (err) {
 			dprintf("failed to move ino=%08lx -> fs corruption\n",

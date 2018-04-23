@@ -44,15 +44,17 @@ struct inode *bfs_iget(struct super_block *sb, unsigned long ino)
 	if (!(inode->i_state & I_NEW))
 		return inode;
 
-	if ((ino < BFS_ROOT_INO) || (ino > BFS_SB(inode->i_sb)->si_lasti)) {
-		printf("Bad inode number %s:%08lx\n", inode->i_sb->s_id, ino);
+	if ((ino < BFS_ROOT_INO) || (ino > BFS_SB(inode_sb(inode))->si_lasti)) {
+		printf("Bad inode number %s:%08lx\n", inode_sb(inode)->s_id,
+		       ino);
 		goto error;
 	}
 
 	block = (ino - BFS_ROOT_INO) / BFS_INODES_PER_BLOCK + 1;
-	bh = sb_bread(inode->i_sb, block);
+	bh = sb_bread(inode_sb(inode), block);
 	if (!bh) {
-		printf("Unable to read inode %s:%08lx\n", inode->i_sb->s_id,
+		printf("Unable to read inode %s:%08lx\n",
+									inode_sb(inode)->s_id,
 									ino);
 		goto error;
 	}
@@ -116,7 +118,7 @@ static struct bfs_inode *find_inode(struct super_block *sb, u16 ino, struct buff
 
 static int bfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
-	struct bfs_sb_info *info = BFS_SB(inode->i_sb);
+	struct bfs_sb_info *info = BFS_SB(inode_sb(inode));
 	unsigned int ino = (u16)inode->i_ino;
         unsigned long i_sblock;
 	struct bfs_inode *di;
@@ -125,7 +127,7 @@ static int bfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 
         dprintf("ino=%08x\n", ino);
 
-	di = find_inode(inode->i_sb, ino, &bh);
+	di = find_inode(inode_sb(inode), ino, &bh);
 	if (IS_ERR(di))
 		return PTR_ERR(di);
 
@@ -165,7 +167,7 @@ static void bfs_evict_inode(struct inode *inode)
 	unsigned long ino = inode->i_ino;
 	struct bfs_inode *di;
 	struct buffer_head *bh;
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	struct bfs_sb_info *info = BFS_SB(s);
 	struct bfs_inode_info *bi = BFS_I(inode);
 
