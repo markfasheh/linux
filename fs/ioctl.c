@@ -179,7 +179,7 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
 	struct fiemap __user *ufiemap = (struct fiemap __user *) arg;
 	struct fiemap_extent_info fieinfo = { 0, };
 	struct inode *inode = file_inode(filp);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	u64 len;
 	int error;
 
@@ -547,7 +547,7 @@ static int ioctl_fioasync(unsigned int fd, struct file *filp,
 
 static int ioctl_fsfreeze(struct file *filp)
 {
-	struct super_block *sb = file_inode(filp)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(filp));
 
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
@@ -564,7 +564,7 @@ static int ioctl_fsfreeze(struct file *filp)
 
 static int ioctl_fsthaw(struct file *filp)
 {
-	struct super_block *sb = file_inode(filp)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(filp));
 
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
@@ -668,7 +668,7 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
 		return ioctl_fiemap(filp, arg);
 
 	case FIGETBSZ:
-		return put_user(inode->i_sb->s_blocksize, argp);
+		return put_user(inode_sb(inode)->s_blocksize, argp);
 
 	case FICLONE:
 		return ioctl_file_clone(filp, arg, 0, 0, 0);

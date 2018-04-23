@@ -197,13 +197,13 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 	if (IS_APPEND(file_inode(f.file)))
 		goto out_putf;
 
-	sb_start_write(inode->i_sb);
+	sb_start_write(inode_sb(inode));
 	error = locks_verify_truncate(inode, f.file, length);
 	if (!error)
 		error = security_path_truncate(&f.file->f_path);
 	if (!error)
 		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, f.file);
-	sb_end_write(inode->i_sb);
+	sb_end_write(inode_sb(inode));
 out_putf:
 	fdput(f);
 out:
@@ -309,7 +309,7 @@ int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 		return -ENODEV;
 
 	/* Check for wrap through zero too */
-	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
+	if (((offset + len) > inode_sb(inode)->s_maxbytes) || ((offset + len) < 0))
 		return -EFBIG;
 
 	if (!file->f_op->fallocate)

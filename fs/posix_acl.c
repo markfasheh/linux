@@ -867,7 +867,7 @@ set_posix_acl(struct inode *inode, int type, struct posix_acl *acl)
 		return -EPERM;
 
 	if (acl) {
-		int ret = posix_acl_valid(inode->i_sb->s_user_ns, acl);
+		int ret = posix_acl_valid(inode_sb(inode)->s_user_ns, acl);
 		if (ret)
 			return ret;
 	}

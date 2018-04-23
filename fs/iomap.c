@@ -806,7 +806,8 @@ static void iomap_dio_bio_end_io(struct bio *bio)
 			struct inode *inode = file_inode(dio->iocb->ki_filp);
 
 			INIT_WORK(&dio->aio.work, iomap_dio_complete_work);
-			queue_work(inode->i_sb->s_dio_done_wq, &dio->aio.work);
+			queue_work(inode_sb(inode)->s_dio_done_wq,
+				   &dio->aio.work);
 		} else {
 			iomap_dio_complete_work(&dio->aio.work);
 		}
@@ -1034,8 +1035,8 @@ iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
 	ret = 0;
 
 	if (iov_iter_rw(iter) == WRITE && !is_sync_kiocb(iocb) &&
-	    !inode->i_sb->s_dio_done_wq) {
-		ret = sb_init_dio_done_wq(inode->i_sb);
+	    !inode_sb(inode)->s_dio_done_wq) {
+		ret = sb_init_dio_done_wq(inode_sb(inode));
 		if (ret < 0)
 			goto out_free_dio;
 	}

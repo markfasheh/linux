@@ -657,7 +657,7 @@ static ssize_t bm_entry_write(struct file *file, const char __user *buffer,
 		break;
 	case 3:
 		/* Delete this handler. */
-		root = file_inode(file)->i_sb->s_root;
+		root = inode_sb(file_inode(file))->s_root;
 		inode_lock(d_inode(root));
 
 		if (!list_empty(&e->list))
@@ -685,7 +685,7 @@ static ssize_t bm_register_write(struct file *file, const char __user *buffer,
 {
 	Node *e;
 	struct inode *inode;
-	struct super_block *sb = file_inode(file)->i_sb;
+	struct super_block *sb = inode_sb(file_inode(file));
 	struct dentry *root = sb->s_root, *dentry;
 	int err = 0;
 
@@ -786,7 +786,7 @@ static ssize_t bm_status_write(struct file *file, const char __user *buffer,
 		break;
 	case 3:
 		/* Delete all handlers. */
-		root = file_inode(file)->i_sb->s_root;
+		root = inode_sb(file_inode(file))->s_root;
 		inode_lock(d_inode(root));
 
 		while (!list_empty(&entries))

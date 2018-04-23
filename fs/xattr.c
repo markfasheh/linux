@@ -53,7 +53,7 @@ strcmp_prefix(const char *a, const char *a_prefix)
 static const struct xattr_handler *
 xattr_resolve_name(struct inode *inode, const char **name)
 {
-	const struct xattr_handler **handlers = inode->i_sb->s_xattr;
+	const struct xattr_handler **handlers = inode_sb(inode)->s_xattr;
 	const struct xattr_handler *handler;
 
 	if (!(inode->i_opflags & IOP_XATTR)) {

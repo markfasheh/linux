@@ -490,7 +490,7 @@ static void inode_switch_wbs(struct inode *inode, int new_wb_id)
 
 	/* while holding I_WB_SWITCH, no one else can update the association */
 	spin_lock(&inode->i_lock);
-	if (!(inode->i_sb->s_flags & SB_ACTIVE) ||
+	if (!(inode_sb(inode)->s_flags & SB_ACTIVE) ||
 	    inode->i_state & (I_WB_SWITCH | I_FREEING) ||
 	    inode_to_wb(inode) == isw->new_wb) {
 		spin_unlock(&inode->i_lock);
@@ -1002,7 +1002,7 @@ void inode_io_list_del(struct inode *inode)
  */
 void sb_mark_inode_writeback(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned long flags;
 
 	if (list_empty(&inode->i_wb_list)) {
@@ -1020,7 +1020,7 @@ void sb_mark_inode_writeback(struct inode *inode)
  */
 void sb_clear_inode_writeback(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	unsigned long flags;
 
 	if (!list_empty(&inode->i_wb_list)) {
@@ -1122,11 +1122,11 @@ static int move_expired_inodes(struct list_head *delaying_queue,
 		moved++;
 		if (flags & EXPIRE_DIRTY_ATIME)
 			set_bit(__I_DIRTY_TIME_EXPIRED, &inode->i_state);
-		if (sb_is_blkdev_sb(inode->i_sb))
+		if (sb_is_blkdev_sb(inode_sb(inode)))
 			continue;
-		if (sb && sb != inode->i_sb)
+		if (sb && sb != inode_sb(inode))
 			do_sb_sort = 1;
-		sb = inode->i_sb;
+		sb = inode_sb(inode);
 	}
 
 	/* just one sb in list, splice to dispatch_queue and we're done */
@@ -1137,10 +1137,10 @@ static int move_expired_inodes(struct list_head *delaying_queue,
 
 	/* Move inodes from one superblock together */
 	while (!list_empty(&tmp)) {
-		sb = wb_inode(tmp.prev)->i_sb;
+		sb = inode_sb(wb_inode(tmp.prev));
 		list_for_each_prev_safe(pos, node, &tmp) {
 			inode = wb_inode(pos);
-			if (inode->i_sb == sb)
+			if (inode_sb(inode) == sb)
 				list_move(&inode->i_io_list, dispatch_queue);
 		}
 	}
@@ -1177,9 +1177,9 @@ static int write_inode(struct inode *inode, struct writeback_control *wbc)
 {
 	int ret;
 
-	if (inode->i_sb->s_op->write_inode && !is_bad_inode(inode)) {
+	if (inode_sb(inode)->s_op->write_inode && !is_bad_inode(inode)) {
 		trace_writeback_write_inode_start(inode, wbc);
-		ret = inode->i_sb->s_op->write_inode(inode, wbc);
+		ret = inode_sb(inode)->s_op->write_inode(inode, wbc);
 		trace_writeback_write_inode(inode, wbc);
 		return ret;
 	}
@@ -1513,7 +1513,7 @@ static long writeback_sb_inodes(struct super_block *sb,
 		struct inode *inode = wb_inode(wb->b_io.prev);
 		struct bdi_writeback *tmp_wb;
 
-		if (inode->i_sb != sb) {
+		if (inode_sb(inode) != sb) {
 			if (work->sb) {
 				/*
 				 * We only want to write back data for this
@@ -1641,7 +1641,7 @@ static long __writeback_inodes_wb(struct bdi_writeback *wb,
 
 	while (!list_empty(&wb->b_io)) {
 		struct inode *inode = wb_inode(wb->b_io.prev);
-		struct super_block *sb = inode->i_sb;
+		struct super_block *sb = inode_sb(inode);
 
 		if (!trylock_super(sb)) {
 			/*
@@ -2064,7 +2064,7 @@ int dirtytime_interval_handler(struct ctl_table *table, int write,
 
 static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 {
-	if (inode->i_ino || strcmp(inode->i_sb->s_id, "bdev")) {
+	if (inode->i_ino || strcmp(inode_sb(inode)->s_id, "bdev")) {
 		struct dentry *dentry;
 		const char *name = "?";
 
@@ -2076,7 +2076,7 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 		printk(KERN_DEBUG
 		       "%s(%d): dirtied inode %lu (%s) on %s\n",
 		       current->comm, task_pid_nr(current), inode->i_ino,
-		       name, inode->i_sb->s_id);
+		       name, inode_sb(inode)->s_id);
 		if (dentry) {
 			spin_unlock(&dentry->d_lock);
 			dput(dentry);
@@ -2113,7 +2113,7 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 void __mark_inode_dirty(struct inode *inode, int flags)
 {
 #define I_DIRTY_INODE (I_DIRTY_SYNC | I_DIRTY_DATASYNC)
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int dirtytime;
 
 	trace_writeback_mark_inode_dirty(inode, flags);

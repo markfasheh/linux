@@ -119,7 +119,7 @@ int inode_newsize_ok(const struct inode *inode, loff_t offset)
 		limit = rlimit(RLIMIT_FSIZE);
 		if (limit != RLIM_INFINITY && offset > limit)
 			goto out_sig;
-		if (offset > inode->i_sb->s_maxbytes)
+		if (offset > inode_sb(inode)->s_maxbytes)
 			goto out_big;
 	} else {
 		/*
@@ -164,13 +164,13 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
 		inode->i_gid = attr->ia_gid;
 	if (ia_valid & ATTR_ATIME)
 		inode->i_atime = timespec_trunc(attr->ia_atime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_MTIME)
 		inode->i_mtime = timespec_trunc(attr->ia_mtime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_CTIME)
 		inode->i_ctime = timespec_trunc(attr->ia_ctime,
-						inode->i_sb->s_time_gran);
+						inode_sb(inode)->s_time_gran);
 	if (ia_valid & ATTR_MODE) {
 		umode_t mode = attr->ia_mode;
 
@@ -288,10 +288,10 @@ int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **de
 	 * namespace of the superblock.
 	 */
 	if (ia_valid & ATTR_UID &&
-	    !kuid_has_mapping(inode->i_sb->s_user_ns, attr->ia_uid))
+	    !kuid_has_mapping(inode_sb(inode)->s_user_ns, attr->ia_uid))
 		return -EOVERFLOW;
 	if (ia_valid & ATTR_GID &&
-	    !kgid_has_mapping(inode->i_sb->s_user_ns, attr->ia_gid))
+	    !kgid_has_mapping(inode_sb(inode)->s_user_ns, attr->ia_gid))
 		return -EOVERFLOW;
 
 	/* Don't allow modifications of files with invalid uids or

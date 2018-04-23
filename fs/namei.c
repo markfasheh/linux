@@ -425,7 +425,7 @@ int inode_permission(struct inode *inode, int mask)
 {
 	int retval;
 
-	retval = sb_permission(inode->i_sb, inode, mask);
+	retval = sb_permission(inode_sb(inode), inode, mask);
 	if (retval)
 		return retval;
 
@@ -2805,7 +2805,7 @@ static inline int may_create(struct inode *dir, struct dentry *child)
 		return -EEXIST;
 	if (IS_DEADDIR(dir))
 		return -ENOENT;
-	s_user_ns = dir->i_sb->s_user_ns;
+	s_user_ns = inode_sb(dir)->s_user_ns;
 	if (!kuid_has_mapping(s_user_ns, current_fsuid()) ||
 	    !kgid_has_mapping(s_user_ns, current_fsgid()))
 		return -EOVERFLOW;
@@ -3781,7 +3781,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, umode_t, mode, unsigned, d
 int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	int error = may_create(dir, dentry);
-	unsigned max_links = dir->i_sb->s_max_links;
+	unsigned max_links = inode_sb(dir)->s_max_links;
 
 	if (error)
 		return error;
@@ -4167,7 +4167,7 @@ SYSCALL_DEFINE2(symlink, const char __user *, oldname, const char __user *, newn
 int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry, struct inode **delegated_inode)
 {
 	struct inode *inode = old_dentry->d_inode;
-	unsigned max_links = dir->i_sb->s_max_links;
+	unsigned max_links = inode_sb(dir)->s_max_links;
 	int error;
 
 	if (!inode)
@@ -4177,7 +4177,7 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
 	if (error)
 		return error;
 
-	if (dir->i_sb != inode->i_sb)
+	if (inode_sb(dir) != inode_sb(inode))
 		return -EXDEV;
 
 	/*
@@ -4363,7 +4363,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct inode *source = old_dentry->d_inode;
 	struct inode *target = new_dentry->d_inode;
 	bool new_is_dir = false;
-	unsigned max_links = new_dir->i_sb->s_max_links;
+	unsigned max_links = inode_sb(new_dir)->s_max_links;
 	struct name_snapshot old_name;
 
 	if (source == target)
@@ -4453,7 +4453,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		dont_mount(new_dentry);
 		detach_mounts(new_dentry);
 	}
-	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE)) {
+	if (!(inode_sb(old_dir)->s_type->fs_flags & FS_RENAME_DOES_D_MOVE)) {
 		if (!(flags & RENAME_EXCHANGE))
 			d_move(old_dentry, new_dentry);
 		else
