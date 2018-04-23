@@ -109,7 +109,7 @@ static int ecryptfs_readdir(struct file *file, struct dir_context *ctx)
 	struct ecryptfs_getdents_callback buf = {
 		.ctx.actor = ecryptfs_filldir,
 		.caller = ctx,
-		.sb = inode->i_sb,
+		.sb = inode_sb(inode),
 	};
 	lower_file = ecryptfs_file_to_lower(file);
 	rc = iterate_dir(lower_file, &buf.ctx);
@@ -135,8 +135,7 @@ static int read_or_initialize_metadata(struct dentry *dentry)
 	int rc;
 
 	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
-	mount_crypt_stat = &ecryptfs_superblock_to_private(
-						inode->i_sb)->mount_crypt_stat;
+	mount_crypt_stat = &ecryptfs_superblock_to_private(inode_sb(inode))->mount_crypt_stat;
 	mutex_lock(&crypt_stat->cs_mutex);
 
 	if (crypt_stat->flags & ECRYPTFS_POLICY_APPLIED &&

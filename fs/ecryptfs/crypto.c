@@ -800,8 +800,7 @@ int ecryptfs_new_file_context(struct inode *ecryptfs_inode)
 	struct ecryptfs_crypt_stat *crypt_stat =
 	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat =
-	    &ecryptfs_superblock_to_private(
-		    ecryptfs_inode->i_sb)->mount_crypt_stat;
+	    &ecryptfs_superblock_to_private(inode_sb(ecryptfs_inode))->mount_crypt_stat;
 	int cipher_name_len;
 	int rc = 0;
 
@@ -1263,7 +1262,7 @@ void ecryptfs_i_size_init(const char *page_virt, struct inode *inode)
 
 	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
 	mount_crypt_stat =
-		&ecryptfs_superblock_to_private(inode->i_sb)->mount_crypt_stat;
+		&ecryptfs_superblock_to_private(inode_sb(inode))->mount_crypt_stat;
 	if (mount_crypt_stat->flags & ECRYPTFS_ENCRYPTED_VIEW_ENABLED) {
 		file_size = i_size_read(ecryptfs_inode_to_lower(inode));
 		if (crypt_stat->flags & ECRYPTFS_METADATA_IN_XATTR)
