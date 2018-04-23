@@ -221,7 +221,7 @@ static inline struct jfs_sb_info *JFS_SBI(struct super_block *sb)
 
 static inline int isReadOnly(struct inode *inode)
 {
-	if (JFS_SBI(inode->i_sb)->log)
+	if (JFS_SBI(inode_sb(inode))->log)
 		return 0;
 	return 1;
 }

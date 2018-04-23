@@ -110,7 +110,7 @@ int jfs_commit_inode(struct inode *inode, int wait)
 		return 0;
 	}
 
-	tid = txBegin(inode->i_sb, COMMIT_INODE);
+	tid = txBegin(inode_sb(inode), COMMIT_INODE);
 	mutex_lock(&JFS_IP(inode)->commit_mutex);
 
 	/*
@@ -137,7 +137,7 @@ int jfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	 */
 	if (!test_cflag(COMMIT_Dirty, inode)) {
 		/* Make sure committed changes hit the disk */
-		jfs_flush_journal(JFS_SBI(inode->i_sb)->log, wait);
+		jfs_flush_journal(JFS_SBI(inode_sb(inode))->log, wait);
 		return 0;
 	}
 
@@ -213,7 +213,7 @@ int jfs_get_block(struct inode *ip, sector_t lblock,
 	else
 		IREAD_LOCK(ip, RDWRLOCK_NORMAL);
 
-	if (((lblock64 << ip->i_sb->s_blocksize_bits) < ip->i_size) &&
+	if (((lblock64 << inode_sb(ip)->s_blocksize_bits) < ip->i_size) &&
 	    (!xtLookup(ip, lblock64, xlen, &xflag, &xaddr, &xlen, 0)) &&
 	    xaddr) {
 		if (xflag & XAD_NOTRECORDED) {
@@ -241,7 +241,7 @@ int jfs_get_block(struct inode *ip, sector_t lblock,
 			set_buffer_new(bh_result);
 		}
 
-		map_bh(bh_result, ip->i_sb, xaddr);
+		map_bh(bh_result, inode_sb(ip), xaddr);
 		bh_result->b_size = xlen << ip->i_blkbits;
 		goto unlock;
 	}
@@ -252,14 +252,14 @@ int jfs_get_block(struct inode *ip, sector_t lblock,
 	 * Allocate a new block
 	 */
 #ifdef _JFS_4K
-	if ((rc = extHint(ip, lblock64 << ip->i_sb->s_blocksize_bits, &xad)))
+	if ((rc = extHint(ip, lblock64 << inode_sb(ip)->s_blocksize_bits, &xad)))
 		goto unlock;
 	rc = extAlloc(ip, xlen, lblock64, &xad, false);
 	if (rc)
 		goto unlock;
 
 	set_buffer_new(bh_result);
-	map_bh(bh_result, ip->i_sb, addressXAD(&xad));
+	map_bh(bh_result, inode_sb(ip), addressXAD(&xad));
 	bh_result->b_size = lengthXAD(&xad) << ip->i_blkbits;
 
 #else				/* _JFS_4K */
@@ -385,7 +385,7 @@ void jfs_truncate_nolock(struct inode *ip, loff_t length)
 	}
 
 	do {
-		tid = txBegin(ip->i_sb, 0);
+		tid = txBegin(inode_sb(ip), 0);
 
 		/*
 		 * The commit_mutex cannot be taken before txBegin.

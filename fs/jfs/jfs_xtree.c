@@ -73,7 +73,7 @@ do {									\
 		     le16_to_cpu((P)->header.maxentry)) ||		\
 		    (le16_to_cpu((P)->header.maxentry) >		\
 		     (((BN) == 0) ? XTROOTMAXSLOT : PSIZE >> L2XTSLOTSIZE))) { \
-			jfs_error((IP)->i_sb,				\
+			jfs_error(inode_sb((IP)),				\
 				  "XT_GETPAGE: xtree page corrupt\n");	\
 			BT_PUTPAGE(MP);					\
 			MP = NULL;					\
@@ -163,8 +163,8 @@ int xtLookup(struct inode *ip, s64 lstart,
 
 	if (!no_check) {
 		/* is lookup offset beyond eof ? */
-		size = ((u64) ip->i_size + (JFS_SBI(ip->i_sb)->bsize - 1)) >>
-		    JFS_SBI(ip->i_sb)->l2bsize;
+		size = ((u64) ip->i_size + (JFS_SBI(inode_sb(ip))->bsize - 1)) >>
+		    JFS_SBI(inode_sb(ip))->l2bsize;
 		if (lstart >= size)
 			return 0;
 	}
@@ -500,7 +500,7 @@ static int xtSearch(struct inode *ip, s64 xoff,	s64 *nextp,
 
 		/* push (bn, index) of the parent page/entry */
 		if (BT_STACK_FULL(btstack)) {
-			jfs_error(ip->i_sb, "stack overrun!\n");
+			jfs_error(inode_sb(ip), "stack overrun!\n");
 			XT_PUTPAGE(mp);
 			return -EIO;
 		}
@@ -764,7 +764,7 @@ xtSplitUp(tid_t tid,
 		split->pxdlist = &pxdlist;
 		pxdlist.maxnpxd = pxdlist.npxd = 0;
 		pxd = &pxdlist.pxd[0];
-		xlen = JFS_SBI(ip->i_sb)->nbperpage;
+		xlen = JFS_SBI(inode_sb(ip))->nbperpage;
 		for (; nsplit > 0; nsplit--, pxd++) {
 			if ((rc = dbAlloc(ip, (s64) 0, (s64) xlen, &xaddr))
 			    == 0) {
@@ -856,7 +856,7 @@ xtSplitUp(tid_t tid,
 			split->index = skip;	/* index at insert */
 			split->flag = XAD_NEW;
 			split->off = offsetXAD(&rcp->xad[XTENTRYSTART]);
-			split->len = JFS_SBI(ip->i_sb)->nbperpage;
+			split->len = JFS_SBI(inode_sb(ip))->nbperpage;
 			split->addr = rcbn;
 
 			/* unpin previous right child page */
@@ -904,7 +904,7 @@ xtSplitUp(tid_t tid,
 			xad = &sp->xad[skip];
 			XT_PUTENTRY(xad, XAD_NEW,
 				    offsetXAD(&rcp->xad[XTENTRYSTART]),
-				    JFS_SBI(ip->i_sb)->nbperpage, rcbn);
+				    JFS_SBI(inode_sb(ip))->nbperpage, rcbn);
 
 			/* advance next available entry index. */
 			le16_add_cpu(&sp->header.nextindex, 1);
@@ -1325,7 +1325,7 @@ xtSplitRoot(tid_t tid,
 	BT_MARK_DIRTY(split->mp, ip);
 
 	xad = &sp->xad[XTENTRYSTART];
-	XT_PUTENTRY(xad, XAD_NEW, 0, JFS_SBI(ip->i_sb)->nbperpage, rbn);
+	XT_PUTENTRY(xad, XAD_NEW, 0, JFS_SBI(inode_sb(ip))->nbperpage, rbn);
 
 	/* update page header of root */
 	sp->header.flag &= ~BT_LEAF;
@@ -1386,7 +1386,7 @@ int xtExtend(tid_t tid,		/* transaction id */
 
 	if (cmp != 0) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "xtSearch did not find extent\n");
+		jfs_error(inode_sb(ip), "xtSearch did not find extent\n");
 		return -EIO;
 	}
 
@@ -1394,7 +1394,7 @@ int xtExtend(tid_t tid,		/* transaction id */
 	xad = &p->xad[index];
 	if ((offsetXAD(xad) + lengthXAD(xad)) != xoff) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "extension is not contiguous\n");
+		jfs_error(inode_sb(ip), "extension is not contiguous\n");
 		return -EIO;
 	}
 
@@ -1553,7 +1553,7 @@ printf("xtTailgate: nxoff:0x%lx nxlen:0x%x nxaddr:0x%lx\n",
 
 	if (cmp != 0) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "couldn't find extent\n");
+		jfs_error(inode_sb(ip), "couldn't find extent\n");
 		return -EIO;
 	}
 
@@ -1561,7 +1561,8 @@ printf("xtTailgate: nxoff:0x%lx nxlen:0x%x nxaddr:0x%lx\n",
 	nextindex = le16_to_cpu(p->header.nextindex);
 	if (index != nextindex - 1) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "the entry found is not the last entry\n");
+		jfs_error(inode_sb(ip),
+			  "the entry found is not the last entry\n");
 		return -EIO;
 	}
 
@@ -1734,7 +1735,7 @@ int xtUpdate(tid_t tid, struct inode *ip, xad_t * nxad)
 
 	if (cmp != 0) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "Could not find extent\n");
+		jfs_error(inode_sb(ip), "Could not find extent\n");
 		return -EIO;
 	}
 
@@ -1757,7 +1758,7 @@ int xtUpdate(tid_t tid, struct inode *ip, xad_t * nxad)
 	if ((xoff > nxoff) ||
 	    (nxoff + nxlen > xoff + xlen)) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb,
+		jfs_error(inode_sb(ip),
 			  "nXAD in not completely contained within XAD\n");
 		return -EIO;
 	}
@@ -1907,7 +1908,7 @@ int xtUpdate(tid_t tid, struct inode *ip, xad_t * nxad)
 
 	if (xoff >= nxoff) {
 		XT_PUTPAGE(mp);
-		jfs_error(ip->i_sb, "xoff >= nxoff\n");
+		jfs_error(inode_sb(ip), "xoff >= nxoff\n");
 		return -EIO;
 	}
 /* #endif _JFS_WIP_COALESCE */
@@ -2048,13 +2049,13 @@ int xtUpdate(tid_t tid, struct inode *ip, xad_t * nxad)
 
 		if (cmp != 0) {
 			XT_PUTPAGE(mp);
-			jfs_error(ip->i_sb, "xtSearch failed\n");
+			jfs_error(inode_sb(ip), "xtSearch failed\n");
 			return -EIO;
 		}
 
 		if (index0 != index) {
 			XT_PUTPAGE(mp);
-			jfs_error(ip->i_sb, "unexpected value of index\n");
+			jfs_error(inode_sb(ip), "unexpected value of index\n");
 			return -EIO;
 		}
 	}
@@ -2237,7 +2238,7 @@ int xtAppend(tid_t tid,		/* transaction id */
 	split.pxdlist = &pxdlist;
 	pxdlist.maxnpxd = pxdlist.npxd = 0;
 	pxd = &pxdlist.pxd[0];
-	nblocks = JFS_SBI(ip->i_sb)->nbperpage;
+	nblocks = JFS_SBI(inode_sb(ip))->nbperpage;
 	for (; nsplit > 0; nsplit--, pxd++, xaddr += nblocks, maxblocks -= nblocks) {
 		if ((rc = dbAllocBottomUp(ip, xaddr, (s64) nblocks)) == 0) {
 			PXDaddress(pxd, xaddr);
@@ -2493,7 +2494,7 @@ xtDeleteUp(tid_t tid, struct inode *ip,
 				xaddr = addressPXD(&p->header.self);
 				/* free the page extent */
 				dbFree(ip, xaddr,
-				       (s64) JFS_SBI(ip->i_sb)->nbperpage);
+				       (s64) JFS_SBI(inode_sb(ip))->nbperpage);
 
 				/* unpin/free the buffer page */
 				discard_metapage(mp);
@@ -2587,7 +2588,7 @@ xtRelocate(tid_t tid, struct inode * ip, xad_t * oxad,	/* old XAD */
 	xlen = lengthXAD(oxad);
 
 	/* validate extent offset */
-	offset = xoff << JFS_SBI(ip->i_sb)->l2bsize;
+	offset = xoff << JFS_SBI(inode_sb(ip))->l2bsize;
 	if (offset >= ip->i_size)
 		return -ESTALE;	/* stale extent */
 
@@ -2669,9 +2670,9 @@ xtRelocate(tid_t tid, struct inode * ip, xad_t * oxad,	/* old XAD */
 		 * it is a good strategy because it may disrupt cache
 		 * policy to keep the pages in memory afterwards.
 		 */
-		offset = xoff << JFS_SBI(ip->i_sb)->l2bsize;
+		offset = xoff << JFS_SBI(inode_sb(ip))->l2bsize;
 		assert((offset & CM_OFFSET) == 0);
-		nbytes = xlen << JFS_SBI(ip->i_sb)->l2bsize;
+		nbytes = xlen << JFS_SBI(inode_sb(ip))->l2bsize;
 		pno = offset >> CM_L2BSIZE;
 		npages = (nbytes + (CM_BSIZE - 1)) >> CM_L2BSIZE;
 /*
@@ -2695,7 +2696,7 @@ xtRelocate(tid_t tid, struct inode * ip, xad_t * oxad,	/* old XAD */
 			assert(!cp->cm_modified);
 
 			/* bind buffer with the new extent address */
-			nblks = nb >> JFS_IP(ip->i_sb)->l2bsize;
+			nblks = nb >> JFS_IP(inode_sb(ip))->l2bsize;
 			cmSetXD(ip, cp, pno, dxaddr, nblks);
 
 			/* release the cbuf, mark it as modified */
@@ -2803,7 +2804,7 @@ xtRelocate(tid_t tid, struct inode * ip, xad_t * oxad,	/* old XAD */
 		    le16_to_cpu(p->header.nextindex) - xtlck->lwm.offset;
 
 		/* update the buffer extent descriptor of target xtpage */
-		xsize = xlen << JFS_SBI(ip->i_sb)->l2bsize;
+		xsize = xlen << JFS_SBI(inode_sb(ip))->l2bsize;
 		bmSetXD(mp, nxaddr, xsize);
 
 		/* unpin the target page to new homeward bound */
@@ -3225,8 +3226,8 @@ s64 xtTruncate(tid_t tid, struct inode *ip, s64 newsize, int flag)
 	 * (this will allow continued access of data/index of
 	 * temporary file (zerolink count file truncated to zero-length)).
 	 */
-	teof = (newsize + (JFS_SBI(ip->i_sb)->bsize - 1)) >>
-	    JFS_SBI(ip->i_sb)->l2bsize;
+	teof = (newsize + (JFS_SBI(inode_sb(ip))->bsize - 1)) >>
+	    JFS_SBI(inode_sb(ip))->l2bsize;
 
 	/* clear stack */
 	BT_CLR(&btstack);
@@ -3291,7 +3292,7 @@ s64 xtTruncate(tid_t tid, struct inode *ip, s64 newsize, int flag)
 			 * to avoid exhausting pagecache & tlocks
 			 */
 			XT_PUTPAGE(mp);
-			newsize = (xoff + xlen) << JFS_SBI(ip->i_sb)->l2bsize;
+			newsize = (xoff + xlen) << JFS_SBI(inode_sb(ip))->l2bsize;
 			goto getParent;
 		}
 		tlck = txLock(tid, ip, mp, tlckXTREE);
@@ -3649,7 +3650,7 @@ s64 xtTruncate(tid_t tid, struct inode *ip, s64 newsize, int flag)
       getChild:
 	/* save current parent entry for the child page */
 	if (BT_STACK_FULL(&btstack)) {
-		jfs_error(ip->i_sb, "stack overrun!\n");
+		jfs_error(inode_sb(ip), "stack overrun!\n");
 		XT_PUTPAGE(mp);
 		return -EIO;
 	}
@@ -3741,7 +3742,7 @@ s64 xtTruncate_pmap(tid_t tid, struct inode *ip, s64 committed_size)
 	BT_CLR(&btstack);
 
 	if (committed_size) {
-		xoff = (committed_size >> JFS_SBI(ip->i_sb)->l2bsize) - 1;
+		xoff = (committed_size >> JFS_SBI(inode_sb(ip))->l2bsize) - 1;
 		rc = xtSearch(ip, xoff, NULL, &cmp, &btstack, 0);
 		if (rc)
 			return rc;
@@ -3750,7 +3751,7 @@ s64 xtTruncate_pmap(tid_t tid, struct inode *ip, s64 committed_size)
 
 		if (cmp != 0) {
 			XT_PUTPAGE(mp);
-			jfs_error(ip->i_sb, "did not find extent\n");
+			jfs_error(inode_sb(ip), "did not find extent\n");
 			return -EIO;
 		}
 	} else {
@@ -3789,7 +3790,7 @@ s64 xtTruncate_pmap(tid_t tid, struct inode *ip, s64 committed_size)
 		xoff = offsetXAD(xad);
 		xlen = lengthXAD(xad);
 		XT_PUTPAGE(mp);
-		return (xoff + xlen) << JFS_SBI(ip->i_sb)->l2bsize;
+		return (xoff + xlen) << JFS_SBI(inode_sb(ip))->l2bsize;
 	}
 	tlck = txLock(tid, ip, mp, tlckXTREE);
 	tlck->type = tlckXTREE | tlckFREE;
@@ -3849,7 +3850,7 @@ s64 xtTruncate_pmap(tid_t tid, struct inode *ip, s64 committed_size)
       getChild:
 	/* save current parent entry for the child page */
 	if (BT_STACK_FULL(&btstack)) {
-		jfs_error(ip->i_sb, "stack overrun!\n");
+		jfs_error(inode_sb(ip), "stack overrun!\n");
 		XT_PUTPAGE(mp);
 		return -EIO;
 	}

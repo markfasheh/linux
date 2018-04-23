@@ -129,7 +129,7 @@ setflags_out:
 
 	case FITRIM:
 	{
-		struct super_block *sb = inode->i_sb;
+		struct super_block *sb = inode_sb(inode);
 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
 		struct fstrim_range range;
 		s64 ret = 0;

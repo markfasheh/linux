@@ -53,7 +53,7 @@ void jfs_set_inode_flags(struct inode *inode)
  */
 struct inode *ialloc(struct inode *parent, umode_t mode)
 {
-	struct super_block *sb = parent->i_sb;
+	struct super_block *sb = inode_sb(parent);
 	struct inode *inode;
 	struct jfs_inode_info *jfs_inode;
 	int rc;

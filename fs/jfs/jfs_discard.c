@@ -44,7 +44,7 @@
  */
 void jfs_issue_discard(struct inode *ip, u64 blkno, u64 nblocks)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	int r = 0;
 
 	r = sb_issue_discard(sb, blkno, nblocks, GFP_NOFS, 0);
@@ -77,9 +77,9 @@ void jfs_issue_discard(struct inode *ip, u64 blkno, u64 nblocks)
  */
 int jfs_ioc_trim(struct inode *ip, struct fstrim_range *range)
 {
-	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
-	struct bmap *bmp = JFS_SBI(ip->i_sb)->bmap;
-	struct super_block *sb = ipbmap->i_sb;
+	struct inode *ipbmap = JFS_SBI(inode_sb(ip))->ipbmap;
+	struct bmap *bmp = JFS_SBI(inode_sb(ip))->bmap;
+	struct super_block *sb = inode_sb(ipbmap);
 	int agno, agno_end;
 	u64 start, end, minlen;
 	u64 trimmed = 0;
@@ -107,8 +107,8 @@ int jfs_ioc_trim(struct inode *ip, struct fstrim_range *range)
 	/**
 	 * we trim all ag's within the range
 	 */
-	agno = BLKTOAG(start, JFS_SBI(ip->i_sb));
-	agno_end = BLKTOAG(end, JFS_SBI(ip->i_sb));
+	agno = BLKTOAG(start, JFS_SBI(inode_sb(ip)));
+	agno_end = BLKTOAG(end, JFS_SBI(inode_sb(ip)));
 	while (agno <= agno_end) {
 		trimmed += dbDiscardAG(ip, agno, minlen);
 		agno++;

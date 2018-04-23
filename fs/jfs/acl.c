@@ -111,7 +111,7 @@ int jfs_set_acl(struct inode *inode, struct posix_acl *acl, int type)
 	int update_mode = 0;
 	umode_t mode = inode->i_mode;
 
-	tid = txBegin(inode->i_sb, 0);
+	tid = txBegin(inode_sb(inode), 0);
 	mutex_lock(&JFS_IP(inode)->commit_mutex);
 	if (type == ACL_TYPE_ACCESS && acl) {
 		rc = posix_acl_update_mode(inode, &mode, &acl);

@@ -1155,7 +1155,7 @@ int txCommit(tid_t tid,		/* transaction identifier */
 		goto TheEnd;
 	}
 
-	sb = cd.sb = iplist[0]->i_sb;
+	sb = cd.sb = inode_sb(iplist[0]);
 	cd.tid = tid;
 
 	if (tid == 0)
@@ -1396,7 +1396,7 @@ static int txLog(struct jfs_log * log, struct tblock * tblk, struct commit * cd)
 
 		/* initialize lrd common */
 		ip = tlck->ip;
-		lrd->aggregate = cpu_to_le32(JFS_SBI(ip->i_sb)->aggregate);
+		lrd->aggregate = cpu_to_le32(JFS_SBI(inode_sb(ip))->aggregate);
 		lrd->log.redopage.fileset = cpu_to_le32(JFS_IP(ip)->fileset);
 		lrd->log.redopage.inode = cpu_to_le32(ip->i_ino);
 
@@ -2437,7 +2437,7 @@ static void txUpdateMap(struct tblock * tblk)
 static void txAllocPMap(struct inode *ip, struct maplock * maplock,
 			struct tblock * tblk)
 {
-	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
+	struct inode *ipbmap = JFS_SBI(inode_sb(ip))->ipbmap;
 	struct xdlistlock *xadlistlock;
 	xad_t *xad;
 	s64 xaddr;
@@ -2495,7 +2495,7 @@ static void txAllocPMap(struct inode *ip, struct maplock * maplock,
 void txFreeMap(struct inode *ip,
 	       struct maplock * maplock, struct tblock * tblk, int maptype)
 {
-	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
+	struct inode *ipbmap = JFS_SBI(inode_sb(ip))->ipbmap;
 	struct xdlistlock *xadlistlock;
 	xad_t *xad;
 	s64 xaddr;
@@ -2875,7 +2875,7 @@ restart:
 		 * when it is committed
 		 */
 		TXN_UNLOCK();
-		tid = txBegin(ip->i_sb, COMMIT_INODE | COMMIT_FORCE);
+		tid = txBegin(inode_sb(ip), COMMIT_INODE | COMMIT_FORCE);
 		mutex_lock(&jfs_ip->commit_mutex);
 		txCommit(tid, 1, &ip, 0);
 		txEnd(tid);
@@ -2952,7 +2952,7 @@ int jfs_sync(void *arg)
 				 * when it is committed
 				 */
 				TXN_UNLOCK();
-				tid = txBegin(ip->i_sb, COMMIT_INODE);
+				tid = txBegin(inode_sb(ip), COMMIT_INODE);
 				txCommit(tid, 1, &ip, 0);
 				txEnd(tid);
 				mutex_unlock(&jfs_ip->commit_mutex);

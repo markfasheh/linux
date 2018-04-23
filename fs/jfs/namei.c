@@ -108,7 +108,7 @@ static int jfs_create(struct inode *dip, struct dentry *dentry, umode_t mode,
 		goto out2;
 	}
 
-	tid = txBegin(dip->i_sb, 0);
+	tid = txBegin(inode_sb(dip), 0);
 
 	mutex_lock_nested(&JFS_IP(dip)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -242,7 +242,7 @@ static int jfs_mkdir(struct inode *dip, struct dentry *dentry, umode_t mode)
 		goto out2;
 	}
 
-	tid = txBegin(dip->i_sb, 0);
+	tid = txBegin(inode_sb(dip), 0);
 
 	mutex_lock_nested(&JFS_IP(dip)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -376,7 +376,7 @@ static int jfs_rmdir(struct inode *dip, struct dentry *dentry)
 		goto out;
 	}
 
-	tid = txBegin(dip->i_sb, 0);
+	tid = txBegin(inode_sb(dip), 0);
 
 	mutex_lock_nested(&JFS_IP(dip)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -503,7 +503,7 @@ static int jfs_unlink(struct inode *dip, struct dentry *dentry)
 
 	IWRITE_LOCK(ip, RDWRLOCK_NORMAL);
 
-	tid = txBegin(dip->i_sb, 0);
+	tid = txBegin(inode_sb(dip), 0);
 
 	mutex_lock_nested(&JFS_IP(dip)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -576,7 +576,7 @@ static int jfs_unlink(struct inode *dip, struct dentry *dentry)
 	mutex_unlock(&JFS_IP(dip)->commit_mutex);
 
 	while (new_size && (rc == 0)) {
-		tid = txBegin(dip->i_sb, 0);
+		tid = txBegin(inode_sb(dip), 0);
 		mutex_lock(&JFS_IP(ip)->commit_mutex);
 		new_size = xtTruncate_pmap(tid, ip, new_size);
 		if (new_size < 0) {
@@ -815,7 +815,7 @@ static int jfs_link(struct dentry *old_dentry,
 	if (rc)
 		goto out;
 
-	tid = txBegin(ip->i_sb, 0);
+	tid = txBegin(inode_sb(ip), 0);
 
 	mutex_lock_nested(&JFS_IP(dir)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -930,7 +930,7 @@ static int jfs_symlink(struct inode *dip, struct dentry *dentry,
 		goto out2;
 	}
 
-	tid = txBegin(dip->i_sb, 0);
+	tid = txBegin(inode_sb(dip), 0);
 
 	mutex_lock_nested(&JFS_IP(dip)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -991,7 +991,7 @@ static int jfs_symlink(struct inode *dip, struct dentry *dentry,
 		 * path name) is treated as non-journaled user data,
 		 * it is read/written thru buffer cache for performance.
 		 */
-		sb = ip->i_sb;
+		sb = inode_sb(ip);
 		bmask = JFS_SBI(sb)->bsize - 1;
 		xsize = (ssize + bmask) & ~bmask;
 		xaddr = 0;
@@ -1163,7 +1163,7 @@ static int jfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	/*
 	 * The real work starts here
 	 */
-	tid = txBegin(new_dir->i_sb, 0);
+	tid = txBegin(inode_sb(new_dir), 0);
 
 	/*
 	 * How do we know the locking is safe from deadlocks?
@@ -1199,7 +1199,7 @@ static int jfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 				mutex_unlock(&JFS_IP(new_dir)->commit_mutex);
 				if (!S_ISDIR(old_ip->i_mode) && new_ip)
 					IWRITE_UNLOCK(new_ip);
-				jfs_error(new_ip->i_sb,
+				jfs_error(inode_sb(new_ip),
 					  "new_ip->i_nlink != 0\n");
 				return -EIO;
 			}
@@ -1322,7 +1322,7 @@ static int jfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	mutex_unlock(&JFS_IP(new_dir)->commit_mutex);
 
 	while (new_size && (rc == 0)) {
-		tid = txBegin(new_ip->i_sb, 0);
+		tid = txBegin(inode_sb(new_ip), 0);
 		mutex_lock(&JFS_IP(new_ip)->commit_mutex);
 		new_size = xtTruncate_pmap(tid, new_ip, new_size);
 		if (new_size < 0) {
@@ -1392,7 +1392,7 @@ static int jfs_mknod(struct inode *dir, struct dentry *dentry,
 	}
 	jfs_ip = JFS_IP(ip);
 
-	tid = txBegin(dir->i_sb, 0);
+	tid = txBegin(inode_sb(dir), 0);
 
 	mutex_lock_nested(&JFS_IP(dir)->commit_mutex, COMMIT_MUTEX_PARENT);
 	mutex_lock_nested(&JFS_IP(ip)->commit_mutex, COMMIT_MUTEX_CHILD);
@@ -1479,7 +1479,7 @@ static struct dentry *jfs_lookup(struct inode *dip, struct dentry *dentry, unsig
 		jfs_err("jfs_lookup: dtSearch returned %d", rc);
 		ip = ERR_PTR(rc);
 	} else {
-		ip = jfs_iget(dip->i_sb, inum);
+		ip = jfs_iget(inode_sb(dip), inum);
 		if (IS_ERR(ip))
 			jfs_err("jfs_lookup: iget failed on inum %d", (uint)inum);
 	}

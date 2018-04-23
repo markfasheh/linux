@@ -214,7 +214,7 @@ static int ea_write_inline(struct inode *ip, struct jfs_ea_list *ealist,
 static int ea_write(struct inode *ip, struct jfs_ea_list *ealist, int size,
 		       dxd_t * ea)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	struct jfs_inode_info *ji = JFS_IP(ip);
 	struct jfs_sb_info *sbi = JFS_SBI(sb);
 	int nblocks;
@@ -363,7 +363,7 @@ static int ea_read_inline(struct inode *ip, struct jfs_ea_list *ealist)
  */
 static int ea_read(struct inode *ip, struct jfs_ea_list *ealist)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	struct jfs_inode_info *ji = JFS_IP(ip);
 	struct jfs_sb_info *sbi = JFS_SBI(sb);
 	int nblocks;
@@ -439,7 +439,7 @@ static int ea_read(struct inode *ip, struct jfs_ea_list *ealist)
 static int ea_get(struct inode *inode, struct ea_buffer *ea_buf, int min_size)
 {
 	struct jfs_inode_info *ji = JFS_IP(inode);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	int size;
 	int ea_size = sizeDXD(&ji->ea);
 	int blocks_needed, current_blocks;
@@ -923,7 +923,7 @@ static int __jfs_xattr_set(struct inode *inode, const char *name,
 	tid_t tid;
 	int rc;
 
-	tid = txBegin(inode->i_sb, 0);
+	tid = txBegin(inode_sb(inode), 0);
 	mutex_lock(&ji->commit_mutex);
 	rc = __jfs_setxattr(tid, inode, name, value, size, flags);
 	if (!rc)

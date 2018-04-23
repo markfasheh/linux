@@ -85,13 +85,13 @@ static s64 extRoundDown(s64 nb);
 int
 extAlloc(struct inode *ip, s64 xlen, s64 pno, xad_t * xp, bool abnr)
 {
-	struct jfs_sb_info *sbi = JFS_SBI(ip->i_sb);
+	struct jfs_sb_info *sbi = JFS_SBI(inode_sb(ip));
 	s64 nxlen, nxaddr, xoff, hint, xaddr = 0;
 	int rc;
 	int xflag;
 
 	/* This blocks if we are low on resources */
-	txBeginAnon(ip->i_sb);
+	txBeginAnon(inode_sb(ip));
 
 	/* Avoid race with jfs_commit_inode() */
 	mutex_lock(&JFS_IP(ip)->commit_mutex);
@@ -214,14 +214,14 @@ extAlloc(struct inode *ip, s64 xlen, s64 pno, xad_t * xp, bool abnr)
  */
 int extRealloc(struct inode *ip, s64 nxlen, xad_t * xp, bool abnr)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	s64 xaddr, xlen, nxaddr, delta, xoff;
 	s64 ntail, nextend, ninsert;
 	int rc, nbperpage = JFS_SBI(sb)->nbperpage;
 	int xflag;
 
 	/* This blocks if we are low on resources */
-	txBeginAnon(ip->i_sb);
+	txBeginAnon(inode_sb(ip));
 
 	mutex_lock(&JFS_IP(ip)->commit_mutex);
 	/* validate extent length */
@@ -363,7 +363,7 @@ exit:
  */
 int extHint(struct inode *ip, s64 offset, xad_t * xp)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	int nbperpage = JFS_SBI(sb)->nbperpage;
 	s64 prev;
 	int rc = 0;
@@ -388,7 +388,7 @@ int extHint(struct inode *ip, s64 offset, xad_t * xp)
 
 	if ((rc == 0) && xlen) {
 		if (xlen != nbperpage) {
-			jfs_error(ip->i_sb, "corrupt xtree\n");
+			jfs_error(inode_sb(ip), "corrupt xtree\n");
 			rc = -EIO;
 		}
 		XADaddress(xp, xaddr);
@@ -425,7 +425,7 @@ int extRecord(struct inode *ip, xad_t * xp)
 {
 	int rc;
 
-	txBeginAnon(ip->i_sb);
+	txBeginAnon(inode_sb(ip));
 
 	mutex_lock(&JFS_IP(ip)->commit_mutex);
 
@@ -455,7 +455,7 @@ int extRecord(struct inode *ip, xad_t * xp)
  */
 int extFill(struct inode *ip, xad_t * xp)
 {
-	int rc, nbperpage = JFS_SBI(ip->i_sb)->nbperpage;
+	int rc, nbperpage = JFS_SBI(inode_sb(ip))->nbperpage;
 	s64 blkno = offsetXAD(xp) >> ip->i_blkbits;
 
 //	assert(ISSPARSE(ip));
@@ -509,7 +509,7 @@ static int
 extBalloc(struct inode *ip, s64 hint, s64 * nblocks, s64 * blkno)
 {
 	struct jfs_inode_info *ji = JFS_IP(ip);
-	struct jfs_sb_info *sbi = JFS_SBI(ip->i_sb);
+	struct jfs_sb_info *sbi = JFS_SBI(inode_sb(ip));
 	s64 nb, nblks, daddr, max;
 	int rc, nbperpage = sbi->nbperpage;
 	struct bmap *bmp = sbi->bmap;

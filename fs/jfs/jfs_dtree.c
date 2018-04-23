@@ -132,7 +132,7 @@ do {									\
 		     (((BN) == 0) ? DTROOTMAXSLOT : (P)->header.maxslot)) || \
 		    ((BN) && ((P)->header.maxslot > DTPAGEMAXSLOT))) {	\
 			BT_PUTPAGE(MP);					\
-			jfs_error((IP)->i_sb,				\
+			jfs_error(inode_sb((IP)),				\
 				  "DT_GETPAGE: dtree page corrupt\n");	\
 			MP = NULL;					\
 			RC = -EIO;					\
@@ -279,7 +279,7 @@ static struct dir_table_slot *find_index(struct inode *ip, u32 index,
 		offset = (index - 2) * sizeof(struct dir_table_slot);
 		page_offset = offset & (PSIZE - 1);
 		blkno = ((offset + 1) >> L2PSIZE) <<
-		    JFS_SBI(ip->i_sb)->l2nbperpage;
+		    JFS_SBI(inode_sb(ip))->l2nbperpage;
 
 		if (*mp && (*lblock != blkno)) {
 			release_metapage(*mp);
@@ -333,7 +333,7 @@ static inline void lock_index(tid_t tid, struct inode *ip, struct metapage * mp,
  */
 static u32 add_index(tid_t tid, struct inode *ip, s64 bn, int slot)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	struct jfs_sb_info *sbi = JFS_SBI(sb);
 	struct jfs_inode_info *jfs_ip = JFS_IP(ip);
 	u64 blkno;
@@ -592,7 +592,7 @@ int dtSearch(struct inode *ip, struct component_name * key, ino_t * data,
 	int psize = 288;	/* initial in-line directory */
 	ino_t inumber;
 	struct component_name ciKey;
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 
 	ciKey.name = kmalloc((JFS_NAME_MAX + 1) * sizeof(wchar_t), GFP_NOFS);
 	if (!ciKey.name) {
@@ -789,7 +789,7 @@ int dtSearch(struct inode *ip, struct component_name * key, ino_t * data,
 		/* get the child page block number */
 		pxd = (pxd_t *) & p->slot[stbl[index]];
 		bn = addressPXD(pxd);
-		psize = lengthPXD(pxd) << JFS_SBI(ip->i_sb)->l2bsize;
+		psize = lengthPXD(pxd) << JFS_SBI(inode_sb(ip))->l2bsize;
 
 		/* unpin the parent page */
 		DT_PUTPAGE(mp);
@@ -930,7 +930,7 @@ int dtInsert(tid_t tid, struct inode *ip,
 static int dtSplitUp(tid_t tid,
 	  struct inode *ip, struct dtsplit * split, struct btstack * btstack)
 {
-	struct jfs_sb_info *sbi = JFS_SBI(ip->i_sb);
+	struct jfs_sb_info *sbi = JFS_SBI(inode_sb(ip));
 	int rc = 0;
 	struct metapage *smp;
 	dtpage_t *sp;		/* split page */
@@ -1642,7 +1642,7 @@ static int dtSplitPage(tid_t tid, struct inode *ip, struct dtsplit * split,
 static int dtExtendPage(tid_t tid,
 	     struct inode *ip, struct dtsplit * split, struct btstack * btstack)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	int rc;
 	struct metapage *smp, *pmp, *mp;
 	dtpage_t *sp, *pp;
@@ -1875,7 +1875,7 @@ static int dtExtendPage(tid_t tid,
 static int dtSplitRoot(tid_t tid,
 	    struct inode *ip, struct dtsplit * split, struct metapage ** rmpp)
 {
-	struct super_block *sb = ip->i_sb;
+	struct super_block *sb = inode_sb(ip);
 	struct metapage *smp;
 	dtroot_t *sp;
 	struct metapage *rmp;
@@ -2577,7 +2577,7 @@ int dtRelocate(tid_t tid, struct inode *ip, s64 lmxaddr, pxd_t * opxd,
 	dtlck->index++;
 
 	/* update the buffer extent descriptor of the dtpage */
-	xsize = xlen << JFS_SBI(ip->i_sb)->l2bsize;
+	xsize = xlen << JFS_SBI(inode_sb(ip))->l2bsize;
 
 	/* unpin the relocated page */
 	DT_PUTPAGE(mp);
@@ -2688,7 +2688,7 @@ static int dtSearchNode(struct inode *ip, s64 lmxaddr, pxd_t * kpxd,
 
 		/* get the child page block address */
 		bn = addressPXD(pxd);
-		psize = lengthPXD(pxd) << JFS_SBI(ip->i_sb)->l2bsize;
+		psize = lengthPXD(pxd) << JFS_SBI(inode_sb(ip))->l2bsize;
 		/* unpin the parent page */
 		DT_PUTPAGE(mp);
 	}
@@ -2929,7 +2929,7 @@ static void add_missing_indices(struct inode *inode, s64 bn)
 	tid_t tid;
 	struct tlock *tlck;
 
-	tid = txBegin(inode->i_sb, 0);
+	tid = txBegin(inode_sb(inode), 0);
 
 	DT_GETPAGE(inode, bn, mp, PSIZE, p, rc);
 
@@ -3005,7 +3005,7 @@ static inline struct jfs_dirent *next_jfs_dirent(struct jfs_dirent *dirent)
 int jfs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *ip = file_inode(file);
-	struct nls_table *codepage = JFS_SBI(ip->i_sb)->nls_tab;
+	struct nls_table *codepage = JFS_SBI(inode_sb(ip))->nls_tab;
 	int rc = 0;
 	loff_t dtpos;	/* legacy OS/2 style position */
 	struct dtoffset {
@@ -3259,7 +3259,7 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
 				d_namleft -= len;
 				/* Sanity Check */
 				if (d_namleft == 0) {
-					jfs_error(ip->i_sb,
+					jfs_error(inode_sb(ip),
 						  "JFS:Dtree error: ino = %ld, bn=%lld, index = %d\n",
 						  (long)ip->i_ino,
 						  (long long)bn,
@@ -3380,7 +3380,7 @@ static int dtReadFirst(struct inode *ip, struct btstack * btstack)
 		 */
 		if (BT_STACK_FULL(btstack)) {
 			DT_PUTPAGE(mp);
-			jfs_error(ip->i_sb, "btstack overrun\n");
+			jfs_error(inode_sb(ip), "btstack overrun\n");
 			BT_STACK_DUMP(btstack);
 			return -EIO;
 		}
@@ -3393,7 +3393,7 @@ static int dtReadFirst(struct inode *ip, struct btstack * btstack)
 
 		/* get the child page block address */
 		bn = addressPXD(xd);
-		psize = lengthPXD(xd) << JFS_SBI(ip->i_sb)->l2bsize;
+		psize = lengthPXD(xd) << JFS_SBI(inode_sb(ip))->l2bsize;
 
 		/* unpin the parent page */
 		DT_PUTPAGE(mp);
