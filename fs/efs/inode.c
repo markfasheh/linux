@@ -87,7 +87,7 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
 			(EFS_BLOCKSIZE / sizeof(struct efs_dinode))) *
 		sizeof(struct efs_dinode);
 
-	bh = sb_bread(inode->i_sb, block);
+	bh = sb_bread(inode_sb(inode), block);
 	if (!bh) {
 		pr_warn("%s() failed at block %d\n", __func__, block);
 		goto read_inode_error;
@@ -196,7 +196,7 @@ efs_extent_check(efs_extent *ptr, efs_block_t block, struct efs_sb_info *sb) {
 }
 
 efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
-	struct efs_sb_info    *sb = SUPER_INFO(inode->i_sb);
+	struct efs_sb_info    *sb = SUPER_INFO(inode_sb(inode));
 	struct efs_inode_info *in = INODE_INFO(inode);
 	struct buffer_head    *bh = NULL;
 
@@ -275,7 +275,7 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
 		if (first || lastblock != iblock) {
 			if (bh) brelse(bh);
 
-			bh = sb_bread(inode->i_sb, iblock);
+			bh = sb_bread(inode_sb(inode), iblock);
 			if (!bh) {
 				pr_err("%s() failed at block %d\n",
 				       __func__, iblock);

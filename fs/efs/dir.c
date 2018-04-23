@@ -42,7 +42,7 @@ static int efs_readdir(struct file *file, struct dir_context *ctx)
 		struct buffer_head *bh;
 
 		/* read the dir block */
-		bh = sb_bread(inode->i_sb, efs_bmap(inode, block));
+		bh = sb_bread(inode_sb(inode), efs_bmap(inode, block));
 
 		if (!bh) {
 			pr_err("%s(): failed to read dir block %d\n",
