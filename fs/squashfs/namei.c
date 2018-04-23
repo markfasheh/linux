@@ -142,7 +142,7 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 	const unsigned char *name = dentry->d_name.name;
 	int len = dentry->d_name.len;
 	struct inode *inode = NULL;
-	struct squashfs_sb_info *msblk = dir->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(dir)->s_fs_info;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
 	u64 block = squashfs_i(dir)->start + msblk->directory_table;
@@ -163,17 +163,18 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 		goto failed;
 	}
 
-	length = get_dir_index_using_name(dir->i_sb, &block, &offset,
-				squashfs_i(dir)->dir_idx_start,
-				squashfs_i(dir)->dir_idx_offset,
-				squashfs_i(dir)->dir_idx_cnt, name, len);
+	length = get_dir_index_using_name(inode_sb(dir), &block, &offset,
+					  squashfs_i(dir)->dir_idx_start,
+					  squashfs_i(dir)->dir_idx_offset,
+					  squashfs_i(dir)->dir_idx_cnt, name,
+					  len);
 
 	while (length < i_size_read(dir)) {
 		/*
 		 * Read directory header.
 		 */
-		err = squashfs_read_metadata(dir->i_sb, &dirh, &block,
-				&offset, sizeof(dirh));
+		err = squashfs_read_metadata(inode_sb(dir), &dirh, &block,
+					     &offset, sizeof(dirh));
 		if (err < 0)
 			goto read_failure;
 
@@ -188,8 +189,9 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 			/*
 			 * Read directory entry.
 			 */
-			err = squashfs_read_metadata(dir->i_sb, dire, &block,
-					&offset, sizeof(*dire));
+			err = squashfs_read_metadata(inode_sb(dir), dire,
+						     &block,
+						     &offset, sizeof(*dire));
 			if (err < 0)
 				goto read_failure;
 
@@ -199,8 +201,9 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 			if (size > SQUASHFS_NAME_LEN)
 				goto data_error;
 
-			err = squashfs_read_metadata(dir->i_sb, dire->name,
-					&block, &offset, size);
+			err = squashfs_read_metadata(inode_sb(dir),
+						     dire->name,
+						     &block, &offset, size);
 			if (err < 0)
 				goto read_failure;
 
@@ -222,7 +225,8 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 					"entry %s, inode  %x:%x, %d\n", name,
 					blk, off, ino_num);
 
-				inode = squashfs_iget(dir->i_sb, ino, ino_num);
+				inode = squashfs_iget(inode_sb(dir), ino,
+						      ino_num);
 				goto exit_lookup;
 			}
 		}

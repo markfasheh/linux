@@ -23,8 +23,9 @@
 int squashfs_readpage_block(struct page *page, u64 block, int bsize)
 {
 	struct inode *i = page->mapping->host;
-	struct squashfs_cache_entry *buffer = squashfs_get_datablock(i->i_sb,
-		block, bsize);
+	struct squashfs_cache_entry *buffer = squashfs_get_datablock(inode_sb(i),
+								     block,
+								     bsize);
 	int res = buffer->error;
 
 	if (res)

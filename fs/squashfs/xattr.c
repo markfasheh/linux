@@ -40,7 +40,7 @@ ssize_t squashfs_listxattr(struct dentry *d, char *buffer,
 	size_t buffer_size)
 {
 	struct inode *inode = d_inode(d);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
 						 + msblk->xattr_table;
@@ -118,7 +118,7 @@ failed:
 static int squashfs_xattr_get(struct inode *inode, int name_index,
 	const char *name, void *buffer, size_t buffer_size)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
 						 + msblk->xattr_table;

@@ -61,7 +61,7 @@ static struct meta_index *locate_meta_index(struct inode *inode, int offset,
 				int index)
 {
 	struct meta_index *meta = NULL;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	int i;
 
 	mutex_lock(&msblk->meta_index_mutex);
@@ -99,7 +99,7 @@ not_allocated:
 static struct meta_index *empty_meta_index(struct inode *inode, int offset,
 				int skip)
 {
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	struct meta_index *meta = NULL;
 	int i;
 
@@ -159,7 +159,7 @@ failed:
 
 static void release_meta_index(struct inode *inode, struct meta_index *meta)
 {
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	mutex_lock(&msblk->meta_index_mutex);
 	meta->locked = 0;
 	mutex_unlock(&msblk->meta_index_mutex);
@@ -236,7 +236,7 @@ static inline int calculate_skip(int blocks)
 static int fill_meta_index(struct inode *inode, int index,
 		u64 *index_block, int *index_offset, u64 *data_block)
 {
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	int skip = calculate_skip(i_size_read(inode) >> msblk->block_log);
 	int offset = 0;
 	struct meta_index *meta;
@@ -282,8 +282,9 @@ static int fill_meta_index(struct inode *inode, int index,
 		for (i = meta->offset + meta->entries; i <= index &&
 				i < meta->offset + SQUASHFS_META_ENTRIES; i++) {
 			int blocks = skip * SQUASHFS_META_INDEXES;
-			long long res = read_indexes(inode->i_sb, blocks,
-					&cur_index_block, &cur_offset);
+			long long res = read_indexes(inode_sb(inode), blocks,
+						     &cur_index_block,
+						     &cur_offset);
 
 			if (res < 0) {
 				if (meta->entries == 0)
@@ -354,7 +355,8 @@ static int read_blocklist(struct inode *inode, int index, u64 *block)
 	 * extra block indexes needed.
 	 */
 	if (res < index) {
-		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
+		blks = read_indexes(inode_sb(inode), index - res, &start,
+				    &offset);
 		if (blks < 0)
 			return (int) blks;
 		*block += blks;
@@ -363,8 +365,8 @@ static int read_blocklist(struct inode *inode, int index, u64 *block)
 	/*
 	 * Read length of block specified by index.
 	 */
-	res = squashfs_read_metadata(inode->i_sb, &size, &start, &offset,
-			sizeof(size));
+	res = squashfs_read_metadata(inode_sb(inode), &size, &start, &offset,
+				     sizeof(size));
 	if (res < 0)
 		return res;
 	return le32_to_cpu(size);
@@ -375,7 +377,7 @@ void squashfs_copy_cache(struct page *page, struct squashfs_cache_entry *buffer,
 	int bytes, int offset)
 {
 	struct inode *inode = page->mapping->host;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	void *pageaddr;
 	int i, mask = (1 << (msblk->block_log - PAGE_SHIFT)) - 1;
 	int start_index = page->index & ~mask, end_index = start_index | mask;
@@ -419,10 +421,10 @@ skip_page:
 static int squashfs_readpage_fragment(struct page *page)
 {
 	struct inode *inode = page->mapping->host;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	struct squashfs_cache_entry *buffer = squashfs_get_fragment(inode->i_sb,
-		squashfs_i(inode)->fragment_block,
-		squashfs_i(inode)->fragment_size);
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
+	struct squashfs_cache_entry *buffer = squashfs_get_fragment(inode_sb(inode),
+								    squashfs_i(inode)->fragment_block,
+								    squashfs_i(inode)->fragment_size);
 	int res = buffer->error;
 
 	if (res)
@@ -441,7 +443,7 @@ static int squashfs_readpage_fragment(struct page *page)
 static int squashfs_readpage_sparse(struct page *page, int index, int file_end)
 {
 	struct inode *inode = page->mapping->host;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	int bytes = index == file_end ?
 			(i_size_read(inode) & (msblk->block_size - 1)) :
 			 msblk->block_size;
@@ -453,7 +455,7 @@ static int squashfs_readpage_sparse(struct page *page, int index, int file_end)
 static int squashfs_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = inode_sb(inode)->s_fs_info;
 	int index = page->index >> (msblk->block_log - PAGE_SHIFT);
 	int file_end = i_size_read(inode) >> msblk->block_log;
 	int res;
