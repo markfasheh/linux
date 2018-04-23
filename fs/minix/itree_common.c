@@ -33,7 +33,7 @@ static inline Indirect *get_branch(struct inode *inode,
 					Indirect chain[DEPTH],
 					int *err)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	Indirect *p = chain;
 	struct buffer_head *bh;
 
@@ -84,7 +84,7 @@ static int alloc_branch(struct inode *inode,
 		if (!nr)
 			break;
 		branch[n].key = cpu_to_block(nr);
-		bh = sb_getblk(inode->i_sb, parent);
+		bh = sb_getblk(inode_sb(inode), parent);
 		lock_buffer(bh);
 		memset(bh->b_data, 0, bh->b_size);
 		branch[n].bh = bh;
@@ -162,7 +162,7 @@ reread:
 	/* Simplest case - block found, no allocation needed */
 	if (!partial) {
 got_it:
-		map_bh(bh, inode->i_sb, block_to_cpu(chain[depth-1].key));
+		map_bh(bh, inode_sb(inode), block_to_cpu(chain[depth-1].key));
 		/* Clean up and exit */
 		partial = chain+depth-1; /* the whole chain */
 		goto cleanup;
@@ -278,7 +278,7 @@ static void free_branches(struct inode *inode, block_t *p, block_t *q, int depth
 			if (!nr)
 				continue;
 			*p = 0;
-			bh = sb_bread(inode->i_sb, nr);
+			bh = sb_bread(inode_sb(inode), nr);
 			if (!bh)
 				continue;
 			free_branches(inode, (block_t*)bh->b_data,
@@ -293,7 +293,7 @@ static void free_branches(struct inode *inode, block_t *p, block_t *q, int depth
 
 static inline void truncate (struct inode * inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	block_t *idata = i_data(inode);
 	int offsets[DEPTH];
 	Indirect chain[DEPTH];

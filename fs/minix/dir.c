@@ -81,7 +81,7 @@ static inline void *minix_next_entry(void *de, struct minix_sb_info *sbi)
 static int minix_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct minix_sb_info *sbi = minix_sb(sb);
 	unsigned chunk_size = sbi->s_dirsize;
 	unsigned long npages = dir_pages(inode);
@@ -153,7 +153,7 @@ minix_dirent *minix_find_entry(struct dentry *dentry, struct page **res_page)
 	const char * name = dentry->d_name.name;
 	int namelen = dentry->d_name.len;
 	struct inode * dir = d_inode(dentry->d_parent);
-	struct super_block * sb = dir->i_sb;
+	struct super_block * sb = inode_sb(dir);
 	struct minix_sb_info * sbi = minix_sb(sb);
 	unsigned long n;
 	unsigned long npages = dir_pages(dir);
@@ -202,7 +202,7 @@ int minix_add_link(struct dentry *dentry, struct inode *inode)
 	struct inode *dir = d_inode(dentry->d_parent);
 	const char * name = dentry->d_name.name;
 	int namelen = dentry->d_name.len;
-	struct super_block * sb = dir->i_sb;
+	struct super_block * sb = inode_sb(dir);
 	struct minix_sb_info * sbi = minix_sb(sb);
 	struct page *page = NULL;
 	unsigned long npages = dir_pages(dir);
@@ -291,7 +291,7 @@ int minix_delete_entry(struct minix_dir_entry *de, struct page *page)
 	struct inode *inode = page->mapping->host;
 	char *kaddr = page_address(page);
 	loff_t pos = page_offset(page) + (char*)de - kaddr;
-	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
 	unsigned len = sbi->s_dirsize;
 	int err;
 
@@ -315,7 +315,7 @@ int minix_delete_entry(struct minix_dir_entry *de, struct page *page)
 int minix_make_empty(struct inode *inode, struct inode *dir)
 {
 	struct page *page = grab_cache_page(inode->i_mapping, 0);
-	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
 	char *kaddr;
 	int err;
 
@@ -362,7 +362,7 @@ int minix_empty_dir(struct inode * inode)
 {
 	struct page *page = NULL;
 	unsigned long i, npages = dir_pages(inode);
-	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
 	char *name;
 	__u32 inumber;
 
@@ -413,7 +413,7 @@ void minix_set_link(struct minix_dir_entry *de, struct page *page,
 	struct inode *inode)
 {
 	struct inode *dir = page->mapping->host;
-	struct minix_sb_info *sbi = minix_sb(dir->i_sb);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(dir));
 	loff_t pos = page_offset(page) +
 			(char *)de-(char*)page_address(page);
 	int err;
@@ -438,7 +438,7 @@ void minix_set_link(struct minix_dir_entry *de, struct page *page,
 struct minix_dir_entry * minix_dotdot (struct inode *dir, struct page **p)
 {
 	struct page *page = dir_get_page(dir, 0);
-	struct minix_sb_info *sbi = minix_sb(dir->i_sb);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(dir));
 	struct minix_dir_entry *de = NULL;
 
 	if (!IS_ERR(page)) {
@@ -457,7 +457,7 @@ ino_t minix_inode_by_name(struct dentry *dentry)
 	if (de) {
 		struct address_space *mapping = page->mapping;
 		struct inode *inode = mapping->host;
-		struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+		struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
 
 		if (sbi->s_version == MINIX_V3)
 			res = ((minix3_dirent *) de)->inode;

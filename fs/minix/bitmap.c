@@ -41,7 +41,7 @@ static __u32 count_free(struct buffer_head *map[], unsigned blocksize, __u32 num
 
 void minix_free_block(struct inode *inode, unsigned long block)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct minix_sb_info *sbi = minix_sb(sb);
 	struct buffer_head *bh;
 	int k = sb->s_blocksize_bits + 3;
@@ -70,8 +70,8 @@ void minix_free_block(struct inode *inode, unsigned long block)
 
 int minix_new_block(struct inode * inode)
 {
-	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
-	int bits_per_zone = 8 * inode->i_sb->s_blocksize;
+	struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
+	int bits_per_zone = 8 * inode_sb(inode)->s_blocksize;
 	int i;
 
 	for (i = 0; i < sbi->s_zmap_blocks; i++) {
@@ -161,14 +161,16 @@ static void minix_clear_inode(struct inode *inode)
 
 	if (INODE_VERSION(inode) == MINIX_V1) {
 		struct minix_inode *raw_inode;
-		raw_inode = minix_V1_raw_inode(inode->i_sb, inode->i_ino, &bh);
+		raw_inode = minix_V1_raw_inode(inode_sb(inode), inode->i_ino,
+					       &bh);
 		if (raw_inode) {
 			raw_inode->i_nlinks = 0;
 			raw_inode->i_mode = 0;
 		}
 	} else {
 		struct minix2_inode *raw_inode;
-		raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
+		raw_inode = minix_V2_raw_inode(inode_sb(inode), inode->i_ino,
+					       &bh);
 		if (raw_inode) {
 			raw_inode->i_nlinks = 0;
 			raw_inode->i_mode = 0;
@@ -182,8 +184,8 @@ static void minix_clear_inode(struct inode *inode)
 
 void minix_free_inode(struct inode * inode)
 {
-	struct super_block *sb = inode->i_sb;
-	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+	struct super_block *sb = inode_sb(inode);
+	struct minix_sb_info *sbi = minix_sb(inode_sb(inode));
 	struct buffer_head *bh;
 	int k = sb->s_blocksize_bits + 3;
 	unsigned long ino, bit;
@@ -212,7 +214,7 @@ void minix_free_inode(struct inode * inode)
 
 struct inode *minix_new_inode(const struct inode *dir, umode_t mode, int *error)
 {
-	struct super_block *sb = dir->i_sb;
+	struct super_block *sb = inode_sb(dir);
 	struct minix_sb_info *sbi = minix_sb(sb);
 	struct inode *inode = new_inode(sb);
 	struct buffer_head * bh;

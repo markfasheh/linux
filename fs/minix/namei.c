@@ -24,12 +24,12 @@ static struct dentry *minix_lookup(struct inode * dir, struct dentry *dentry, un
 	struct inode * inode = NULL;
 	ino_t ino;
 
-	if (dentry->d_name.len > minix_sb(dir->i_sb)->s_namelen)
+	if (dentry->d_name.len > minix_sb(inode_sb(dir))->s_namelen)
 		return ERR_PTR(-ENAMETOOLONG);
 
 	ino = minix_inode_by_name(dentry);
 	if (ino) {
-		inode = minix_iget(dir->i_sb, ino);
+		inode = minix_iget(inode_sb(dir), ino);
 		if (IS_ERR(inode))
 			return ERR_CAST(inode);
 	}
@@ -80,7 +80,7 @@ static int minix_symlink(struct inode * dir, struct dentry *dentry,
 	int i = strlen(symname)+1;
 	struct inode * inode;
 
-	if (i > dir->i_sb->s_blocksize)
+	if (i > inode_sb(dir)->s_blocksize)
 		goto out;
 
 	inode = minix_new_inode(dir, S_IFLNK | 0777, &err);

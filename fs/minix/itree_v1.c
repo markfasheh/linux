@@ -28,12 +28,12 @@ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
 
 	if (block < 0) {
 		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %pg\n",
-			block, inode->i_sb->s_bdev);
-	} else if (block >= (minix_sb(inode->i_sb)->s_max_size/BLOCK_SIZE)) {
+			block, inode_sb(inode)->s_bdev);
+	} else if (block >= (minix_sb(inode_sb(inode))->s_max_size/BLOCK_SIZE)) {
 		if (printk_ratelimit())
 			printk("MINIX-fs: block_to_path: "
 			       "block %ld too big on dev %pg\n",
-				block, inode->i_sb->s_bdev);
+				block, inode_sb(inode)->s_bdev);
 	} else if (block < 7) {
 		offsets[n++] = block;
 	} else if ((block -= 7) < 512) {

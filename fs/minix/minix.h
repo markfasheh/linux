@@ -6,7 +6,7 @@
 #include <linux/pagemap.h>
 #include <linux/minix_fs.h>
 
-#define INODE_VERSION(inode)	minix_sb(inode->i_sb)->s_version
+#define INODE_VERSION(inode)	minix_sb(inode_sb(inode))->s_version
 #define MINIX_V1		0x0001		/* original minix fs */
 #define MINIX_V2		0x0002		/* minix V2 fs */
 #define MINIX_V3		0x0003		/* minix V3 fs */
