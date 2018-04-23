@@ -638,7 +638,7 @@ static void qsync_work_fn(struct work_struct *work)
 	struct ocfs2_mem_dqinfo *oinfo = container_of(work,
 						      struct ocfs2_mem_dqinfo,
 						      dqi_sync_work.work);
-	struct super_block *sb = oinfo->dqi_gqinode->i_sb;
+	struct super_block *sb = inode_sb(oinfo->dqi_gqinode);
 
 	/*
 	 * We have to be careful here not to deadlock on s_umount as umount

@@ -113,7 +113,7 @@ static int ocfs2_do_funlock(struct file *file, int cmd, struct file_lock *fl)
 int ocfs2_flock(struct file *file, int cmd, struct file_lock *fl)
 {
 	struct inode *inode = file->f_mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (!(fl->fl_flags & FL_FLOCK))
 		return -ENOLCK;
@@ -133,7 +133,7 @@ int ocfs2_flock(struct file *file, int cmd, struct file_lock *fl)
 int ocfs2_lock(struct file *file, int cmd, struct file_lock *fl)
 {
 	struct inode *inode = file->f_mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (!(fl->fl_flags & FL_POSIX))
 		return -ENOLCK;

@@ -485,7 +485,7 @@ static inline int ocfs2_should_order_data(struct inode *inode)
 {
 	if (!S_ISREG(inode->i_mode))
 		return 0;
-	if (OCFS2_SB(inode->i_sb)->s_mount_opt & OCFS2_MOUNT_DATA_WRITEBACK)
+	if (OCFS2_SB(inode_sb(inode))->s_mount_opt & OCFS2_MOUNT_DATA_WRITEBACK)
 		return 0;
 	return 1;
 }

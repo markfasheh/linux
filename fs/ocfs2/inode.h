@@ -158,7 +158,7 @@ void ocfs2_get_inode_flags(struct ocfs2_inode_info *oi);
 
 static inline blkcnt_t ocfs2_inode_sector_count(struct inode *inode)
 {
-	int c_to_s_bits = OCFS2_SB(inode->i_sb)->s_clustersize_bits - 9;
+	int c_to_s_bits = OCFS2_SB(inode_sb(inode))->s_clustersize_bits - 9;
 
 	return (blkcnt_t)OCFS2_I(inode)->ip_clusters << c_to_s_bits;
 }

@@ -205,7 +205,7 @@ static inline void ocfs2_start_checkpoint(struct ocfs2_super *osb)
 
 static inline void ocfs2_checkpoint_inode(struct inode *inode)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	if (ocfs2_mount_local(osb))
 		return;
@@ -626,7 +626,7 @@ static inline int ocfs2_begin_ordered_truncate(struct inode *inode,
 					       loff_t new_size)
 {
 	return jbd2_journal_begin_ordered_truncate(
-				OCFS2_SB(inode->i_sb)->journal->j_journal,
+				OCFS2_SB(inode_sb(inode))->journal->j_journal,
 				&OCFS2_I(inode)->ip_jinode,
 				new_size);
 }

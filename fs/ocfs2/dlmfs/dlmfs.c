@@ -412,7 +412,7 @@ static struct inode *dlmfs_get_inode(struct inode *parent,
 				     struct dentry *dentry,
 				     umode_t mode)
 {
-	struct super_block *sb = parent->i_sb;
+	struct super_block *sb = inode_sb(parent);
 	struct inode * inode = new_inode(sb);
 	struct dlmfs_inode_private *ip;
 

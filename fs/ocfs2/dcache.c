@@ -445,7 +445,7 @@ void ocfs2_dentry_move(struct dentry *dentry, struct dentry *target,
 		       struct inode *old_dir, struct inode *new_dir)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(old_dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(old_dir));
 	struct inode *inode = d_inode(dentry);
 
 	/*

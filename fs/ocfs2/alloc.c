@@ -232,7 +232,7 @@ static int ocfs2_dinode_insert_check(struct ocfs2_extent_tree *et,
 				     struct ocfs2_extent_rec *rec)
 {
 	struct ocfs2_inode_info *oi = cache_info_to_inode(et->et_ci);
-	struct ocfs2_super *osb = OCFS2_SB(oi->vfs_inode.i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(&oi->vfs_inode));
 
 	BUG_ON(oi->ip_dyn_features & OCFS2_INLINE_DATA_FL);
 	mlog_bug_on_msg(!ocfs2_sparse_alloc(osb) &&
@@ -5275,8 +5275,9 @@ int ocfs2_mark_extent_written(struct inode *inode,
 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
 		cpos, len, phys);
 
-	if (!ocfs2_writes_unwritten_extents(OCFS2_SB(inode->i_sb))) {
-		ocfs2_error(inode->i_sb, "Inode %llu has unwritten extents that are being written to, but the feature bit is not set in the super block\n",
+	if (!ocfs2_writes_unwritten_extents(OCFS2_SB(inode_sb(inode)))) {
+		ocfs2_error(inode_sb(inode),
+			    "Inode %llu has unwritten extents that are being written to, but the feature bit is not set in the super block\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno);
 		ret = -EROFS;
 		goto out;
@@ -5687,7 +5688,7 @@ static int ocfs2_reserve_blocks_for_rec_trunc(struct inode *inode,
 {
 	int ret = 0, num_free_extents;
 	unsigned int max_recs_needed = 2 * extents_to_split;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	*ac = NULL;
 
@@ -5729,8 +5730,8 @@ int ocfs2_remove_btree_range(struct inode *inode,
 			     u64 refcount_loc, bool refcount_tree_locked)
 {
 	int ret, credits = 0, extra_blocks = 0;
-	u64 phys_blkno = ocfs2_clusters_to_blocks(inode->i_sb, phys_cpos);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	u64 phys_blkno = ocfs2_clusters_to_blocks(inode_sb(inode), phys_cpos);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct inode *tl_inode = osb->osb_tl_inode;
 	handle_t *handle;
 	struct ocfs2_alloc_context *meta_ac = NULL;
@@ -5793,7 +5794,7 @@ int ocfs2_remove_btree_range(struct inode *inode,
 	}
 
 	dquot_free_space_nodirty(inode,
-				  ocfs2_clusters_to_bytes(inode->i_sb, len));
+				  ocfs2_clusters_to_bytes(inode_sb(inode), len));
 
 	ret = ocfs2_remove_extent(handle, et, cpos, len, meta_ac, dealloc);
 	if (ret) {
@@ -5984,8 +5985,8 @@ static int ocfs2_replay_truncate_records(struct ocfs2_super *osb,
 		ocfs2_journal_dirty(handle, tl_bh);
 
 		rec = tl->tl_recs[i];
-		start_blk = ocfs2_clusters_to_blocks(data_alloc_inode->i_sb,
-						    le32_to_cpu(rec.t_start));
+		start_blk = ocfs2_clusters_to_blocks(inode_sb(data_alloc_inode),
+						     le32_to_cpu(rec.t_start));
 		num_clusters = le32_to_cpu(rec.t_clusters);
 
 		/* if start_blk is not set, we ignore the record as
@@ -6861,7 +6862,7 @@ static void ocfs2_zero_cluster_pages(struct inode *inode, loff_t start,
 	int i;
 	struct page *page;
 	unsigned int from, to = PAGE_SIZE;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	BUG_ON(!ocfs2_sparse_alloc(OCFS2_SB(sb)));
 
@@ -6929,7 +6930,7 @@ out:
 static int ocfs2_grab_eof_pages(struct inode *inode, loff_t start, loff_t end,
 				struct page **pages, int *num)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	BUG_ON(start >> OCFS2_SB(sb)->s_clustersize_bits !=
 	       (end - 1) >> OCFS2_SB(sb)->s_clustersize_bits);
@@ -6953,7 +6954,7 @@ int ocfs2_zero_range_for_truncate(struct inode *inode, handle_t *handle,
 	struct page **pages = NULL;
 	u64 phys;
 	unsigned int ext_flags;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 
 	/*
 	 * File systems which don't support sparse files zero on every
@@ -7017,7 +7018,7 @@ out:
 static void ocfs2_zero_dinode_id2_with_xattr(struct inode *inode,
 					     struct ocfs2_dinode *di)
 {
-	unsigned int blocksize = 1 << inode->i_sb->s_blocksize_bits;
+	unsigned int blocksize = 1 << inode_sb(inode)->s_blocksize_bits;
 	unsigned int xattrsize = le16_to_cpu(di->i_xattr_inline_size);
 
 	if (le16_to_cpu(di->i_dyn_features) & OCFS2_INLINE_XATTR_FL)
@@ -7036,7 +7037,7 @@ void ocfs2_dinode_new_extent_list(struct inode *inode,
 	di->id2.i_list.l_tree_depth = 0;
 	di->id2.i_list.l_next_free_rec = 0;
 	di->id2.i_list.l_count = cpu_to_le16(
-		ocfs2_extent_recs_per_inode_with_xattr(inode->i_sb, di));
+		ocfs2_extent_recs_per_inode_with_xattr(inode_sb(inode), di));
 }
 
 void ocfs2_set_inode_data_inline(struct inode *inode, struct ocfs2_dinode *di)
@@ -7056,7 +7057,7 @@ void ocfs2_set_inode_data_inline(struct inode *inode, struct ocfs2_dinode *di)
 	ocfs2_zero_dinode_id2_with_xattr(inode, di);
 
 	idata->id_count = cpu_to_le16(
-			ocfs2_max_inline_data_with_xattr(inode->i_sb, di));
+			ocfs2_max_inline_data_with_xattr(inode_sb(inode), di));
 }
 
 int ocfs2_convert_inline_data_to_extents(struct inode *inode,
@@ -7068,7 +7069,7 @@ int ocfs2_convert_inline_data_to_extents(struct inode *inode,
 	handle_t *handle;
 	u64 uninitialized_var(block);
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *)di_bh->b_data;
 	struct ocfs2_alloc_context *data_ac = NULL;
 	struct page **pages = NULL;
@@ -7132,7 +7133,8 @@ int ocfs2_convert_inline_data_to_extents(struct inode *inode,
 		 * Save two copies, one for insert, and one that can
 		 * be changed by ocfs2_map_and_dirty_page() below.
 		 */
-		block = phys = ocfs2_clusters_to_blocks(inode->i_sb, bit_off);
+		block = phys = ocfs2_clusters_to_blocks(inode_sb(inode),
+							bit_off);
 
 		/*
 		 * Non sparse file systems zero on extend, so no need
@@ -7303,7 +7305,7 @@ start:
 	 */
 	el = path_leaf_el(path);
 	if (le16_to_cpu(el->l_next_free_rec) == 0) {
-		ocfs2_error(inode->i_sb,
+		ocfs2_error(inode_sb(inode),
 			    "Inode %llu has empty extent block at %llu\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno,
 			    (unsigned long long)path_leaf_bh(path)->b_blocknr);
@@ -7355,7 +7357,8 @@ start:
 		trunc_len = range - new_highest_cpos;
 		coff = new_highest_cpos - le32_to_cpu(rec->e_cpos);
 		blkno = le64_to_cpu(rec->e_blkno) +
-				ocfs2_clusters_to_blocks(inode->i_sb, coff);
+				ocfs2_clusters_to_blocks(inode_sb(inode),
+							 coff);
 	} else {
 		/*
 		 * Truncate completed, leave happily.
@@ -7364,7 +7367,7 @@ start:
 		goto bail;
 	}
 
-	phys_cpos = ocfs2_blocks_to_clusters(inode->i_sb, blkno);
+	phys_cpos = ocfs2_blocks_to_clusters(inode_sb(inode), blkno);
 
 	if ((flags & OCFS2_EXT_REFCOUNTED) && trunc_len && !ref_tree) {
 		status = ocfs2_lock_refcount_tree(osb, refcount_loc, 1,
@@ -7413,7 +7416,7 @@ int ocfs2_truncate_inline(struct inode *inode, struct buffer_head *di_bh,
 	int ret;
 	unsigned int numbytes;
 	handle_t *handle;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *)di_bh->b_data;
 	struct ocfs2_inline_data *idata = &di->id2.i_data;
 
@@ -7425,7 +7428,7 @@ int ocfs2_truncate_inline(struct inode *inode, struct buffer_head *di_bh,
 	if (!(OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL) ||
 	    !(le16_to_cpu(di->i_dyn_features) & OCFS2_INLINE_DATA_FL) ||
 	    !ocfs2_supports_inline_data(osb)) {
-		ocfs2_error(inode->i_sb,
+		ocfs2_error(inode_sb(inode),
 			    "Inline data flags for inode %llu don't agree! Disk: 0x%x, Memory: 0x%x, Superblock: 0x%x\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno,
 			    le16_to_cpu(di->i_dyn_features),

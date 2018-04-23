@@ -363,7 +363,7 @@ static int ocfs2_map_slot_buffers(struct ocfs2_super *osb,
 	if (status)
 		goto bail;
 
-	blocks = ocfs2_blocks_for_bytes(si->si_inode->i_sb, bytes);
+	blocks = ocfs2_blocks_for_bytes(inode_sb(si->si_inode), bytes);
 	BUG_ON(blocks > UINT_MAX);
 	si->si_blocks = blocks;
 	if (!si->si_blocks)

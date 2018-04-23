@@ -61,7 +61,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
 	struct ocfs2_dinode *fe = NULL;
 	struct buffer_head *bh = NULL;
 	struct buffer_head *buffer_cache_bh = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	void *kaddr;
 
 	trace_ocfs2_symlink_get_block(
@@ -70,7 +70,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
 
 	BUG_ON(ocfs2_inode_is_fast_symlink(inode));
 
-	if ((iblock << inode->i_sb->s_blocksize_bits) > PATH_MAX + 1) {
+	if ((iblock << inode_sb(inode)->s_blocksize_bits) > PATH_MAX + 1) {
 		mlog(ML_ERROR, "block offset > PATH_MAX: %llu",
 		     (unsigned long long)iblock);
 		goto bail;
@@ -83,7 +83,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
 	}
 	fe = (struct ocfs2_dinode *) bh->b_data;
 
-	if ((u64)iblock >= ocfs2_clusters_to_blocks(inode->i_sb,
+	if ((u64)iblock >= ocfs2_clusters_to_blocks(inode_sb(inode),
 						    le32_to_cpu(fe->i_clusters))) {
 		err = -ENOMEM;
 		mlog(ML_ERROR, "block offset is outside the allocated size: "
@@ -123,7 +123,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
 		brelse(buffer_cache_bh);
 	}
 
-	map_bh(bh_result, inode->i_sb,
+	map_bh(bh_result, inode_sb(inode),
 	       le64_to_cpu(fe->id2.i_list.l_recs[0].e_blkno) + iblock);
 
 	err = 0;
@@ -154,7 +154,7 @@ int ocfs2_get_block(struct inode *inode, sector_t iblock,
 	unsigned int ext_flags;
 	u64 max_blocks = bh_result->b_size >> inode->i_blkbits;
 	u64 p_blkno, count, past_eof;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 
 	trace_ocfs2_get_block((unsigned long long)OCFS2_I(inode)->ip_blkno,
 			      (unsigned long long)iblock, bh_result, create);
@@ -200,7 +200,7 @@ int ocfs2_get_block(struct inode *inode, sector_t iblock,
 
 	/* Treat the unwritten extent as a hole for zeroing purposes. */
 	if (p_blkno && !(ext_flags & OCFS2_EXT_UNWRITTEN))
-		map_bh(bh_result, inode->i_sb, p_blkno);
+		map_bh(bh_result, inode_sb(inode), p_blkno);
 
 	bh_result->b_size = count << inode->i_blkbits;
 
@@ -218,7 +218,7 @@ int ocfs2_get_block(struct inode *inode, sector_t iblock,
 		}
 	}
 
-	past_eof = ocfs2_blocks_for_bytes(inode->i_sb, i_size_read(inode));
+	past_eof = ocfs2_blocks_for_bytes(inode_sb(inode), i_size_read(inode));
 
 	trace_ocfs2_get_block_end((unsigned long long)OCFS2_I(inode)->ip_blkno,
 				  (unsigned long long)past_eof);
@@ -240,7 +240,8 @@ int ocfs2_read_inline_data(struct inode *inode, struct page *page,
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *)di_bh->b_data;
 
 	if (!(le16_to_cpu(di->i_dyn_features) & OCFS2_INLINE_DATA_FL)) {
-		ocfs2_error(inode->i_sb, "Inode %llu lost inline data flag\n",
+		ocfs2_error(inode_sb(inode),
+			    "Inode %llu lost inline data flag\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno);
 		return -EROFS;
 	}
@@ -248,8 +249,8 @@ int ocfs2_read_inline_data(struct inode *inode, struct page *page,
 	size = i_size_read(inode);
 
 	if (size > PAGE_SIZE ||
-	    size > ocfs2_max_inline_data_with_xattr(inode->i_sb, di)) {
-		ocfs2_error(inode->i_sb,
+	    size > ocfs2_max_inline_data_with_xattr(inode_sb(inode), di)) {
+		ocfs2_error(inode_sb(inode),
 			    "Inode %llu has with inline data has bad size: %Lu\n",
 			    (unsigned long long)OCFS2_I(inode)->ip_blkno,
 			    (unsigned long long)size);
@@ -598,7 +599,7 @@ static int ocfs2_should_read_blk(struct inode *inode, struct page *page,
 {
 	u64 offset = page_offset(page) + block_start;
 
-	if (ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)))
+	if (ocfs2_sparse_alloc(OCFS2_SB(inode_sb(inode))))
 		return 1;
 
 	if (i_size_read(inode) > offset)
@@ -651,7 +652,7 @@ int ocfs2_map_page_blocks(struct page *page, u64 *p_blkno,
 			set_buffer_new(bh);
 
 		if (!buffer_mapped(bh)) {
-			map_bh(bh, inode->i_sb, *p_blkno);
+			map_bh(bh, inode_sb(inode), *p_blkno);
 			clean_bdev_bh_alias(bh);
 		}
 
@@ -973,7 +974,7 @@ static int ocfs2_prepare_page_for_write(struct inode *inode, u64 *p_blkno,
 	unsigned int cluster_start, cluster_end;
 	unsigned int user_data_from = 0, user_data_to = 0;
 
-	ocfs2_figure_cluster_boundaries(OCFS2_SB(inode->i_sb), cpos,
+	ocfs2_figure_cluster_boundaries(OCFS2_SB(inode_sb(inode)), cpos,
 					&cluster_start, &cluster_end);
 
 	/* treat the write as new if the a hole/lseek spanned across
@@ -1034,7 +1035,7 @@ static int ocfs2_prepare_page_for_write(struct inode *inode, u64 *p_blkno,
 	 * been zero'd from being read in as a hole.
 	 */
 	if (new && !PageUptodate(page))
-		ocfs2_clear_page_regions(page, OCFS2_SB(inode->i_sb),
+		ocfs2_clear_page_regions(page, OCFS2_SB(inode_sb(inode)),
 					 cpos, user_data_from, user_data_to);
 
 	flush_dcache_page(page);
@@ -1067,8 +1068,9 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
 	 * last page of the write.
 	 */
 	if (new) {
-		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
-		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
+		wc->w_num_pages = ocfs2_pages_per_cluster(inode_sb(inode));
+		start = ocfs2_align_clusters_to_page_index(inode_sb(inode),
+							   cpos);
 		/*
 		 * We need the index *past* the last page we could possibly
 		 * touch.  This is the page past the end of the write or
@@ -1149,7 +1151,7 @@ static int ocfs2_write_cluster(struct address_space *mapping,
 	u64 p_blkno;
 	struct inode *inode = mapping->host;
 	struct ocfs2_extent_tree et;
-	int bpc = ocfs2_clusters_to_blocks(inode->i_sb, 1);
+	int bpc = ocfs2_clusters_to_blocks(inode_sb(inode), 1);
 
 	if (new) {
 		u32 tmp_pos;
@@ -1159,7 +1161,7 @@ static int ocfs2_write_cluster(struct address_space *mapping,
 		 * any additional semaphores or cluster locks.
 		 */
 		tmp_pos = cpos;
-		ret = ocfs2_add_inode_data(OCFS2_SB(inode->i_sb), inode,
+		ret = ocfs2_add_inode_data(OCFS2_SB(inode_sb(inode)), inode,
 					   &tmp_pos, 1, !clear_unwritten,
 					   wc->w_di_bh, wc->w_handle,
 					   data_ac, meta_ac, NULL);
@@ -1205,9 +1207,9 @@ static int ocfs2_write_cluster(struct address_space *mapping,
 
 	BUG_ON(*phys == 0);
 
-	p_blkno = ocfs2_clusters_to_blocks(inode->i_sb, *phys);
+	p_blkno = ocfs2_clusters_to_blocks(inode_sb(inode), *phys);
 	if (!should_zero)
-		p_blkno += (user_pos >> inode->i_sb->s_blocksize_bits) & (u64)(bpc - 1);
+		p_blkno += (user_pos >> inode_sb(inode)->s_blocksize_bits) & (u64)(bpc - 1);
 
 	for(i = 0; i < wc->w_num_pages; i++) {
 		int tmpret;
@@ -1250,7 +1252,7 @@ static int ocfs2_write_cluster_by_desc(struct address_space *mapping,
 	loff_t cluster_off;
 	unsigned int local_len = len;
 	struct ocfs2_write_cluster_desc *desc;
-	struct ocfs2_super *osb = OCFS2_SB(mapping->host->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(mapping->host));
 
 	for (i = 0; i < wc->w_clen; i++) {
 		desc = &wc->w_desc[i];
@@ -1500,7 +1502,7 @@ static int ocfs2_write_begin_inline(struct address_space *mapping,
 				    struct ocfs2_write_ctxt *wc)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct page *page;
 	handle_t *handle;
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *)wc->w_di_bh->b_data;
@@ -1604,7 +1606,7 @@ static int ocfs2_try_to_write_inline_data(struct address_space *mapping,
 	 */
 	di = (struct ocfs2_dinode *)wc->w_di_bh->b_data;
 	if (mmap_page ||
-	    end > ocfs2_max_inline_data_with_xattr(inode->i_sb, di))
+	    end > ocfs2_max_inline_data_with_xattr(inode_sb(inode), di))
 		return 0;
 
 do_inline_write:
@@ -1640,7 +1642,7 @@ static int ocfs2_expand_nonsparse_inode(struct inode *inode,
 	int ret;
 	loff_t newsize = pos + len;
 
-	BUG_ON(ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)));
+	BUG_ON(ocfs2_sparse_alloc(OCFS2_SB(inode_sb(inode))));
 
 	if (newsize <= i_size_read(inode))
 		return 0;
@@ -1652,7 +1654,8 @@ static int ocfs2_expand_nonsparse_inode(struct inode *inode,
 	/* There is no wc if this is call from direct. */
 	if (wc)
 		wc->w_first_new_cpos =
-			ocfs2_clusters_for_bytes(inode->i_sb, i_size_read(inode));
+			ocfs2_clusters_for_bytes(inode_sb(inode),
+						 i_size_read(inode));
 
 	return ret;
 }
@@ -1662,7 +1665,7 @@ static int ocfs2_zero_tail(struct inode *inode, struct buffer_head *di_bh,
 {
 	int ret = 0;
 
-	BUG_ON(!ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)));
+	BUG_ON(!ocfs2_sparse_alloc(OCFS2_SB(inode_sb(inode))));
 	if (pos > i_size_read(inode))
 		ret = ocfs2_zero_extend(inode, di_bh, pos);
 
@@ -1678,7 +1681,7 @@ int ocfs2_write_begin_nolock(struct address_space *mapping,
 	unsigned int clusters_to_alloc, extents_to_split, clusters_need = 0;
 	struct ocfs2_write_ctxt *wc;
 	struct inode *inode = mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_dinode *di;
 	struct ocfs2_alloc_context *data_ac = NULL;
 	struct ocfs2_alloc_context *meta_ac = NULL;
@@ -1775,7 +1778,7 @@ try_again:
 		if (data_ac)
 			data_ac->ac_resv = &OCFS2_I(inode)->ip_la_data_resv;
 
-		credits = ocfs2_calc_extend_credits(inode->i_sb,
+		credits = ocfs2_calc_extend_credits(inode_sb(inode),
 						    &di->id2.i_list);
 	} else if (type == OCFS2_WRITE_DIRECT)
 		/* direct write needs not to start trans if no extents alloc. */
@@ -1979,7 +1982,7 @@ int ocfs2_write_end_nolock(struct address_space *mapping,
 	int i, ret;
 	unsigned from, to, start = pos & (PAGE_SIZE - 1);
 	struct inode *inode = mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_write_ctxt *wc = fsdata;
 	struct ocfs2_dinode *di = (struct ocfs2_dinode *)wc->w_di_bh->b_data;
 	handle_t *handle = wc->w_handle;
@@ -2146,14 +2149,14 @@ static void ocfs2_dio_free_write_ctx(struct inode *inode,
 static int ocfs2_dio_wr_get_block(struct inode *inode, sector_t iblock,
 			       struct buffer_head *bh_result, int create)
 {
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
 	struct ocfs2_write_ctxt *wc;
 	struct ocfs2_write_cluster_desc *desc = NULL;
 	struct ocfs2_dio_write_ctxt *dwc = NULL;
 	struct buffer_head *di_bh = NULL;
 	u64 p_blkno;
-	loff_t pos = iblock << inode->i_sb->s_blocksize_bits;
+	loff_t pos = iblock << inode_sb(inode)->s_blocksize_bits;
 	unsigned len, total_len = bh_result->b_size;
 	int ret = 0, first_get_block = 0;
 
@@ -2188,8 +2191,8 @@ static int ocfs2_dio_wr_get_block(struct inode *inode, sector_t iblock,
 		goto out;
 	}
 
-	if (ocfs2_clusters_for_bytes(inode->i_sb, pos + total_len) >
-	    ocfs2_clusters_for_bytes(inode->i_sb, i_size_read(inode)) &&
+	if (ocfs2_clusters_for_bytes(inode_sb(inode), pos + total_len) >
+	    ocfs2_clusters_for_bytes(inode_sb(inode), i_size_read(inode)) &&
 	    !dwc->dw_orphaned) {
 		/*
 		 * when we are going to alloc extents beyond file size, add the
@@ -2213,7 +2216,7 @@ static int ocfs2_dio_wr_get_block(struct inode *inode, sector_t iblock,
 	down_write(&oi->ip_alloc_sem);
 
 	if (first_get_block) {
-		if (ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)))
+		if (ocfs2_sparse_alloc(OCFS2_SB(inode_sb(inode))))
 			ret = ocfs2_zero_tail(inode, di_bh, pos);
 		else
 			ret = ocfs2_expand_nonsparse_inode(inode, di_bh, pos,
@@ -2234,11 +2237,11 @@ static int ocfs2_dio_wr_get_block(struct inode *inode, sector_t iblock,
 
 	desc = &wc->w_desc[0];
 
-	p_blkno = ocfs2_clusters_to_blocks(inode->i_sb, desc->c_phys);
+	p_blkno = ocfs2_clusters_to_blocks(inode_sb(inode), desc->c_phys);
 	BUG_ON(p_blkno == 0);
-	p_blkno += iblock & (u64)(ocfs2_clusters_to_blocks(inode->i_sb, 1) - 1);
+	p_blkno += iblock & (u64)(ocfs2_clusters_to_blocks(inode_sb(inode), 1) - 1);
 
-	map_bh(bh_result, inode->i_sb, p_blkno);
+	map_bh(bh_result, inode_sb(inode), p_blkno);
 	bh_result->b_size = len;
 	if (desc->c_needs_zero)
 		set_buffer_new(bh_result);
@@ -2281,7 +2284,7 @@ static int ocfs2_dio_end_io_write(struct inode *inode,
 {
 	struct ocfs2_cached_dealloc_ctxt dealloc;
 	struct ocfs2_extent_tree et;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	struct ocfs2_inode_info *oi = OCFS2_I(inode);
 	struct ocfs2_unwritten_extent *ue = NULL;
 	struct buffer_head *di_bh = NULL;
@@ -2345,7 +2348,7 @@ static int ocfs2_dio_end_io_write(struct inode *inode,
 		goto unlock;
 	}
 
-	credits = ocfs2_calc_extend_credits(inode->i_sb, &di->id2.i_list);
+	credits = ocfs2_calc_extend_credits(inode_sb(inode), &di->id2.i_list);
 
 	handle = ocfs2_start_trans(osb, credits);
 	if (IS_ERR(handle)) {
@@ -2426,7 +2429,7 @@ static ssize_t ocfs2_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
 {
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file->f_mapping->host;
-	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(inode));
 	get_block_t *get_block;
 
 	/*
@@ -2446,7 +2449,7 @@ static ssize_t ocfs2_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
 	else
 		get_block = ocfs2_dio_wr_get_block;
 
-	return __blockdev_direct_IO(iocb, inode, inode->i_sb->s_bdev,
+	return __blockdev_direct_IO(iocb, inode, inode_sb(inode)->s_bdev,
 				    iter, get_block,
 				    ocfs2_dio_end_io, NULL, 0);
 }

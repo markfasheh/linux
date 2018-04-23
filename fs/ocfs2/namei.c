@@ -139,7 +139,7 @@ static struct dentry *ocfs2_lookup(struct inode *dir, struct dentry *dentry,
 	if (status < 0)
 		goto bail_add;
 
-	inode = ocfs2_iget(OCFS2_SB(dir->i_sb), blkno, 0, 0);
+	inode = ocfs2_iget(OCFS2_SB(inode_sb(dir)), blkno, 0, 0);
 	if (IS_ERR(inode)) {
 		ret = ERR_PTR(-EACCES);
 		goto bail_unlock;
@@ -201,7 +201,7 @@ static struct inode *ocfs2_get_init_inode(struct inode *dir, umode_t mode)
 	struct inode *inode;
 	int status;
 
-	inode = new_inode(dir->i_sb);
+	inode = new_inode(inode_sb(dir));
 	if (!inode) {
 		mlog(ML_ERROR, "new_inode failed!\n");
 		return ERR_PTR(-ENOMEM);
@@ -273,7 +273,7 @@ static int ocfs2_mknod(struct inode *dir,
 	}
 
 	/* get our super block */
-	osb = OCFS2_SB(dir->i_sb);
+	osb = OCFS2_SB(inode_sb(dir));
 
 	status = ocfs2_inode_lock(dir, &parent_fe_bh, 1);
 	if (status < 0) {
@@ -512,7 +512,7 @@ static int __ocfs2_mknod_locked(struct inode *dir,
 				u64 fe_blkno, u64 suballoc_loc, u16 suballoc_bit)
 {
 	int status = 0;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	struct ocfs2_dinode *fe = NULL;
 	struct ocfs2_extent_list *fel;
 	u16 feat;
@@ -696,7 +696,7 @@ static int ocfs2_link(struct dentry *old_dentry,
 	struct buffer_head *old_dir_bh = NULL;
 	struct buffer_head *parent_fe_bh = NULL;
 	struct ocfs2_dinode *fe = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	struct ocfs2_dir_lookup_result lookup = { NULL, };
 	sigset_t oldset;
 	u64 old_de_ino;
@@ -885,7 +885,7 @@ static int ocfs2_unlink(struct inode *dir,
 	bool is_unlinkable = false;
 	struct inode *inode = d_inode(dentry);
 	struct inode *orphan_dir = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	u64 blkno;
 	struct ocfs2_dinode *fe = NULL;
 	struct buffer_head *fe_bh = NULL;
@@ -1253,7 +1253,7 @@ static int ocfs2_rename(struct inode *old_dir,
 		goto bail;
 	}
 
-	osb = OCFS2_SB(old_dir->i_sb);
+	osb = OCFS2_SB(inode_sb(old_dir));
 
 	if (new_inode) {
 		if (!igrab(new_inode))
@@ -1829,7 +1829,7 @@ static int ocfs2_symlink(struct inode *dir,
 		goto bail;
 	}
 
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	osb = OCFS2_SB(sb);
 
 	l = strlen(symname) + 1;
@@ -2134,7 +2134,7 @@ static int __ocfs2_prepare_orphan_dir(struct inode *orphan_dir_inode,
 				      bool dio)
 {
 	int ret;
-	struct ocfs2_super *osb = OCFS2_SB(orphan_dir_inode->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(orphan_dir_inode));
 	int namelen = dio ?
 			(OCFS2_DIO_ORPHAN_PREFIX_LEN + OCFS2_ORPHAN_NAMELEN) :
 			OCFS2_ORPHAN_NAMELEN;
@@ -2434,7 +2434,7 @@ static int ocfs2_prep_new_orphaned_file(struct inode *dir,
 {
 	int ret;
 	u64 di_blkno;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	struct inode *orphan_dir = NULL;
 	struct buffer_head *orphan_dir_bh = NULL;
 	struct ocfs2_alloc_context *inode_ac = NULL;
@@ -2500,7 +2500,7 @@ int ocfs2_create_inode_in_orphan(struct inode *dir,
 	int status, did_quota_inode = 0;
 	struct inode *inode = NULL;
 	struct inode *orphan_dir = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	struct ocfs2_dinode *di = NULL;
 	handle_t *handle = NULL;
 	char orphan_name[OCFS2_ORPHAN_NAMELEN + 1];
@@ -2773,7 +2773,7 @@ int ocfs2_mv_orphaned_inode_to_new(struct inode *dir,
 	int status = 0;
 	struct buffer_head *parent_di_bh = NULL;
 	handle_t *handle = NULL;
-	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+	struct ocfs2_super *osb = OCFS2_SB(inode_sb(dir));
 	struct ocfs2_dinode *dir_di, *di;
 	struct inode *orphan_dir_inode = NULL;
 	struct buffer_head *orphan_dir_bh = NULL;
