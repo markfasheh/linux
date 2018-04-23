@@ -134,7 +134,7 @@ int hfs_ext_write_extent(struct inode *inode)
 	int res = 0;
 
 	if (HFS_I(inode)->flags & HFS_FLG_EXT_DIRTY) {
-		res = hfs_find_init(HFS_SB(inode->i_sb)->ext_tree, &fd);
+		res = hfs_find_init(HFS_SB(inode_sb(inode))->ext_tree, &fd);
 		if (res)
 			return res;
 		res = __hfs_ext_write_extent(inode, &fd);
@@ -193,7 +193,7 @@ static int hfs_ext_read_extent(struct inode *inode, u16 block)
 	    block < HFS_I(inode)->cached_start + HFS_I(inode)->cached_blocks)
 		return 0;
 
-	res = hfs_find_init(HFS_SB(inode->i_sb)->ext_tree, &fd);
+	res = hfs_find_init(HFS_SB(inode_sb(inode))->ext_tree, &fd);
 	if (!res) {
 		res = __hfs_ext_cache_extent(&fd, inode, block);
 		hfs_find_exit(&fd);
@@ -336,7 +336,7 @@ int hfs_get_block(struct inode *inode, sector_t block,
 	u16 dblock, ablock;
 	int res;
 
-	sb = inode->i_sb;
+	sb = inode_sb(inode);
 	/* Convert inode block to disk allocation block */
 	ablock = (u32)block / HFS_SB(sb)->fs_div;
 
@@ -384,7 +384,7 @@ done:
 
 int hfs_extend_file(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	u32 start, len, goal;
 	int res;
 
@@ -469,7 +469,7 @@ insert_extent:
 
 void hfs_file_truncate(struct inode *inode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct hfs_find_data fd;
 	u16 blk_cnt, alloc_cnt, start;
 	u32 size;

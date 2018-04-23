@@ -30,7 +30,7 @@ static int __hfs_setxattr(struct inode *inode, enum hfs_xattr_type type,
 	if (!S_ISREG(inode->i_mode) || HFS_IS_RSRC(inode))
 		return -EOPNOTSUPP;
 
-	res = hfs_find_init(HFS_SB(inode->i_sb)->cat_tree, &fd);
+	res = hfs_find_init(HFS_SB(inode_sb(inode))->cat_tree, &fd);
 	if (res)
 		return res;
 	fd.search_key->cat = HFS_I(inode)->cat_key;
@@ -77,7 +77,7 @@ static ssize_t __hfs_getxattr(struct inode *inode, enum hfs_xattr_type type,
 		return -EOPNOTSUPP;
 
 	if (size) {
-		res = hfs_find_init(HFS_SB(inode->i_sb)->cat_tree, &fd);
+		res = hfs_find_init(HFS_SB(inode_sb(inode))->cat_tree, &fd);
 		if (res)
 			return res;
 		fd.search_key->cat = HFS_I(inode)->cat_key;

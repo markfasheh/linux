@@ -56,8 +56,8 @@ static int hfs_cat_build_record(hfs_cat_rec *rec, u32 cnid, struct inode *inode)
 		rec->file.CrDat = mtime;
 		rec->file.MdDat = mtime;
 		rec->file.BkDat = 0;
-		rec->file.UsrWds.fdType = HFS_SB(inode->i_sb)->s_type;
-		rec->file.UsrWds.fdCreator = HFS_SB(inode->i_sb)->s_creator;
+		rec->file.UsrWds.fdType = HFS_SB(inode_sb(inode))->s_type;
+		rec->file.UsrWds.fdCreator = HFS_SB(inode_sb(inode))->s_creator;
 		return sizeof(struct hfs_cat_file);
 	}
 }
@@ -92,7 +92,7 @@ int hfs_cat_create(u32 cnid, struct inode *dir, const struct qstr *str, struct i
 	if (dir->i_size >= HFS_MAX_VALENCE)
 		return -ENOSPC;
 
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	err = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
 	if (err)
 		return err;
@@ -218,7 +218,7 @@ int hfs_cat_delete(u32 cnid, struct inode *dir, const struct qstr *str)
 	int res, type;
 
 	hfs_dbg(CAT_MOD, "delete_cat: %s,%u\n", str ? str->name : NULL, cnid);
-	sb = dir->i_sb;
+	sb = inode_sb(dir);
 	res = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
 	if (res)
 		return res;
@@ -289,7 +289,7 @@ int hfs_cat_move(u32 cnid, struct inode *src_dir, const struct qstr *src_name,
 	hfs_dbg(CAT_MOD, "rename_cat: %u - %lu,%s - %lu,%s\n",
 		cnid, src_dir->i_ino, src_name->name,
 		dst_dir->i_ino, dst_name->name);
-	sb = src_dir->i_sb;
+	sb = inode_sb(src_dir);
 	err = hfs_find_init(HFS_SB(sb)->cat_tree, &src_fd);
 	if (err)
 		return err;
