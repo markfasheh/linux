@@ -36,14 +36,15 @@ struct inode *omfs_new_inode(struct inode *dir, umode_t mode)
 	u64 new_block;
 	int err;
 	int len;
-	struct omfs_sb_info *sbi = OMFS_SB(dir->i_sb);
+	struct omfs_sb_info *sbi = OMFS_SB(inode_sb(dir));
 
-	inode = new_inode(dir->i_sb);
+	inode = new_inode(inode_sb(dir));
 	if (!inode)
 		return ERR_PTR(-ENOMEM);
 
-	err = omfs_allocate_range(dir->i_sb, sbi->s_mirrors, sbi->s_mirrors,
-			&new_block, &len);
+	err = omfs_allocate_range(inode_sb(dir), sbi->s_mirrors,
+				  sbi->s_mirrors,
+				  &new_block, &len);
 	if (err)
 		goto fail;
 
@@ -102,7 +103,7 @@ static void omfs_update_checksums(struct omfs_inode *oi)
 static int __omfs_write_inode(struct inode *inode, int wait)
 {
 	struct omfs_inode *oi;
-	struct omfs_sb_info *sbi = OMFS_SB(inode->i_sb);
+	struct omfs_sb_info *sbi = OMFS_SB(inode_sb(inode));
 	struct buffer_head *bh, *bh2;
 	u64 ctime;
 	int i;
@@ -110,7 +111,7 @@ static int __omfs_write_inode(struct inode *inode, int wait)
 	int sync_failed = 0;
 
 	/* get current inode since we may have written sibling ptrs etc. */
-	bh = omfs_bread(inode->i_sb, inode->i_ino);
+	bh = omfs_bread(inode_sb(inode), inode->i_ino);
 	if (!bh)
 		goto out;
 
@@ -149,7 +150,7 @@ static int __omfs_write_inode(struct inode *inode, int wait)
 
 	/* if mirroring writes, copy to next fsblock */
 	for (i = 1; i < sbi->s_mirrors; i++) {
-		bh2 = omfs_bread(inode->i_sb, inode->i_ino + i);
+		bh2 = omfs_bread(inode_sb(inode), inode->i_ino + i);
 		if (!bh2)
 			goto out_brelse;
 
@@ -196,7 +197,7 @@ static void omfs_evict_inode(struct inode *inode)
 		omfs_shrink_inode(inode);
 	}
 
-	omfs_clear_range(inode->i_sb, inode->i_ino, 2);
+	omfs_clear_range(inode_sb(inode), inode->i_ino, 2);
 }
 
 struct inode *omfs_iget(struct super_block *sb, ino_t ino)
@@ -214,7 +215,7 @@ struct inode *omfs_iget(struct super_block *sb, ino_t ino)
 	if (!(inode->i_state & I_NEW))
 		return inode;
 
-	bh = omfs_bread(inode->i_sb, ino);
+	bh = omfs_bread(inode_sb(inode), ino);
 	if (!bh)
 		goto iget_failed;
 

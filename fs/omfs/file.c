@@ -30,7 +30,7 @@ void omfs_make_empty_table(struct buffer_head *bh, int offset)
 
 int omfs_shrink_inode(struct inode *inode)
 {
-	struct omfs_sb_info *sbi = OMFS_SB(inode->i_sb);
+	struct omfs_sb_info *sbi = OMFS_SB(inode_sb(inode));
 	struct omfs_extent *oe;
 	struct omfs_extent_entry *entry;
 	struct buffer_head *bh;
@@ -49,7 +49,7 @@ int omfs_shrink_inode(struct inode *inode)
 	if (inode->i_size != 0)
 		goto out;
 
-	bh = omfs_bread(inode->i_sb, next);
+	bh = omfs_bread(inode_sb(inode), next);
 	if (!bh)
 		goto out;
 
@@ -76,7 +76,7 @@ int omfs_shrink_inode(struct inode *inode)
 			start = be64_to_cpu(entry->e_cluster);
 			count = be64_to_cpu(entry->e_blocks);
 
-			omfs_clear_range(inode->i_sb, start, (int) count);
+			omfs_clear_range(inode_sb(inode), start, (int) count);
 			entry++;
 		}
 		omfs_make_empty_table(bh, (char *) oe - bh->b_data);
@@ -84,12 +84,13 @@ int omfs_shrink_inode(struct inode *inode)
 		brelse(bh);
 
 		if (last != inode->i_ino)
-			omfs_clear_range(inode->i_sb, last, sbi->s_mirrors);
+			omfs_clear_range(inode_sb(inode), last,
+					 sbi->s_mirrors);
 
 		if (next == ~0)
 			break;
 
-		bh = omfs_bread(inode->i_sb, next);
+		bh = omfs_bread(inode_sb(inode), next);
 		if (!bh)
 			goto out;
 		oe = (struct omfs_extent *) (&bh->b_data[OMFS_EXTENT_CONT]);
@@ -118,7 +119,7 @@ static int omfs_grow_extent(struct inode *inode, struct omfs_extent *oe,
 {
 	struct omfs_extent_entry *terminator;
 	struct omfs_extent_entry *entry = &oe->e_entry;
-	struct omfs_sb_info *sbi = OMFS_SB(inode->i_sb);
+	struct omfs_sb_info *sbi = OMFS_SB(inode_sb(inode));
 	u32 extent_count = be32_to_cpu(oe->e_extent_count);
 	u64 new_block = 0;
 	u32 max_count;
@@ -145,7 +146,7 @@ static int omfs_grow_extent(struct inode *inode, struct omfs_extent *oe,
 		new_block = be64_to_cpu(entry->e_cluster) +
 			be64_to_cpu(entry->e_blocks);
 
-		if (omfs_allocate_block(inode->i_sb, new_block)) {
+		if (omfs_allocate_block(inode_sb(inode), new_block)) {
 			be64_add_cpu(&entry->e_blocks, 1);
 			terminator->e_blocks = ~(cpu_to_be64(
 				be64_to_cpu(~terminator->e_blocks) + 1));
@@ -159,8 +160,8 @@ static int omfs_grow_extent(struct inode *inode, struct omfs_extent *oe,
 		return -EIO;
 
 	/* try to allocate a new cluster */
-	ret = omfs_allocate_range(inode->i_sb, 1, sbi->s_clustersize,
-		&new_block, &new_count);
+	ret = omfs_allocate_range(inode_sb(inode), 1, sbi->s_clustersize,
+				  &new_block, &new_count);
 	if (ret)
 		goto out_fail;
 
@@ -194,8 +195,8 @@ static sector_t find_block(struct inode *inode, struct omfs_extent_entry *ent,
 	/* count > 1 because of terminator */
 	sector_t searched = 0;
 	for (; count > 1; count--) {
-		int numblocks = clus_to_blk(OMFS_SB(inode->i_sb),
-			be64_to_cpu(ent->e_blocks));
+		int numblocks = clus_to_blk(OMFS_SB(inode_sb(inode)),
+					    be64_to_cpu(ent->e_blocks));
 
 		if (block >= searched  &&
 		    block < searched + numblocks) {
@@ -204,8 +205,8 @@ static sector_t find_block(struct inode *inode, struct omfs_extent_entry *ent,
 			 * numblocks - (block - searched) is remainder
 			 */
 			*left = numblocks - (block - searched);
-			return clus_to_blk(OMFS_SB(inode->i_sb),
-				be64_to_cpu(ent->e_cluster)) +
+			return clus_to_blk(OMFS_SB(inode_sb(inode)),
+					   be64_to_cpu(ent->e_cluster)) +
 				block - searched;
 		}
 		searched += numblocks;
@@ -225,12 +226,12 @@ static int omfs_get_block(struct inode *inode, sector_t block,
 	int extent_count;
 	struct omfs_extent *oe;
 	struct omfs_extent_entry *entry;
-	struct omfs_sb_info *sbi = OMFS_SB(inode->i_sb);
+	struct omfs_sb_info *sbi = OMFS_SB(inode_sb(inode));
 	int max_blocks = bh_result->b_size >> inode->i_blkbits;
 	int remain;
 
 	ret = -EIO;
-	bh = omfs_bread(inode->i_sb, inode->i_ino);
+	bh = omfs_bread(inode_sb(inode), inode->i_ino);
 	if (!bh)
 		goto out;
 
@@ -253,7 +254,7 @@ static int omfs_get_block(struct inode *inode, sector_t block,
 		offset = find_block(inode, entry, block, extent_count, &remain);
 		if (offset > 0) {
 			ret = 0;
-			map_bh(bh_result, inode->i_sb, offset);
+			map_bh(bh_result, inode_sb(inode), offset);
 			if (remain > max_blocks)
 				remain = max_blocks;
 			bh_result->b_size = (remain << inode->i_blkbits);
@@ -263,7 +264,7 @@ static int omfs_get_block(struct inode *inode, sector_t block,
 			break;
 
 		brelse(bh);
-		bh = omfs_bread(inode->i_sb, next);
+		bh = omfs_bread(inode_sb(inode), next);
 		if (!bh)
 			goto out;
 		oe = (struct omfs_extent *) (&bh->b_data[OMFS_EXTENT_CONT]);
@@ -274,7 +275,7 @@ static int omfs_get_block(struct inode *inode, sector_t block,
 		if (ret == 0) {
 			mark_buffer_dirty(bh);
 			mark_inode_dirty(inode);
-			map_bh(bh_result, inode->i_sb,
+			map_bh(bh_result, inode_sb(inode),
 					clus_to_blk(sbi, new_block));
 		}
 	}
