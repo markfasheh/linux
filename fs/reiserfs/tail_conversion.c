@@ -26,7 +26,7 @@ int direct2indirect(struct reiserfs_transaction_handle *th, struct inode *inode,
 		    struct treepath *path, struct buffer_head *unbh,
 		    loff_t tail_offset)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct buffer_head *up_to_date_bh;
 	struct item_head *p_le_ih = tp_item_head(path);
 	unsigned long total_tail = 0;
@@ -178,7 +178,7 @@ void reiserfs_unmap_buffer(struct buffer_head *bh)
 	 */
 	if ((!list_empty(&bh->b_assoc_buffers) || bh->b_private) && bh->b_page) {
 		struct inode *inode = bh->b_page->mapping->host;
-		struct reiserfs_journal *j = SB_JOURNAL(inode->i_sb);
+		struct reiserfs_journal *j = SB_JOURNAL(inode_sb(inode));
 		spin_lock(&j->j_dirty_buffers_lock);
 		list_del_init(&bh->b_assoc_buffers);
 		reiserfs_free_jh(bh);
@@ -208,7 +208,7 @@ int indirect2direct(struct reiserfs_transaction_handle *th,
 		    loff_t n_new_file_size,	/* New file size. */
 		    char *mode)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct item_head s_ih;
 	unsigned long block_size = sb->s_blocksize;
 	char *tail;

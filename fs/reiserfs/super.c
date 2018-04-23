@@ -340,9 +340,9 @@ static int finish_unfinished(struct super_block *s)
 			retval = remove_save_link_only(s, &save_link_key, 0);
 			continue;
 		}
-		depth = reiserfs_write_unlock_nested(inode->i_sb);
+		depth = reiserfs_write_unlock_nested(inode_sb(inode));
 		dquot_initialize(inode);
-		reiserfs_write_lock_nested(inode->i_sb, depth);
+		reiserfs_write_lock_nested(inode_sb(inode), depth);
 
 		if (truncate && S_ISDIR(inode->i_mode)) {
 			/*
@@ -453,17 +453,18 @@ void add_save_link(struct reiserfs_transaction_handle *th,
 	key.on_disk_key.k_objectid = inode->i_ino;
 	if (!truncate) {
 		/* unlink, rmdir, rename */
-		set_cpu_key_k_offset(&key, 1 + inode->i_sb->s_blocksize);
+		set_cpu_key_k_offset(&key, 1 + inode_sb(inode)->s_blocksize);
 		set_cpu_key_k_type(&key, TYPE_DIRECT);
 
 		/* item head of "safe" link */
 		make_le_item_head(&ih, &key, key.version,
-				  1 + inode->i_sb->s_blocksize, TYPE_DIRECT,
+				  1 + inode_sb(inode)->s_blocksize,
+				  TYPE_DIRECT,
 				  4 /*length */ , 0xffff /*free space */ );
 	} else {
 		/* truncate */
 		if (S_ISDIR(inode->i_mode))
-			reiserfs_warning(inode->i_sb, "green-2102",
+			reiserfs_warning(inode_sb(inode), "green-2102",
 					 "Adding a truncate savelink for "
 					 "a directory %k! Please report",
 					 INODE_PKEY(inode));
@@ -477,10 +478,10 @@ void add_save_link(struct reiserfs_transaction_handle *th,
 	key.key_length = 3;
 
 	/* look for its place in the tree */
-	retval = search_item(inode->i_sb, &key, &path);
+	retval = search_item(inode_sb(inode), &key, &path);
 	if (retval != ITEM_NOT_FOUND) {
 		if (retval != -ENOSPC)
-			reiserfs_error(inode->i_sb, "vs-2100",
+			reiserfs_error(inode_sb(inode), "vs-2100",
 				       "search_by_key (%K) returned %d", &key,
 				       retval);
 		pathrelse(&path);
@@ -495,7 +496,7 @@ void add_save_link(struct reiserfs_transaction_handle *th,
 	    reiserfs_insert_item(th, &path, &key, &ih, NULL, (char *)&link);
 	if (retval) {
 		if (retval != -ENOSPC)
-			reiserfs_error(inode->i_sb, "vs-2120",
+			reiserfs_error(inode_sb(inode), "vs-2120",
 				       "insert_item returned %d", retval);
 	} else {
 		if (truncate)
@@ -514,7 +515,7 @@ int remove_save_link(struct inode *inode, int truncate)
 	int err;
 
 	/* we are going to do one balancing only */
-	err = journal_begin(&th, inode->i_sb, JOURNAL_PER_BALANCE_CNT);
+	err = journal_begin(&th, inode_sb(inode), JOURNAL_PER_BALANCE_CNT);
 	if (err)
 		return err;
 
@@ -524,7 +525,7 @@ int remove_save_link(struct inode *inode, int truncate)
 	if (!truncate) {
 		/* unlink, rmdir, rename */
 		set_le_key_k_offset(KEY_FORMAT_3_5, &key,
-				    1 + inode->i_sb->s_blocksize);
+				    1 + inode_sb(inode)->s_blocksize);
 		set_le_key_k_type(KEY_FORMAT_3_5, &key, TYPE_DIRECT);
 	} else {
 		/* truncate */
@@ -700,19 +701,19 @@ static void reiserfs_dirty_inode(struct inode *inode, int flags)
 
 	int err = 0;
 
-	if (sb_rdonly(inode->i_sb)) {
-		reiserfs_warning(inode->i_sb, "clm-6006",
+	if (sb_rdonly(inode_sb(inode))) {
+		reiserfs_warning(inode_sb(inode), "clm-6006",
 				 "writing inode %lu on readonly FS",
 				 inode->i_ino);
 		return;
 	}
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 
 	/*
 	 * this is really only used for atime updates, so they don't have
 	 * to be included in O_SYNC or fsync
 	 */
-	err = journal_begin(&th, inode->i_sb, 1);
+	err = journal_begin(&th, inode_sb(inode), 1);
 	if (err)
 		goto out;
 
@@ -720,7 +721,7 @@ static void reiserfs_dirty_inode(struct inode *inode, int flags)
 	journal_end(&th);
 
 out:
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 }
 
 static int reiserfs_show_options(struct seq_file *seq, struct dentry *root)

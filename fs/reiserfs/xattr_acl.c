@@ -35,9 +35,9 @@ reiserfs_set_acl(struct inode *inode, struct posix_acl *acl, int type)
 	jcreate_blocks = reiserfs_xattr_jcreate_nblocks(inode) +
 			 reiserfs_xattr_nblocks(inode, size) * 2;
 
-	reiserfs_write_lock(inode->i_sb);
-	error = journal_begin(&th, inode->i_sb, jcreate_blocks);
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
+	error = journal_begin(&th, inode_sb(inode), jcreate_blocks);
+	reiserfs_write_unlock(inode_sb(inode));
 	if (error == 0) {
 		if (type == ACL_TYPE_ACCESS && acl) {
 			error = posix_acl_update_mode(inode, &mode, &acl);
@@ -49,9 +49,9 @@ reiserfs_set_acl(struct inode *inode, struct posix_acl *acl, int type)
 		if (!error && update_mode)
 			inode->i_mode = mode;
 unlock:
-		reiserfs_write_lock(inode->i_sb);
+		reiserfs_write_lock(inode_sb(inode));
 		error2 = journal_end(&th);
-		reiserfs_write_unlock(inode->i_sb);
+		reiserfs_write_unlock(inode_sb(inode));
 		if (error2)
 			error = error2;
 	}
@@ -378,7 +378,7 @@ int reiserfs_cache_default_acl(struct inode *inode)
 		 * we need to create the tree to the xattrs, and then we
 		 * just want two files. */
 		nblocks = reiserfs_xattr_jcreate_nblocks(inode);
-		nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode->i_sb);
+		nblocks += JOURNAL_BLOCKS_PER_OBJECT(inode_sb(inode));
 
 		REISERFS_I(inode)->i_flags |= i_has_xattr_dir;
 
@@ -398,7 +398,7 @@ int reiserfs_acl_chmod(struct inode *inode)
 	if (IS_PRIVATE(inode))
 		return 0;
 	if (get_inode_sd_version(inode) == STAT_DATA_V1 ||
-	    !reiserfs_posixacl(inode->i_sb))
+	    !reiserfs_posixacl(inode_sb(inode)))
 		return 0;
 
 	return posix_acl_chmod(inode, inode->i_mode);

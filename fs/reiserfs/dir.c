@@ -39,9 +39,9 @@ static int reiserfs_dir_fsync(struct file *filp, loff_t start, loff_t end,
 		return err;
 
 	inode_lock(inode);
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 	err = reiserfs_commit_for_inode(inode);
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 	inode_unlock(inode);
 	if (err < 0)
 		return err;
@@ -52,7 +52,7 @@ static int reiserfs_dir_fsync(struct file *filp, loff_t start, loff_t end,
 
 static inline bool is_privroot_deh(struct inode *dir, struct reiserfs_de_head *deh)
 {
-	struct dentry *privroot = REISERFS_SB(dir->i_sb)->priv_root;
+	struct dentry *privroot = REISERFS_SB(inode_sb(dir))->priv_root;
 	return (d_really_is_positive(privroot) &&
 	        deh->deh_objectid == INODE_PKEY(d_inode(privroot))->k_objectid);
 }
@@ -76,9 +76,9 @@ int reiserfs_readdir_inode(struct inode *inode, struct dir_context *ctx)
 	int ret = 0;
 	int depth;
 
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 
-	reiserfs_check_lock_depth(inode->i_sb, "readdir");
+	reiserfs_check_lock_depth(inode_sb(inode), "readdir");
 
 	/*
 	 * form key for search the next directory entry using
@@ -95,7 +95,8 @@ research:
 		 * specified key
 		 */
 		search_res =
-		    search_by_entry_key(inode->i_sb, &pos_key, &path_to_entry,
+		    search_by_entry_key(inode_sb(inode), &pos_key,
+					&path_to_entry,
 					&de);
 		if (search_res == IO_ERROR) {
 			/*
@@ -165,7 +166,7 @@ research:
 
 				/* too big to send back to VFS */
 				if (d_reclen >
-				    REISERFS_MAX_NAME(inode->i_sb->
+				    REISERFS_MAX_NAME(inode_sb(inode)->
 						      s_blocksize)) {
 					continue;
 				}
@@ -205,17 +206,19 @@ research:
 				 * Since filldir might sleep, we can release
 				 * the write lock here for other waiters
 				 */
-				depth = reiserfs_write_unlock_nested(inode->i_sb);
+				depth = reiserfs_write_unlock_nested(inode_sb(inode));
 				if (!dir_emit
 				    (ctx, local_buf, d_reclen, d_ino,
 				     DT_UNKNOWN)) {
-					reiserfs_write_lock_nested(inode->i_sb, depth);
+					reiserfs_write_lock_nested(inode_sb(inode),
+								   depth);
 					if (local_buf != small_buf) {
 						kfree(local_buf);
 					}
 					goto end;
 				}
-				reiserfs_write_lock_nested(inode->i_sb, depth);
+				reiserfs_write_lock_nested(inode_sb(inode),
+							   depth);
 				if (local_buf != small_buf) {
 					kfree(local_buf);
 				}
@@ -239,7 +242,7 @@ research:
 		 * item we went through is last item of node. Using right
 		 * delimiting key check is it directory end
 		 */
-		rkey = get_rkey(&path_to_entry, inode->i_sb);
+		rkey = get_rkey(&path_to_entry, inode_sb(inode));
 		if (!comp_le_keys(rkey, &MIN_KEY)) {
 			/*
 			 * set pos_key to key, that is the smallest and greater
@@ -265,7 +268,7 @@ end:
 	pathrelse(&path_to_entry);
 	reiserfs_check_path(&path_to_entry);
 out:
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 	return ret;
 }
 

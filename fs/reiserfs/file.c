@@ -56,14 +56,14 @@ static int reiserfs_file_release(struct inode *inode, struct file *filp)
 		return 0;
 	}
 
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 	/*
 	 * freeing preallocation only involves relogging blocks that
 	 * are already in the current transaction.  preallocation gets
 	 * freed at the end of each transaction, so it is impossible for
 	 * us to log any additional blocks (including quota blocks)
 	 */
-	err = journal_begin(&th, inode->i_sb, 1);
+	err = journal_begin(&th, inode_sb(inode), 1);
 	if (err) {
 		/*
 		 * uh oh, we can't allow the inode to go away while there
@@ -71,7 +71,7 @@ static int reiserfs_file_release(struct inode *inode, struct file *filp)
 		 * aborted transaction
 		 */
 		jbegin_failure = err;
-		err = journal_join_abort(&th, inode->i_sb);
+		err = journal_join_abort(&th, inode_sb(inode));
 
 		if (err) {
 			/*
@@ -84,7 +84,7 @@ static int reiserfs_file_release(struct inode *inode, struct file *filp)
 			 * and let the admin know what is going on.
 			 */
 			igrab(inode);
-			reiserfs_warning(inode->i_sb, "clm-9001",
+			reiserfs_warning(inode_sb(inode), "clm-9001",
 					 "pinning inode %lu because the "
 					 "preallocation can't be freed",
 					 inode->i_ino);
@@ -115,7 +115,7 @@ static int reiserfs_file_release(struct inode *inode, struct file *filp)
 		err = reiserfs_truncate_file(inode, 0);
 	}
 out:
-	reiserfs_write_unlock(inode->i_sb);
+	reiserfs_write_unlock(inode_sb(inode));
 	mutex_unlock(&REISERFS_I(inode)->tailpack);
 	return err;
 }
@@ -161,11 +161,11 @@ static int reiserfs_sync_file(struct file *filp, loff_t start, loff_t end,
 	inode_lock(inode);
 	BUG_ON(!S_ISREG(inode->i_mode));
 	err = sync_mapping_buffers(inode->i_mapping);
-	reiserfs_write_lock(inode->i_sb);
+	reiserfs_write_lock(inode_sb(inode));
 	barrier_done = reiserfs_commit_for_inode(inode);
-	reiserfs_write_unlock(inode->i_sb);
-	if (barrier_done != 1 && reiserfs_barrier_flush(inode->i_sb))
-		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+	reiserfs_write_unlock(inode_sb(inode));
+	if (barrier_done != 1 && reiserfs_barrier_flush(inode_sb(inode)))
+		blkdev_issue_flush(inode_sb(inode)->s_bdev, GFP_KERNEL, NULL);
 	inode_unlock(inode);
 	if (barrier_done < 0)
 		return barrier_done;
@@ -183,7 +183,7 @@ int reiserfs_commit_page(struct inode *inode, struct page *page,
 	unsigned long i_size_index = inode->i_size >> PAGE_SHIFT;
 	int new;
 	int logit = reiserfs_file_data_log(inode);
-	struct super_block *s = inode->i_sb;
+	struct super_block *s = inode_sb(inode);
 	int bh_per_page = PAGE_SIZE / s->s_blocksize;
 	struct reiserfs_transaction_handle th;
 	int ret = 0;
@@ -219,7 +219,7 @@ int reiserfs_commit_page(struct inode *inode, struct page *page,
 				 * do data=ordered on any page past the end
 				 * of file and any buffer marked BH_New.
 				 */
-				if (reiserfs_data_ordered(inode->i_sb) &&
+				if (reiserfs_data_ordered(inode_sb(inode)) &&
 				    (new || page->index >= i_size_index)) {
 					reiserfs_add_ordered_list(inode, bh);
 				}

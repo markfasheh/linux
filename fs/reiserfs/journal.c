@@ -782,11 +782,11 @@ no_jh:
 
 int reiserfs_add_tail_list(struct inode *inode, struct buffer_head *bh)
 {
-	return __add_jh(SB_JOURNAL(inode->i_sb), bh, 1);
+	return __add_jh(SB_JOURNAL(inode_sb(inode)), bh, 1);
 }
 int reiserfs_add_ordered_list(struct inode *inode, struct buffer_head *bh)
 {
-	return __add_jh(SB_JOURNAL(inode->i_sb), bh, 0);
+	return __add_jh(SB_JOURNAL(inode_sb(inode)), bh, 0);
 }
 
 #define JH_ENTRY(l) list_entry((l), struct reiserfs_jh, list)
@@ -3825,7 +3825,7 @@ int journal_mark_freed(struct reiserfs_transaction_handle *th,
 
 void reiserfs_update_inode_transaction(struct inode *inode)
 {
-	struct reiserfs_journal *journal = SB_JOURNAL(inode->i_sb);
+	struct reiserfs_journal *journal = SB_JOURNAL(inode_sb(inode));
 	REISERFS_I(inode)->i_jl = journal->j_current_jl;
 	REISERFS_I(inode)->i_trans_id = journal->j_trans_id;
 }
@@ -3838,7 +3838,7 @@ static int __commit_trans_jl(struct inode *inode, unsigned long id,
 			     struct reiserfs_journal_list *jl)
 {
 	struct reiserfs_transaction_handle th;
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	struct reiserfs_journal *journal = SB_JOURNAL(sb);
 	int ret = 0;
 
@@ -3881,7 +3881,7 @@ static int __commit_trans_jl(struct inode *inode, unsigned long id,
 		 * if we've got a larger transaction id than the oldest list
 		 */
 flush_commit_only:
-		if (journal_list_still_alive(inode->i_sb, id)) {
+		if (journal_list_still_alive(inode_sb(inode), id)) {
 			/*
 			 * we only set ret to 1 when we know for sure
 			 * the barrier hasn't been started yet on the commit
