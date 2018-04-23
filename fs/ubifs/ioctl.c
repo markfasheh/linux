@@ -106,7 +106,7 @@ static int setflags(struct inode *inode, int flags)
 {
 	int oldflags, err, release;
 	struct ubifs_inode *ui = ubifs_inode(inode);
-	struct ubifs_info *c = inode->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 	struct ubifs_budget_req req = { .dirtied_ino = 1,
 					.dirtied_ino_d = ui->data_len };
 
@@ -186,7 +186,7 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 	case FS_IOC_SET_ENCRYPTION_POLICY: {
 #ifdef CONFIG_UBIFS_FS_ENCRYPTION
-		struct ubifs_info *c = inode->i_sb->s_fs_info;
+		struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 
 		err = ubifs_enable_encryption(c);
 		if (err)

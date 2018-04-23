@@ -35,7 +35,7 @@ static unsigned int ubifs_crypt_max_namelen(struct inode *inode)
 int ubifs_encrypt(const struct inode *inode, struct ubifs_data_node *dn,
 		  unsigned int in_len, unsigned int *out_len, int block)
 {
-	struct ubifs_info *c = inode->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 	void *p = &dn->data;
 	struct page *ret;
 	unsigned int pad_len = round_up(in_len, UBIFS_CIPHER_BLOCK_SIZE);
@@ -61,7 +61,7 @@ int ubifs_encrypt(const struct inode *inode, struct ubifs_data_node *dn,
 int ubifs_decrypt(const struct inode *inode, struct ubifs_data_node *dn,
 		  unsigned int *out_len, int block)
 {
-	struct ubifs_info *c = inode->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 	int err;
 	unsigned int clen = le16_to_cpu(dn->compr_size);
 	unsigned int dlen = *out_len;

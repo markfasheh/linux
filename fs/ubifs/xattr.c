@@ -284,7 +284,7 @@ int ubifs_xattr_set(struct inode *host, const char *name, const void *value,
 		    size_t size, int flags, bool check_lock)
 {
 	struct inode *inode;
-	struct ubifs_info *c = host->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(host)->s_fs_info;
 	struct fscrypt_name nm = { .disk_name = FSTR_INIT((char *)name, strlen(name))};
 	struct ubifs_dent_node *xent;
 	union ubifs_key key;
@@ -345,7 +345,7 @@ ssize_t ubifs_xattr_get(struct inode *host, const char *name, void *buf,
 			size_t size)
 {
 	struct inode *inode;
-	struct ubifs_info *c = host->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(host)->s_fs_info;
 	struct fscrypt_name nm = { .disk_name = FSTR_INIT((char *)name, strlen(name))};
 	struct ubifs_inode *ui;
 	struct ubifs_dent_node *xent;
@@ -415,7 +415,7 @@ ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size)
 {
 	union ubifs_key key;
 	struct inode *host = d_inode(dentry);
-	struct ubifs_info *c = host->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(host)->s_fs_info;
 	struct ubifs_inode *host_ui = ubifs_inode(host);
 	struct ubifs_dent_node *xent, *pxent = NULL;
 	int err, len, written = 0;
@@ -532,7 +532,7 @@ void ubifs_evict_xattr_inode(struct ubifs_info *c, ino_t xattr_inum)
 static int ubifs_xattr_remove(struct inode *host, const char *name)
 {
 	struct inode *inode;
-	struct ubifs_info *c = host->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(host)->s_fs_info;
 	struct fscrypt_name nm = { .disk_name = FSTR_INIT((char *)name, strlen(name))};
 	struct ubifs_dent_node *xent;
 	union ubifs_key key;
@@ -614,7 +614,7 @@ int ubifs_init_security(struct inode *dentry, struct inode *inode,
 	err = security_inode_init_security(inode, dentry, qstr,
 					   &init_xattrs, 0);
 	if (err) {
-		struct ubifs_info *c = dentry->i_sb->s_fs_info;
+		struct ubifs_info *c = inode_sb(dentry)->s_fs_info;
 		ubifs_err(c, "cannot initialize security for inode %lu, error %d",
 			  inode->i_ino, err);
 	}

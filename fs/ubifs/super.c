@@ -293,7 +293,7 @@ static void ubifs_destroy_inode(struct inode *inode)
 static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
 	int err = 0;
-	struct ubifs_info *c = inode->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 	struct ubifs_inode *ui = ubifs_inode(inode);
 
 	ubifs_assert(!ui->xattr);
@@ -337,7 +337,7 @@ static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
 static void ubifs_evict_inode(struct inode *inode)
 {
 	int err;
-	struct ubifs_info *c = inode->i_sb->s_fs_info;
+	struct ubifs_info *c = inode_sb(inode)->s_fs_info;
 	struct ubifs_inode *ui = ubifs_inode(inode);
 
 	if (ui->xattr)
