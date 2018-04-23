@@ -497,10 +497,10 @@ static int __rpc_create_common(struct inode *dir, struct dentry *dentry,
 	struct inode *inode;
 
 	d_drop(dentry);
-	inode = rpc_get_inode(dir->i_sb, mode);
+	inode = rpc_get_inode(inode_sb(dir), mode);
 	if (!inode)
 		goto out_err;
-	inode->i_ino = iunique(dir->i_sb, 100);
+	inode->i_ino = iunique(inode_sb(dir), 100);
 	if (i_fop)
 		inode->i_fop = i_fop;
 	if (private)
