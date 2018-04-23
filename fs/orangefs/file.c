@@ -722,7 +722,7 @@ static int orangefs_lock(struct file *filp, int cmd, struct file_lock *fl)
 {
 	int rc = -EINVAL;
 
-	if (ORANGEFS_SB(file_inode(filp)->i_sb)->flags & ORANGEFS_OPT_LOCAL_LOCK) {
+	if (ORANGEFS_SB(inode_sb(file_inode(filp)))->flags & ORANGEFS_OPT_LOCAL_LOCK) {
 		if (cmd == F_GETLK) {
 			rc = 0;
 			posix_test_lock(filp, fl);
