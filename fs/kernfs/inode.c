@@ -173,7 +173,7 @@ static inline void set_default_inode_attr(struct inode *inode, umode_t mode)
 
 static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
 {
-	struct super_block *sb = inode->i_sb;
+	struct super_block *sb = inode_sb(inode);
 	inode->i_uid = iattr->ia_uid;
 	inode->i_gid = iattr->ia_gid;
 	inode->i_atime = timespec_trunc(iattr->ia_atime, sb->s_time_gran);

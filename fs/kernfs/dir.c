@@ -1059,7 +1059,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
 	mutex_lock(&kernfs_mutex);
 
 	if (kernfs_ns_enabled(parent))
-		ns = kernfs_info(dir->i_sb)->ns;
+		ns = kernfs_info(inode_sb(dir))->ns;
 
 	kn = kernfs_find_ns(parent, dentry->d_name.name, ns);
 
@@ -1070,7 +1070,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
 	}
 
 	/* attach dentry and inode */
-	inode = kernfs_get_inode(dir->i_sb, kn);
+	inode = kernfs_get_inode(inode_sb(dir), kn);
 	if (!inode) {
 		ret = ERR_PTR(-ENOMEM);
 		goto out_unlock;
