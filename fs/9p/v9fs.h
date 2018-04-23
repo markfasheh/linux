@@ -171,7 +171,7 @@ extern struct inode *v9fs_inode_from_fid_dotl(struct v9fs_session_info *v9ses,
 
 static inline struct v9fs_session_info *v9fs_inode2v9ses(struct inode *inode)
 {
-	return (inode->i_sb->s_fs_info);
+	return (inode_sb(inode)->s_fs_info);
 }
 
 static inline struct v9fs_session_info *v9fs_dentry2v9ses(struct dentry *dentry)

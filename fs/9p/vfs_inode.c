@@ -690,7 +690,7 @@ v9fs_create(struct v9fs_session_info *v9ses, struct inode *dir,
 		/*
 		 * instantiate inode and assign the unopened fid to the dentry
 		 */
-		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			p9_debug(P9_DEBUG_VFS,
@@ -820,9 +820,9 @@ struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
 	 * inode. But with cache disabled, lookup should do this.
 	 */
 	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE)
-		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_inode_from_fid(v9ses, fid, inode_sb(dir));
 	else
-		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 	if (IS_ERR(inode)) {
 		p9_client_clunk(fid);
 		return ERR_CAST(inode);
@@ -1425,7 +1425,7 @@ int v9fs_refresh_inode(struct p9_fid *fid, struct inode *inode)
 	 * because we may have cached data
 	 */
 	i_size = inode->i_size;
-	v9fs_stat2inode(st, inode, inode->i_sb);
+	v9fs_stat2inode(st, inode, inode_sb(inode));
 	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE)
 		inode->i_size = i_size;
 	spin_unlock(&inode->i_lock);

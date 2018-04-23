@@ -318,7 +318,7 @@ v9fs_vfs_atomic_open_dotl(struct inode *dir, struct dentry *dentry,
 		fid = NULL;
 		goto error;
 	}
-	inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+	inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		p9_debug(P9_DEBUG_VFS, "inode creation failed %d\n", err);
@@ -435,7 +435,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
 
 	/* instantiate inode and assign the unopened fid to the dentry */
 	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
-		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			p9_debug(P9_DEBUG_VFS, "inode creation failed %d\n",
@@ -453,7 +453,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
 		 * inode with stat. We need to get an inode
 		 * so that we can set the acl with dentry
 		 */
-		inode = v9fs_get_inode(dir->i_sb, mode, 0);
+		inode = v9fs_get_inode(inode_sb(dir), mode, 0);
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			goto error;
@@ -723,7 +723,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
 		}
 
 		/* instantiate inode and assign the unopened fid to dentry */
-		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			p9_debug(P9_DEBUG_VFS, "inode creation failed %d\n",
@@ -736,7 +736,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
 		err = 0;
 	} else {
 		/* Not in cached mode. No need to populate inode with stat */
-		inode = v9fs_get_inode(dir->i_sb, S_IFLNK, 0);
+		inode = v9fs_get_inode(inode_sb(dir), S_IFLNK, 0);
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			goto error;
@@ -864,7 +864,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, umode_t omode,
 
 	/* instantiate inode and assign the unopened fid to the dentry */
 	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
-		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, inode_sb(dir));
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			p9_debug(P9_DEBUG_VFS, "inode creation failed %d\n",
@@ -881,7 +881,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, umode_t omode,
 		 * Not in cached mode. No need to populate inode with stat.
 		 * socket syscall returns a fd, so we need instantiate
 		 */
-		inode = v9fs_get_inode(dir->i_sb, mode, rdev);
+		inode = v9fs_get_inode(inode_sb(dir), mode, rdev);
 		if (IS_ERR(inode)) {
 			err = PTR_ERR(inode);
 			goto error;
