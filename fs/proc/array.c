@@ -687,7 +687,7 @@ static int children_seq_show(struct seq_file *seq, void *v)
 	struct inode *inode = seq->private;
 	pid_t pid;
 
-	pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
+	pid = pid_nr_ns(v, inode_sb(inode)->s_fs_info);
 	seq_printf(seq, "%d ", pid);
 
 	return 0;

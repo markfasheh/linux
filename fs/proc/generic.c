@@ -221,7 +221,7 @@ struct dentry *proc_lookup_de(struct inode *dir, struct dentry *dentry,
 	if (de) {
 		pde_get(de);
 		read_unlock(&proc_subdir_lock);
-		inode = proc_get_inode(dir->i_sb, de);
+		inode = proc_get_inode(inode_sb(dir), de);
 		if (!inode)
 			return ERR_PTR(-ENOMEM);
 		d_set_d_op(dentry, &simple_dentry_operations);
