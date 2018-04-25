@@ -700,8 +700,8 @@ TRACE_EVENT(ocfs2_trim_extent,
 		__field(__u64,	count)
 	),
 	TP_fast_assign(
-		__entry->dev_major = MAJOR(sb->s_dev);
-		__entry->dev_minor = MINOR(sb->s_dev);
+		__entry->dev_major = MAJOR(sb->s_view.v_dev);
+		__entry->dev_minor = MINOR(sb->s_view.v_dev);
 		__entry->blk = blk;
 		__entry->count = count;
 	),

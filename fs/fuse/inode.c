@@ -1103,7 +1103,7 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
 	if (!fud)
 		goto err_put_conn;
 
-	fc->dev = sb->s_dev;
+	fc->dev = sb->s_view.v_dev;
 	fc->sb = sb;
 	err = fuse_bdi_init(fc, sb);
 	if (err)

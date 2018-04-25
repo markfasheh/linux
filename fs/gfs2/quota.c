@@ -1227,7 +1227,7 @@ int gfs2_quota_check(struct gfs2_inode *ip, kuid_t uid, kgid_t gid,
 						      &qd->qd_flags)) {
 					print_message(qd, "exceeded");
 					quota_send_warning(qd->qd_id,
-							   sdp->sd_vfs->s_dev,
+							   sdp->sd_vfs->s_view.v_dev,
 							   QUOTA_NL_BHARDWARN);
 				}
 				error = -EDQUOT;
@@ -1238,7 +1238,8 @@ int gfs2_quota_check(struct gfs2_inode *ip, kuid_t uid, kgid_t gid,
 					 gfs2_tune_get(sdp, gt_quota_warn_period)
 					 * HZ)) {
 			quota_send_warning(qd->qd_id,
-					   sdp->sd_vfs->s_dev, QUOTA_NL_BSOFTWARN);
+					   sdp->sd_vfs->s_view.v_dev,
+					   QUOTA_NL_BSOFTWARN);
 			error = print_message(qd, "warning");
 			qd->qd_last_warn = jiffies;
 		}

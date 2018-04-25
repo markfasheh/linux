@@ -489,7 +489,7 @@ get:
 		if (err)
 			goto fail;
 
-		WARN_ON_ONCE(dir->d_sb->s_dev != stat.dev);
+		WARN_ON_ONCE(dir->d_sb->s_view.v_dev != stat.dev);
 		ino = stat.ino;
 	}
 
@@ -660,7 +660,7 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 		if (err)
 			return err;
 
-		WARN_ON_ONCE(dir->d_sb->s_dev != stat.dev);
+		WARN_ON_ONCE(dir->d_sb->s_view.v_dev != stat.dev);
 		rdt.parent_ino = stat.ino;
 	}
 

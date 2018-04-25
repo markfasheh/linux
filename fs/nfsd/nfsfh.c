@@ -440,7 +440,7 @@ static bool fsid_type_ok_for_exp(u8 fsid_type, struct svc_export *exp)
 {
 	switch (fsid_type) {
 	case FSID_DEV:
-		if (!old_valid_dev(exp_sb(exp)->s_dev))
+		if (!old_valid_dev(exp_sb(exp)->s_view.v_dev))
 			return 0;
 		/* FALL THROUGH */
 	case FSID_MAJOR_MINOR:
@@ -505,7 +505,7 @@ retry:
 			else
 				fsid_type = FSID_UUID4_INUM;
 		}
-	} else if (!old_valid_dev(exp_sb(exp)->s_dev))
+	} else if (!old_valid_dev(exp_sb(exp)->s_view.v_dev))
 		/* for newer device numbers, we must use a newer fsid format */
 		fsid_type = FSID_ENCODE_DEV;
 	else
@@ -528,7 +528,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp, struct dentry *dentry,
 	 */
 
 	struct inode * inode = d_inode(dentry);
-	dev_t ex_dev = exp_sb(exp)->s_dev;
+	dev_t ex_dev = exp_sb(exp)->s_view.v_dev;
 
 	dprintk("nfsd: fh_compose(exp %02x:%02x/%ld %pd2, ino=%ld)\n",
 		MAJOR(ex_dev), MINOR(ex_dev),

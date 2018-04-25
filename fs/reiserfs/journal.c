@@ -2613,14 +2613,14 @@ static int journal_init_dev(struct super_block *super,
 
 	journal->j_dev_bd = NULL;
 	jdev = SB_ONDISK_JOURNAL_DEVICE(super) ?
-	    new_decode_dev(SB_ONDISK_JOURNAL_DEVICE(super)) : super->s_dev;
+	    new_decode_dev(SB_ONDISK_JOURNAL_DEVICE(super)) : super->s_view.v_dev;
 
 	if (bdev_read_only(super->s_bdev))
 		blkdev_mode = FMODE_READ;
 
 	/* there is no "jdev" option and journal is on separate device */
 	if ((!jdev_name || !jdev_name[0])) {
-		if (jdev == super->s_dev)
+		if (jdev == super->s_view.v_dev)
 			blkdev_mode &= ~FMODE_EXCL;
 		journal->j_dev_bd = blkdev_get_by_dev(jdev, blkdev_mode,
 						      journal);
@@ -2632,7 +2632,7 @@ static int journal_init_dev(struct super_block *super,
 					 "cannot init journal device '%s': %i",
 					 __bdevname(jdev, b), result);
 			return result;
-		} else if (jdev != super->s_dev)
+		} else if (jdev != super->s_view.v_dev)
 			set_blocksize(journal->j_dev_bd, super->s_blocksize);
 
 		return 0;

@@ -1267,7 +1267,7 @@ static int nilfs_identify(char *data, struct nilfs_super_data *sd)
 static int nilfs_set_bdev_super(struct super_block *s, void *data)
 {
 	s->s_bdev = data;
-	s->s_dev = s->s_bdev->bd_dev;
+	s->s_view.v_dev = s->s_bdev->bd_dev;
 	return 0;
 }
 

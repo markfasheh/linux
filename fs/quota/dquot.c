@@ -1242,7 +1242,7 @@ static void flush_warnings(struct dquot_warn *warn)
 		print_warning(&warn[i]);
 #endif
 		quota_send_warning(warn[i].w_dq_id,
-				   warn[i].w_sb->s_dev, warn[i].w_type);
+				   warn[i].w_sb->s_view.v_dev, warn[i].w_type);
 	}
 }
 

@@ -1055,7 +1055,7 @@ out_final:
 static void ceph_kill_sb(struct super_block *s)
 {
 	struct ceph_fs_client *fsc = ceph_sb_to_client(s);
-	dev_t dev = s->s_dev;
+	dev_t dev = s->s_view.v_dev;
 
 	dout("kill_sb %p\n", s);
 

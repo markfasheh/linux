@@ -223,7 +223,7 @@ DECLARE_EVENT_CLASS(writeback_work_class,
 		strncpy(__entry->name,
 			wb->bdi->dev ? dev_name(wb->bdi->dev) : "(unknown)", 32);
 		__entry->nr_pages = work->nr_pages;
-		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
+		__entry->sb_dev = work->sb ? work->sb->s_view.v_dev : 0;
 		__entry->sync_mode = work->sync_mode;
 		__entry->for_kupdate = work->for_kupdate;
 		__entry->range_cyclic = work->range_cyclic;

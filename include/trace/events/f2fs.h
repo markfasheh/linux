@@ -265,7 +265,7 @@ TRACE_EVENT(f2fs_sync_fs,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->dirty	= is_sbi_flag_set(F2FS_SB(sb), SBI_IS_DIRTY);
 		__entry->wait	= wait;
 	),
@@ -570,7 +570,7 @@ TRACE_EVENT(f2fs_background_gc,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->wait_ms	= wait_ms;
 		__entry->prefree	= prefree;
 		__entry->free		= free;
@@ -608,7 +608,7 @@ TRACE_EVENT(f2fs_gc_begin,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->sync		= sync;
 		__entry->background	= background;
 		__entry->dirty_nodes	= dirty_nodes;
@@ -661,7 +661,7 @@ TRACE_EVENT(f2fs_gc_end,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->ret		= ret;
 		__entry->seg_freed	= seg_freed;
 		__entry->sec_freed	= sec_freed;
@@ -713,7 +713,7 @@ TRACE_EVENT(f2fs_get_victim,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->type		= type;
 		__entry->gc_type	= gc_type;
 		__entry->alloc_mode	= p->alloc_mode;
@@ -1034,7 +1034,7 @@ DECLARE_EVENT_CLASS(f2fs__bio,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->target		= bio_dev(bio);
 		__entry->op		= bio_op(bio);
 		__entry->op_flags	= bio->bi_opf;
@@ -1336,7 +1336,7 @@ TRACE_EVENT(f2fs_write_checkpoint,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->reason		= reason;
 		__entry->msg		= msg;
 	),
@@ -1545,7 +1545,7 @@ TRACE_EVENT(f2fs_shrink_extent_tree,
 	),
 
 	TP_fast_assign(
-		__entry->dev = sbi->sb->s_dev;
+		__entry->dev = sbi->sb->s_view.v_dev;
 		__entry->node_cnt = node_cnt;
 		__entry->tree_cnt = tree_cnt;
 	),
@@ -1592,7 +1592,7 @@ DECLARE_EVENT_CLASS(f2fs_sync_dirty_inodes,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->type	= type;
 		__entry->count	= count;
 	),

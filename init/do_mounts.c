@@ -369,7 +369,7 @@ static int __init do_mount_root(char *name, char *fs, int flags, void *data)
 
 	sys_chdir("/root");
 	s = current->fs->pwd.dentry->d_sb;
-	ROOT_DEV = s->s_dev;
+	ROOT_DEV = s->s_view.v_dev;
 	printk(KERN_INFO
 	       "VFS: Mounted root (%s filesystem)%s on device %u:%u.\n",
 	       s->s_type->name,
