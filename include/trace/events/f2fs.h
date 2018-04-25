@@ -171,7 +171,7 @@ DECLARE_EVENT_CLASS(f2fs__inode,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pino	= F2FS_I(inode)->i_pino;
 		__entry->mode	= inode->i_mode;
@@ -205,7 +205,7 @@ DECLARE_EVENT_CLASS(f2fs__inode_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->ret	= ret;
 	),
@@ -237,7 +237,7 @@ TRACE_EVENT(f2fs_sync_file_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode_sb(inode)->s_dev;
+		__entry->dev		= inode_view(inode)->v_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->cp_reason	= cp_reason;
 		__entry->datasync	= datasync;
@@ -319,7 +319,7 @@ TRACE_EVENT(f2fs_unlink_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(dir)->s_dev;
+		__entry->dev	= inode_view(dir)->v_dev;
 		__entry->ino	= dir->i_ino;
 		__entry->size	= dir->i_size;
 		__entry->blocks	= dir->i_blocks;
@@ -370,7 +370,7 @@ TRACE_EVENT(f2fs_truncate_data_blocks_range,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->nid	= nid;
 		__entry->ofs	= ofs;
@@ -399,7 +399,7 @@ DECLARE_EVENT_CLASS(f2fs__truncate_op,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->size	= inode->i_size;
 		__entry->blocks	= inode->i_blocks;
@@ -456,7 +456,7 @@ DECLARE_EVENT_CLASS(f2fs__truncate_node,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode_sb(inode)->s_dev;
+		__entry->dev		= inode_view(inode)->v_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->nid		= nid;
 		__entry->blk_addr	= blk_addr;
@@ -504,7 +504,7 @@ TRACE_EVENT(f2fs_truncate_partial_nodes,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->nid[0]	= nid[0];
 		__entry->nid[1]	= nid[1];
@@ -538,7 +538,7 @@ TRACE_EVENT(f2fs_map_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode_sb(inode)->s_dev;
+		__entry->dev		= inode_view(inode)->v_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->m_lblk		= map->m_lblk;
 		__entry->m_pblk		= map->m_pblk;
@@ -756,7 +756,7 @@ TRACE_EVENT(f2fs_lookup_start,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(dir)->s_dev;
+		__entry->dev	= inode_view(dir)->v_dev;
 		__entry->ino	= dir->i_ino;
 		__entry->name	= dentry->d_name.name;
 		__entry->flags	= flags;
@@ -784,7 +784,7 @@ TRACE_EVENT(f2fs_lookup_end,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(dir)->s_dev;
+		__entry->dev	= inode_view(dir)->v_dev;
 		__entry->ino	= dir->i_ino;
 		__entry->name	= dentry->d_name.name;
 		__entry->cino	= ino;
@@ -813,7 +813,7 @@ TRACE_EVENT(f2fs_readdir,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(dir)->s_dev;
+		__entry->dev	= inode_view(dir)->v_dev;
 		__entry->ino	= dir->i_ino;
 		__entry->start	= start_pos;
 		__entry->end	= end_pos;
@@ -846,7 +846,7 @@ TRACE_EVENT(f2fs_fallocate,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->mode	= mode;
 		__entry->offset	= offset;
@@ -882,7 +882,7 @@ TRACE_EVENT(f2fs_direct_IO_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= offset;
 		__entry->len	= len;
@@ -913,7 +913,7 @@ TRACE_EVENT(f2fs_direct_IO_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= offset;
 		__entry->len	= len;
@@ -945,7 +945,7 @@ TRACE_EVENT(f2fs_reserve_new_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->nid	= nid;
 		__entry->ofs_in_node = ofs_in_node;
 		__entry->count = count;
@@ -977,7 +977,7 @@ DECLARE_EVENT_CLASS(f2fs__submit_page_bio,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode_sb(page->mapping->host)->s_dev;
+		__entry->dev		= inode_view(page->mapping->host)->v_dev;
 		__entry->ino		= page->mapping->host->i_ino;
 		__entry->index		= page->index;
 		__entry->old_blkaddr	= fio->old_blkaddr;
@@ -1104,7 +1104,7 @@ TRACE_EVENT(f2fs_write_begin,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= pos;
 		__entry->len	= len;
@@ -1134,7 +1134,7 @@ TRACE_EVENT(f2fs_write_end,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->pos	= pos;
 		__entry->len	= len;
@@ -1165,7 +1165,7 @@ DECLARE_EVENT_CLASS(f2fs__page,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(page->mapping->host)->s_dev;
+		__entry->dev	= inode_view(page->mapping->host)->v_dev;
 		__entry->ino	= page->mapping->host->i_ino;
 		__entry->type	= type;
 		__entry->dir	= S_ISDIR(page->mapping->host->i_mode);
@@ -1259,7 +1259,7 @@ TRACE_EVENT(f2fs_writepages,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= inode_sb(inode)->s_dev;
+		__entry->dev		= inode_view(inode)->v_dev;
 		__entry->ino		= inode->i_ino;
 		__entry->type		= type;
 		__entry->dir		= S_ISDIR(inode->i_mode);
@@ -1311,7 +1311,7 @@ TRACE_EVENT(f2fs_readpages,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= inode_sb(inode)->s_dev;
+		__entry->dev	= inode_view(inode)->v_dev;
 		__entry->ino	= inode->i_ino;
 		__entry->start	= page->index;
 		__entry->nrpage	= nrpage;
@@ -1454,7 +1454,7 @@ TRACE_EVENT(f2fs_lookup_extent_tree_start,
 	),
 
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->pgofs = pgofs;
 	),
@@ -1483,7 +1483,7 @@ TRACE_EVENT_CONDITION(f2fs_lookup_extent_tree_end,
 	),
 
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->pgofs = pgofs;
 		__entry->fofs = ei->fofs;
@@ -1516,7 +1516,7 @@ TRACE_EVENT(f2fs_update_extent_tree_range,
 	),
 
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->pgofs = pgofs;
 		__entry->blk = blkaddr;
@@ -1569,7 +1569,7 @@ TRACE_EVENT(f2fs_destroy_extent_tree,
 	),
 
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->node_cnt = node_cnt;
 	),

@@ -503,7 +503,7 @@ xfs_vn_getattr(
 		return -EIO;
 
 	stat->size = XFS_ISIZE(ip);
-	stat->dev = inode_sb(inode)->s_dev;
+	stat->dev = inode_view(inode)->v_dev;
 	stat->mode = inode->i_mode;
 	stat->nlink = inode->i_nlink;
 	stat->uid = inode->i_uid;

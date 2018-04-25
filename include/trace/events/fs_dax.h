@@ -24,7 +24,7 @@ DECLARE_EVENT_CLASS(dax_pmd_fault_class,
 		__field(int, result)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->vm_start = vmf->vma->vm_start;
 		__entry->vm_end = vmf->vma->vm_end;
@@ -74,7 +74,7 @@ DECLARE_EVENT_CLASS(dax_pmd_load_hole_class,
 		__field(dev_t, dev)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->vm_flags = vmf->vma->vm_flags;
 		__entry->address = vmf->address;
@@ -117,7 +117,7 @@ DECLARE_EVENT_CLASS(dax_pmd_insert_mapping_class,
 		__field(int, write)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->vm_flags = vmf->vma->vm_flags;
 		__entry->address = vmf->address;
@@ -163,7 +163,7 @@ DECLARE_EVENT_CLASS(dax_pte_fault_class,
 		__field(int, result)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->vm_flags = vmf->vma->vm_flags;
 		__entry->address = vmf->address;
@@ -206,7 +206,7 @@ TRACE_EVENT(dax_insert_mapping,
 		__field(int, write)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->vm_flags = vmf->vma->vm_flags;
 		__entry->address = vmf->address;
@@ -234,7 +234,7 @@ DECLARE_EVENT_CLASS(dax_writeback_range_class,
 		__field(dev_t, dev)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->start_index = start_index;
 		__entry->end_index = end_index;
@@ -266,7 +266,7 @@ TRACE_EVENT(dax_writeback_one,
 		__field(dev_t, dev)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->pgoff = pgoff;
 		__entry->pglen = pglen;

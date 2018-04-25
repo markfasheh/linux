@@ -786,7 +786,7 @@ struct raparms *
 nfsd_init_raparms(struct file *file)
 {
 	struct inode *inode = file_inode(file);
-	dev_t dev = inode_sb(inode)->s_dev;
+	dev_t dev = inode_view(inode)->v_dev;
 	ino_t ino = inode->i_ino;
 	struct raparms	*ra, **rap, **frap = NULL;
 	int depth = 0;
@@ -943,7 +943,7 @@ static int wait_for_concurrent_writes(struct file *file)
 	int err = 0;
 
 	if (atomic_read(&inode->i_writecount) > 1
-	    || (last_ino == inode->i_ino && last_dev == inode_sb(inode)->s_dev)) {
+	    || (last_ino == inode->i_ino && last_dev == inode_view(inode)->v_dev)) {
 		dprintk("nfsd: write defer %d\n", task_pid_nr(current));
 		msleep(10);
 		dprintk("nfsd: write resume %d\n", task_pid_nr(current));
@@ -954,7 +954,7 @@ static int wait_for_concurrent_writes(struct file *file)
 		err = vfs_fsync(file, 0);
 	}
 	last_ino = inode->i_ino;
-	last_dev = inode_sb(inode)->s_dev;
+	last_dev = inode_view(inode)->v_dev;
 	return err;
 }
 

@@ -499,7 +499,7 @@ static int audit_watch_handle_event(struct fsnotify_group *group,
 	}
 
 	if (mask & (FS_CREATE|FS_MOVED_TO) && inode)
-		audit_update_watch(parent, dname, inode_sb(inode)->s_dev,
+		audit_update_watch(parent, dname, inode_view(inode)->v_dev,
 				   inode->i_ino, 0);
 	else if (mask & (FS_DELETE|FS_MOVED_FROM))
 		audit_update_watch(parent, dname, AUDIT_DEV_UNSET, AUDIT_INO_UNSET, 1);
@@ -554,7 +554,7 @@ int audit_exe_compare(struct task_struct *tsk, struct audit_fsnotify_mark *mark)
 	if (!exe_file)
 		return 0;
 	ino = file_inode(exe_file)->i_ino;
-	dev = inode_sb(file_inode(exe_file))->s_dev;
+	dev = inode_view(file_inode(exe_file))->v_dev;
 	fput(exe_file);
 	return audit_mark_compare(mark, ino, dev);
 }

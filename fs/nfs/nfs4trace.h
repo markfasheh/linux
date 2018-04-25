@@ -488,7 +488,7 @@ TRACE_EVENT(nfs4_cached_open,
 		TP_fast_assign(
 			const struct inode *inode = state->inode;
 
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->fmode = (__force unsigned int)state->state;
@@ -533,7 +533,7 @@ TRACE_EVENT(nfs4_close,
 		TP_fast_assign(
 			const struct inode *inode = state->inode;
 
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->fmode = (__force unsigned int)state->state;
@@ -600,7 +600,7 @@ DECLARE_EVENT_CLASS(nfs4_lock_event,
 			__entry->type = request->fl_type;
 			__entry->start = request->fl_start;
 			__entry->end = request->fl_end;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->stateid_seq =
@@ -672,7 +672,7 @@ TRACE_EVENT(nfs4_set_lock,
 			__entry->type = request->fl_type;
 			__entry->start = request->fl_start;
 			__entry->end = request->fl_end;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->stateid_seq =
@@ -719,7 +719,7 @@ DECLARE_EVENT_CLASS(nfs4_set_delegation_event,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->fmode = (__force unsigned int)fmode;
@@ -804,7 +804,7 @@ DECLARE_EVENT_CLASS(nfs4_test_stateid_event,
 			const struct inode *inode = state->inode;
 
 			__entry->error = error;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->stateid_seq =
@@ -855,7 +855,7 @@ DECLARE_EVENT_CLASS(nfs4_lookup_event,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(dir)->s_dev;
+			__entry->dev = inode_view(dir)->v_dev;
 			__entry->dir = NFS_FILEID(dir);
 			__entry->error = error;
 			__assign_str(name, name->name);
@@ -903,7 +903,7 @@ TRACE_EVENT(nfs4_lookupp,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->ino = NFS_FILEID(inode);
 			__entry->error = error;
 		),
@@ -938,7 +938,7 @@ TRACE_EVENT(nfs4_rename,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(olddir)->s_dev;
+			__entry->dev = inode_view(olddir)->v_dev;
 			__entry->olddir = NFS_FILEID(olddir);
 			__entry->newdir = NFS_FILEID(newdir);
 			__entry->error = error;
@@ -976,7 +976,7 @@ DECLARE_EVENT_CLASS(nfs4_inode_event,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->error = error;
@@ -1029,7 +1029,7 @@ DECLARE_EVENT_CLASS(nfs4_inode_stateid_event,
 		),
 
 		TP_fast_assign(
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->error = error;
@@ -1139,7 +1139,7 @@ DECLARE_EVENT_CLASS(nfs4_inode_callback_event,
 			__entry->fhandle = nfs_fhandle_hash(fhandle);
 			if (inode != NULL) {
 				__entry->fileid = NFS_FILEID(inode);
-				__entry->dev = inode_sb(inode)->s_dev;
+				__entry->dev = inode_view(inode)->v_dev;
 			} else {
 				__entry->fileid = 0;
 				__entry->dev = 0;
@@ -1196,7 +1196,7 @@ DECLARE_EVENT_CLASS(nfs4_inode_stateid_callback_event,
 			__entry->fhandle = nfs_fhandle_hash(fhandle);
 			if (inode != NULL) {
 				__entry->fileid = NFS_FILEID(inode);
-				__entry->dev = inode_sb(inode)->s_dev;
+				__entry->dev = inode_view(inode)->v_dev;
 			} else {
 				__entry->fileid = 0;
 				__entry->dev = 0;
@@ -1303,7 +1303,7 @@ DECLARE_EVENT_CLASS(nfs4_read_event,
 			const struct inode *inode = hdr->inode;
 			const struct nfs4_state *state =
 				hdr->args.context->state;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->offset = hdr->args.offset;
@@ -1363,7 +1363,7 @@ DECLARE_EVENT_CLASS(nfs4_write_event,
 			const struct inode *inode = hdr->inode;
 			const struct nfs4_state *state =
 				hdr->args.context->state;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->offset = hdr->args.offset;
@@ -1420,7 +1420,7 @@ DECLARE_EVENT_CLASS(nfs4_commit_event,
 
 		TP_fast_assign(
 			const struct inode *inode = data->inode;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->offset = data->args.offset;
@@ -1485,7 +1485,7 @@ TRACE_EVENT(nfs4_layoutget,
 		TP_fast_assign(
 			const struct inode *inode = d_inode(ctx->dentry);
 			const struct nfs4_state *state = ctx->state;
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->iomode = args->iomode;
@@ -1567,7 +1567,7 @@ TRACE_EVENT(pnfs_update_layout,
 			__field(enum pnfs_update_layout_reason, reason)
 		),
 		TP_fast_assign(
-			__entry->dev = inode_sb(inode)->s_dev;
+			__entry->dev = inode_view(inode)->v_dev;
 			__entry->fileid = NFS_FILEID(inode);
 			__entry->fhandle = nfs_fhandle_hash(NFS_FH(inode));
 			__entry->pos = pos;
