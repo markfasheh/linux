@@ -433,8 +433,8 @@ static int romfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	 */
 	if (sb->s_bdev)
 		id = huge_encode_dev(sb->s_bdev->bd_dev);
-	else if (sb->s_dev)
-		id = huge_encode_dev(sb->s_dev);
+	else if (sb->s_view.v_dev)
+		id = huge_encode_dev(sb->s_view.v_dev);
 
 	buf->f_type = ROMFS_MAGIC;
 	buf->f_namelen = ROMFS_MAXFN;
@@ -510,7 +510,7 @@ static int romfs_fill_super(struct super_block *sb, void *data, int silent)
 #ifdef CONFIG_ROMFS_ON_MTD
 	/* Use same dev ID from the underlying mtdblock device */
 	if (sb->s_mtd)
-		sb->s_dev = MKDEV(MTD_BLOCK_MAJOR, sb->s_mtd->index);
+		sb->s_view.v_dev = MKDEV(MTD_BLOCK_MAJOR, sb->s_mtd->index);
 #endif
 	/* read the image superblock and check it */
 	rsb = kmalloc(512, GFP_KERNEL);

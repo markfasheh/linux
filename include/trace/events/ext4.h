@@ -599,7 +599,7 @@ TRACE_EVENT(ext4_discard_blocks,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->blk	= blk;
 		__entry->count	= count;
 	),
@@ -625,7 +625,7 @@ DECLARE_EVENT_CLASS(ext4__mb_new_pa,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= ac->ac_sb->s_dev;
+		__entry->dev		= ac->ac_sb->s_view.v_dev;
 		__entry->ino		= ac->ac_inode->i_ino;
 		__entry->pa_pstart	= pa->pa_pstart;
 		__entry->pa_lstart	= pa->pa_lstart;
@@ -694,7 +694,7 @@ TRACE_EVENT(ext4_mb_release_group_pa,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->pa_pstart	= pa->pa_pstart;
 		__entry->pa_len		= pa->pa_len;
 	),
@@ -737,7 +737,7 @@ TRACE_EVENT(ext4_mb_discard_preallocations,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->needed	= needed;
 	),
 
@@ -874,7 +874,7 @@ TRACE_EVENT(ext4_sync_file_enter,
 	TP_fast_assign(
 		struct dentry *dentry = file->f_path.dentry;
 
-		__entry->dev		= dentry->d_sb->s_dev;
+		__entry->dev		= dentry->d_sb->s_view.v_dev;
 		__entry->ino		= d_inode(dentry)->i_ino;
 		__entry->datasync	= datasync;
 		__entry->parent		= d_inode(dentry->d_parent)->i_ino;
@@ -921,7 +921,7 @@ TRACE_EVENT(ext4_sync_fs,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->wait	= wait;
 	),
 
@@ -1078,7 +1078,7 @@ DECLARE_EVENT_CLASS(ext4__mballoc,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->ino		= inode ? inode->i_ino : 0;
 		__entry->result_start	= start;
 		__entry->result_group	= group;
@@ -1248,7 +1248,7 @@ DECLARE_EVENT_CLASS(ext4__bitmap_load,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->group	= group;
 	),
 
@@ -1434,7 +1434,7 @@ TRACE_EVENT(ext4_unlink_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= dentry->d_sb->s_dev;
+		__entry->dev		= dentry->d_sb->s_view.v_dev;
 		__entry->ino		= d_inode(dentry)->i_ino;
 		__entry->parent		= parent->i_ino;
 		__entry->size		= d_inode(dentry)->i_size;
@@ -1458,7 +1458,7 @@ TRACE_EVENT(ext4_unlink_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= dentry->d_sb->s_dev;
+		__entry->dev		= dentry->d_sb->s_view.v_dev;
 		__entry->ino		= d_inode(dentry)->i_ino;
 		__entry->ret		= ret;
 	),
@@ -1737,7 +1737,7 @@ TRACE_EVENT(ext4_journal_start,
 	),
 
 	TP_fast_assign(
-		__entry->dev		 = sb->s_dev;
+		__entry->dev		 = sb->s_view.v_dev;
 		__entry->ip		 = IP;
 		__entry->blocks		 = blocks;
 		__entry->rsv_blocks	 = rsv_blocks;
@@ -1760,7 +1760,7 @@ TRACE_EVENT(ext4_journal_start_reserved,
 	),
 
 	TP_fast_assign(
-		__entry->dev		 = sb->s_dev;
+		__entry->dev		 = sb->s_view.v_dev;
 		__entry->ip		 = IP;
 		__entry->blocks		 = blocks;
 	),
@@ -1787,8 +1787,8 @@ DECLARE_EVENT_CLASS(ext4__trim,
 	),
 
 	TP_fast_assign(
-		__entry->dev_major	= MAJOR(sb->s_dev);
-		__entry->dev_minor	= MINOR(sb->s_dev);
+		__entry->dev_major	= MAJOR(sb->s_view.v_dev);
+		__entry->dev_minor	= MINOR(sb->s_view.v_dev);
 		__entry->group		= group;
 		__entry->start		= start;
 		__entry->len		= len;
@@ -1872,7 +1872,7 @@ TRACE_EVENT(ext4_get_implied_cluster_alloc_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev	= sb->s_dev;
+		__entry->dev	= sb->s_view.v_dev;
 		__entry->flags	= map->m_flags;
 		__entry->lblk	= map->m_lblk;
 		__entry->pblk	= map->m_pblk;
@@ -2390,7 +2390,7 @@ DECLARE_EVENT_CLASS(ext4__es_shrink_enter,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->nr_to_scan	= nr_to_scan;
 		__entry->cache_cnt	= cache_cnt;
 	),
@@ -2424,7 +2424,7 @@ TRACE_EVENT(ext4_es_shrink_scan_exit,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->nr_shrunk	= nr_shrunk;
 		__entry->cache_cnt	= cache_cnt;
 	),
@@ -2499,7 +2499,7 @@ TRACE_EVENT(ext4_es_shrink,
 	),
 
 	TP_fast_assign(
-		__entry->dev		= sb->s_dev;
+		__entry->dev		= sb->s_view.v_dev;
 		__entry->nr_shrunk	= nr_shrunk;
 		__entry->scan_time	= div_u64(scan_time, 1000);
 		__entry->nr_skipped	= nr_skipped;

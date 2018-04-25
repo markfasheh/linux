@@ -51,7 +51,7 @@ static int get_sb_mtd_set(struct super_block *sb, void *_mtd)
 	struct mtd_info *mtd = _mtd;
 
 	sb->s_mtd = mtd;
-	sb->s_dev = MKDEV(MTD_BLOCK_MAJOR, mtd->index);
+	sb->s_view.v_dev = MKDEV(MTD_BLOCK_MAJOR, mtd->index);
 	sb->s_bdi = bdi_get(mtd_bdi);
 
 	return 0;

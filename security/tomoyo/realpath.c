@@ -166,7 +166,7 @@ static char *tomoyo_get_local_path(struct dentry *dentry, char * const buffer,
 		goto prepend_filesystem_name;
 	}
 	/* Use filesystem name for unnamed devices. */
-	if (!MAJOR(sb->s_dev))
+	if (!MAJOR(sb->s_view.v_dev))
 		goto prepend_filesystem_name;
 	{
 		struct inode *inode = d_backing_inode(sb->s_root);
@@ -181,7 +181,7 @@ static char *tomoyo_get_local_path(struct dentry *dentry, char * const buffer,
 	{
 		char name[64];
 		int name_len;
-		const dev_t dev = sb->s_dev;
+		const dev_t dev = sb->s_view.v_dev;
 		name[sizeof(name) - 1] = '\0';
 		snprintf(name, sizeof(name) - 1, "dev(%u,%u):", MAJOR(dev),
 			 MINOR(dev));

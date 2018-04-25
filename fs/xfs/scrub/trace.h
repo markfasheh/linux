@@ -41,7 +41,7 @@ DECLARE_EVENT_CLASS(xfs_scrub_class,
 		__field(int, error)
 	),
 	TP_fast_assign(
-		__entry->dev = ip->i_mount->m_super->s_dev;
+		__entry->dev = ip->i_mount->m_super->s_view.v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->type = sm->sm_type;
 		__entry->agno = sm->sm_agno;
@@ -83,7 +83,7 @@ TRACE_EVENT(xfs_scrub_op_error,
 		__field(void *, ret_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->agno = agno;
 		__entry->bno = bno;
@@ -113,7 +113,7 @@ TRACE_EVENT(xfs_scrub_file_op_error,
 		__field(void *, ret_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = sc->ip->i_mount->m_super->s_dev;
+		__entry->dev = sc->ip->i_mount->m_super->s_view.v_dev;
 		__entry->ino = sc->ip->i_ino;
 		__entry->whichfork = whichfork;
 		__entry->type = sc->sm->sm_type;
@@ -150,7 +150,7 @@ DECLARE_EVENT_CLASS(xfs_scrub_block_error_class,
 		agno = XFS_FSB_TO_AGNO(sc->mp, fsbno);
 		bno = XFS_FSB_TO_AGBNO(sc->mp, fsbno);
 
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->agno = agno;
 		__entry->bno = bno;
@@ -200,7 +200,7 @@ DECLARE_EVENT_CLASS(xfs_scrub_ino_error_class,
 					XFS_INO_TO_AGINO(sc->mp, ino));
 		}
 
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->ino = ino;
 		__entry->type = sc->sm->sm_type;
 		__entry->agno = agno;
@@ -239,7 +239,7 @@ DECLARE_EVENT_CLASS(xfs_scrub_fblock_error_class,
 		__field(void *, ret_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = sc->ip->i_mount->m_super->s_dev;
+		__entry->dev = sc->ip->i_mount->m_super->s_view.v_dev;
 		__entry->ino = sc->ip->i_ino;
 		__entry->whichfork = whichfork;
 		__entry->type = sc->sm->sm_type;
@@ -273,7 +273,7 @@ TRACE_EVENT(xfs_scrub_incomplete,
 		__field(void *, ret_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->ret_ip = ret_ip;
 	),
@@ -301,7 +301,7 @@ TRACE_EVENT(xfs_scrub_btree_op_error,
 	TP_fast_assign(
 		xfs_fsblock_t fsbno = xfs_scrub_btree_cur_fsbno(cur, level);
 
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->btnum = cur->bc_btnum;
 		__entry->level = level;
@@ -342,7 +342,7 @@ TRACE_EVENT(xfs_scrub_ifork_btree_op_error,
 	),
 	TP_fast_assign(
 		xfs_fsblock_t fsbno = xfs_scrub_btree_cur_fsbno(cur, level);
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->ino = sc->ip->i_ino;
 		__entry->whichfork = cur->bc_private.b.whichfork;
 		__entry->type = sc->sm->sm_type;
@@ -384,7 +384,7 @@ TRACE_EVENT(xfs_scrub_btree_error,
 	),
 	TP_fast_assign(
 		xfs_fsblock_t fsbno = xfs_scrub_btree_cur_fsbno(cur, level);
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->btnum = cur->bc_btnum;
 		__entry->level = level;
@@ -422,7 +422,7 @@ TRACE_EVENT(xfs_scrub_ifork_btree_error,
 	),
 	TP_fast_assign(
 		xfs_fsblock_t fsbno = xfs_scrub_btree_cur_fsbno(cur, level);
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->ino = sc->ip->i_ino;
 		__entry->whichfork = cur->bc_private.b.whichfork;
 		__entry->type = sc->sm->sm_type;
@@ -463,7 +463,7 @@ DECLARE_EVENT_CLASS(xfs_scrub_sbtree_class,
 	TP_fast_assign(
 		xfs_fsblock_t fsbno = xfs_scrub_btree_cur_fsbno(cur, level);
 
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->btnum = cur->bc_btnum;
 		__entry->agno = XFS_FSB_TO_AGNO(cur->bc_mp, fsbno);
@@ -501,7 +501,7 @@ TRACE_EVENT(xfs_scrub_xref_error,
 		__field(void *, ret_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = sc->mp->m_super->s_dev;
+		__entry->dev = sc->mp->m_super->s_view.v_dev;
 		__entry->type = sc->sm->sm_type;
 		__entry->error = error;
 		__entry->ret_ip = ret_ip;

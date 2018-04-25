@@ -1973,7 +1973,7 @@ static void ocfs2_dismount_volume(struct super_block *sb, int mnt_err)
 
 	ocfs2_delete_osb(osb);
 	kfree(osb);
-	sb->s_dev = 0;
+	sb->s_view.v_dev = 0;
 	sb->s_fs_info = NULL;
 }
 
@@ -2102,7 +2102,7 @@ static int ocfs2_initialize_super(struct super_block *sb,
 	ocfs2_init_node_maps(osb);
 
 	snprintf(osb->dev_str, sizeof(osb->dev_str), "%u,%u",
-		 MAJOR(osb->sb->s_dev), MINOR(osb->sb->s_dev));
+		 MAJOR(osb->sb->s_view.v_dev), MINOR(osb->sb->s_view.v_dev));
 
 	osb->max_slots = le16_to_cpu(di->id2.i_super.s_max_slots);
 	if (osb->max_slots > OCFS2_MAX_SLOTS || osb->max_slots == 0) {

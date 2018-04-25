@@ -225,7 +225,7 @@ void autofs4_catatonic_mode(struct autofs_sb_info *);
 
 static inline u32 autofs4_get_dev(struct autofs_sb_info *sbi)
 {
-	return new_encode_dev(sbi->sb->s_dev);
+	return new_encode_dev(sbi->sb->s_view.v_dev);
 }
 
 static inline u64 autofs4_get_ino(struct autofs_sb_info *sbi)

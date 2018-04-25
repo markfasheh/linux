@@ -2321,7 +2321,7 @@ static void nfs_initialise_sb(struct super_block *sb)
 
 	/* We probably want something more informative here */
 	snprintf(sb->s_id, sizeof(sb->s_id),
-		 "%u:%u", MAJOR(sb->s_dev), MINOR(sb->s_dev));
+		 "%u:%u", MAJOR(sb->s_view.v_dev), MINOR(sb->s_view.v_dev));
 
 	if (sb->s_blocksize == 0)
 		sb->s_blocksize = nfs_block_bits(server->wsize,
@@ -2433,7 +2433,7 @@ static int nfs_set_super(struct super_block *s, void *data)
 	s->s_d_op = server->nfs_client->rpc_ops->dentry_ops;
 	ret = set_anon_super(s, server);
 	if (ret == 0)
-		server->s_dev = s->s_dev;
+		server->s_dev = s->s_view.v_dev;
 	return ret;
 }
 
@@ -2708,7 +2708,7 @@ EXPORT_SYMBOL_GPL(nfs_fs_mount);
 void nfs_kill_super(struct super_block *s)
 {
 	struct nfs_server *server = NFS_SB(s);
-	dev_t dev = s->s_dev;
+	dev_t dev = s->s_view.v_dev;
 
 	generic_shutdown_super(s);
 

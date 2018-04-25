@@ -1222,7 +1222,7 @@ fail_debug:
 static int set_gfs2_super(struct super_block *s, void *data)
 {
 	s->s_bdev = data;
-	s->s_dev = s->s_bdev->bd_dev;
+	s->s_view.v_dev = s->s_bdev->bd_dev;
 	s->s_bdi = bdi_get(s->s_bdev->bd_bdi);
 	return 0;
 }

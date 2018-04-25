@@ -132,7 +132,7 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 			 * number are unique, so we use the overlay st_dev,
 			 * which is friendly to du -x.
 			 */
-			stat->dev = dentry->d_sb->s_dev;
+			stat->dev = dentry->d_sb->s_view.v_dev;
 		} else if (!OVL_TYPE_UPPER(type)) {
 			/*
 			 * For non-samefs setup, to make sure that st_dev/st_ino
@@ -151,7 +151,7 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 		 * overlay st_dev} is not unique, so use the non persistent
 		 * overlay st_ino for directories.
 		 */
-		stat->dev = dentry->d_sb->s_dev;
+		stat->dev = dentry->d_sb->s_view.v_dev;
 		stat->ino = dentry->d_inode->i_ino;
 	}
 

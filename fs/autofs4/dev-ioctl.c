@@ -231,7 +231,7 @@ static int find_autofs_mount(const char *pathname,
 
 static int test_by_dev(const struct path *path, void *p)
 {
-	return path->dentry->d_sb->s_dev == *(dev_t *)p;
+	return path->dentry->d_sb->s_view.v_dev == *(dev_t *)p;
 }
 
 static int test_by_type(const struct path *path, void *p)
@@ -243,7 +243,7 @@ static int test_by_type(const struct path *path, void *p)
 
 /*
  * Open a file descriptor on the autofs mount point corresponding
- * to the given path and device number (aka. new_encode_dev(sb->s_dev)).
+ * to the given path and device number (aka. new_encode_dev(sb->s_view.v_dev)).
  */
 static int autofs_dev_ioctl_open_mountpoint(const char *name, dev_t devid)
 {
@@ -451,7 +451,7 @@ static int autofs_dev_ioctl_requester(struct file *fp,
 		goto out;
 	}
 
-	devid = sbi->sb->s_dev;
+	devid = sbi->sb->s_view.v_dev;
 
 	param->requester.uid = param->requester.gid = -1;
 
@@ -554,14 +554,14 @@ static int autofs_dev_ioctl_ismountpoint(struct file *fp,
 						test_by_type, &type);
 		if (err)
 			goto out;
-		devid = new_encode_dev(path.dentry->d_sb->s_dev);
+		devid = new_encode_dev(path.dentry->d_sb->s_view.v_dev);
 		err = 0;
 		if (path.mnt->mnt_root == path.dentry) {
 			err = 1;
 			magic = path.dentry->d_sb->s_magic;
 		}
 	} else {
-		dev_t dev = sbi->sb->s_dev;
+		dev_t dev = sbi->sb->s_view.v_dev;
 
 		err = find_autofs_mount(name, &path, test_by_dev, &dev);
 		if (err)

@@ -583,7 +583,7 @@ xfs_quota_warn(
 
 	quota_send_warning(make_kqid(&init_user_ns, qtype,
 				     be32_to_cpu(dqp->q_core.d_id)),
-			   mp->m_super->s_dev, type);
+			   mp->m_super->s_view.v_dev, type);
 }
 
 /*

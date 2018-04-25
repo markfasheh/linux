@@ -781,7 +781,7 @@ rescan:
 	list_for_each_entry(sb, &super_blocks, s_list) {
 		if (hlist_unhashed(&sb->s_instances))
 			continue;
-		if (sb->s_dev ==  dev) {
+		if (sb->s_view.v_dev ==  dev) {
 			sb->s_count++;
 			spin_unlock(&sb_lock);
 			down_read(&sb->s_umount);
@@ -981,14 +981,14 @@ EXPORT_SYMBOL(free_anon_bdev);
 
 int set_anon_super(struct super_block *s, void *data)
 {
-	return get_anon_bdev(&s->s_dev);
+	return get_anon_bdev(&s->s_view.v_dev);
 }
 
 EXPORT_SYMBOL(set_anon_super);
 
 void kill_anon_super(struct super_block *sb)
 {
-	dev_t dev = sb->s_dev;
+	dev_t dev = sb->s_view.v_dev;
 	generic_shutdown_super(sb);
 	free_anon_bdev(dev);
 }
@@ -1052,7 +1052,7 @@ EXPORT_SYMBOL(mount_ns);
 static int set_bdev_super(struct super_block *s, void *data)
 {
 	s->s_bdev = data;
-	s->s_dev = s->s_bdev->bd_dev;
+	s->s_view.v_dev = s->s_bdev->bd_dev;
 	s->s_bdi = bdi_get(s->s_bdev->bd_bdi);
 
 	return 0;

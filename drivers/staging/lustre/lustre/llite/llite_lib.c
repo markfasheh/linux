@@ -524,7 +524,7 @@ static int client_common_fill_super(struct super_block *sb, char *md, char *dt)
 		goto out_lock_cn_cb;
 	}
 
-	sbi->ll_sdev_orig = sb->s_dev;
+	sbi->ll_sdev_orig = sb->s_view.v_dev;
 
 	/* We set sb->s_dev equal on all lustre clients in order to support
 	 * NFS export clustering.  NFSD requires that the FSID be the same
@@ -535,7 +535,7 @@ static int client_common_fill_super(struct super_block *sb, char *md, char *dt)
 	 */
 	uuid = obd_get_uuid(sbi->ll_md_exp);
 	if (uuid) {
-		sb->s_dev = get_uuid2int(uuid->uuid, strlen(uuid->uuid));
+		sb->s_view.v_dev = get_uuid2int(uuid->uuid, strlen(uuid->uuid));
 		get_uuid2fsid(uuid->uuid, strlen(uuid->uuid), &sbi->ll_fsid);
 	}
 
@@ -670,7 +670,7 @@ void ll_kill_super(struct super_block *sb)
 	 * in put_super not affected real removing devices
 	 */
 	if (sbi) {
-		sb->s_dev = sbi->ll_sdev_orig;
+		sb->s_view.v_dev = sbi->ll_sdev_orig;
 		sbi->ll_umounting = 1;
 
 		/* wait running statahead threads to quit */

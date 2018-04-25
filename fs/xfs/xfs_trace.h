@@ -114,7 +114,7 @@ DECLARE_EVENT_CLASS(xfs_perag_class,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->refcount = refcount;
 		__entry->caller_ip = caller_ip;
@@ -149,7 +149,7 @@ DECLARE_EVENT_CLASS(xfs_ag_class,
 		__field(xfs_agnumber_t, agno)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 	),
 	TP_printk("dev %d:%d agno %u",
@@ -742,7 +742,7 @@ TRACE_EVENT(xfs_irec_merge_pre,
 		__field(uint16_t, nholemask)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agino = agino;
 		__entry->holemask = holemask;
@@ -766,7 +766,7 @@ TRACE_EVENT(xfs_irec_merge_post,
 		__field(uint16_t, holemask)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agino = agino;
 		__entry->holemask = holemask;
@@ -868,7 +868,7 @@ DECLARE_EVENT_CLASS(xfs_dquot_class,
 		__field(unsigned long long, ino_softlimit)
 	), \
 	TP_fast_assign(
-		__entry->dev = dqp->q_mount->m_super->s_dev;
+		__entry->dev = dqp->q_mount->m_super->s_view.v_dev;
 		__entry->id = be32_to_cpu(dqp->q_core.d_id);
 		__entry->flags = dqp->dq_flags;
 		__entry->nrefs = dqp->q_nrefs;
@@ -947,7 +947,7 @@ DECLARE_EVENT_CLASS(xfs_loggrant_class,
 		__field(xfs_lsn_t, tail_lsn)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->ocnt = tic->t_ocnt;
 		__entry->cnt = tic->t_cnt;
 		__entry->curr_res = tic->t_curr_res;
@@ -1022,7 +1022,7 @@ DECLARE_EVENT_CLASS(xfs_log_item_class,
 		__field(xfs_lsn_t, lsn)
 	),
 	TP_fast_assign(
-		__entry->dev = lip->li_mountp->m_super->s_dev;
+		__entry->dev = lip->li_mountp->m_super->s_view.v_dev;
 		__entry->lip = lip;
 		__entry->type = lip->li_type;
 		__entry->flags = lip->li_flags;
@@ -1045,7 +1045,7 @@ TRACE_EVENT(xfs_log_force,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->lsn = lsn;
 		__entry->caller_ip = caller_ip;
 	),
@@ -1075,7 +1075,7 @@ DECLARE_EVENT_CLASS(xfs_ail_class,
 		__field(xfs_lsn_t, new_lsn)
 	),
 	TP_fast_assign(
-		__entry->dev = lip->li_mountp->m_super->s_dev;
+		__entry->dev = lip->li_mountp->m_super->s_view.v_dev;
 		__entry->lip = lip;
 		__entry->type = lip->li_type;
 		__entry->flags = lip->li_flags;
@@ -1109,7 +1109,7 @@ TRACE_EVENT(xfs_log_assign_tail_lsn,
 		__field(xfs_lsn_t, last_sync_lsn)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->new_lsn = new_lsn;
 		__entry->old_lsn = atomic64_read(&log->l_tail_lsn);
 		__entry->last_sync_lsn = atomic64_read(&log->l_last_sync_lsn);
@@ -1425,7 +1425,7 @@ DECLARE_EVENT_CLASS(xfs_extent_busy_class,
 		__field(xfs_extlen_t, len)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -1461,7 +1461,7 @@ TRACE_EVENT(xfs_extent_busy_trim,
 		__field(xfs_extlen_t, tlen)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -1498,7 +1498,7 @@ TRACE_EVENT(xfs_agf,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = be32_to_cpu(agf->agf_seqno),
 		__entry->flags = flags;
 		__entry->length = be32_to_cpu(agf->agf_length),
@@ -1549,7 +1549,7 @@ TRACE_EVENT(xfs_free_extent,
 		__field(int, haveright)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -1594,7 +1594,7 @@ DECLARE_EVENT_CLASS(xfs_alloc_class,
 		__field(xfs_fsblock_t, firstblock)
 	),
 	TP_fast_assign(
-		__entry->dev = args->mp->m_super->s_dev;
+		__entry->dev = args->mp->m_super->s_view.v_dev;
 		__entry->agno = args->agno;
 		__entry->agbno = args->agbno;
 		__entry->minlen = args->minlen;
@@ -1958,7 +1958,7 @@ TRACE_EVENT(xfs_log_recover,
 		__field(xfs_daddr_t, tailblk)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->headblk = headblk;
 		__entry->tailblk = tailblk;
 	),
@@ -1978,7 +1978,7 @@ TRACE_EVENT(xfs_log_recover_record,
 		__field(int, pass)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->lsn = be64_to_cpu(rhead->h_lsn);
 		__entry->len = be32_to_cpu(rhead->h_len);
 		__entry->num_logops = be32_to_cpu(rhead->h_num_logops);
@@ -2005,7 +2005,7 @@ DECLARE_EVENT_CLASS(xfs_log_recover_item_class,
 		__field(int, total)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->item = (unsigned long)item;
 		__entry->tid = trans->r_log_tid;
 		__entry->lsn = trans->r_lsn;
@@ -2050,7 +2050,7 @@ DECLARE_EVENT_CLASS(xfs_log_recover_buf_item_class,
 		__field(unsigned int, map_size)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->blkno = buf_f->blf_blkno;
 		__entry->len = buf_f->blf_len;
 		__entry->flags = buf_f->blf_flags;
@@ -2097,7 +2097,7 @@ DECLARE_EVENT_CLASS(xfs_log_recover_ino_item_class,
 		__field(int, boffset)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->ino = in_f->ilf_ino;
 		__entry->size = in_f->ilf_size;
 		__entry->fields = in_f->ilf_fields;
@@ -2141,7 +2141,7 @@ DECLARE_EVENT_CLASS(xfs_log_recover_icreate_item_class,
 		__field(unsigned int, gen)
 	),
 	TP_fast_assign(
-		__entry->dev = log->l_mp->m_super->s_dev;
+		__entry->dev = log->l_mp->m_super->s_view.v_dev;
 		__entry->agno = be32_to_cpu(in_f->icl_ag);
 		__entry->agbno = be32_to_cpu(in_f->icl_agbno);
 		__entry->count = be32_to_cpu(in_f->icl_count);
@@ -2173,7 +2173,7 @@ DECLARE_EVENT_CLASS(xfs_discard_class,
 		__field(xfs_extlen_t, len)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -2208,7 +2208,7 @@ DECLARE_EVENT_CLASS(xfs_btree_cur_class,
 		__field(xfs_daddr_t, daddr)
 	),
 	TP_fast_assign(
-		__entry->dev = cur->bc_mp->m_super->s_dev;
+		__entry->dev = cur->bc_mp->m_super->s_view.v_dev;
 		__entry->btnum = cur->bc_btnum;
 		__entry->level = level;
 		__entry->nlevels = cur->bc_nlevels;
@@ -2245,7 +2245,7 @@ DECLARE_EVENT_CLASS(xfs_defer_class,
 		__field(char, low)
 	),
 	TP_fast_assign(
-		__entry->dev = mp ? mp->m_super->s_dev : 0;
+		__entry->dev = mp ? mp->m_super->s_view.v_dev : 0;
 		__entry->dop = dop;
 		__entry->committed = dop->dop_committed;
 		__entry->low = dop->dop_low;
@@ -2272,7 +2272,7 @@ DECLARE_EVENT_CLASS(xfs_defer_error_class,
 		__field(int, error)
 	),
 	TP_fast_assign(
-		__entry->dev = mp ? mp->m_super->s_dev : 0;
+		__entry->dev = mp ? mp->m_super->s_view.v_dev : 0;
 		__entry->dop = dop;
 		__entry->committed = dop->dop_committed;
 		__entry->low = dop->dop_low;
@@ -2301,7 +2301,7 @@ DECLARE_EVENT_CLASS(xfs_defer_pending_class,
 		__field(int, nr)
 	),
 	TP_fast_assign(
-		__entry->dev = mp ? mp->m_super->s_dev : 0;
+		__entry->dev = mp ? mp->m_super->s_view.v_dev : 0;
 		__entry->type = dfp->dfp_type->type;
 		__entry->intent = dfp->dfp_intent;
 		__entry->committed = dfp->dfp_done != NULL;
@@ -2331,7 +2331,7 @@ DECLARE_EVENT_CLASS(xfs_phys_extent_deferred_class,
 		__field(xfs_extlen_t, len)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->type = type;
 		__entry->agbno = agbno;
@@ -2374,7 +2374,7 @@ DECLARE_EVENT_CLASS(xfs_map_extent_deferred_class,
 		__field(int, op)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->ino = ino;
 		__entry->agbno = agbno;
@@ -2443,7 +2443,7 @@ DECLARE_EVENT_CLASS(xfs_rmap_class,
 		__field(unsigned long, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -2481,7 +2481,7 @@ DECLARE_EVENT_CLASS(xfs_ag_error_class,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->error = error;
 		__entry->caller_ip = caller_ip;
@@ -2525,7 +2525,7 @@ DECLARE_EVENT_CLASS(xfs_rmapbt_class,
 		__field(unsigned int, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->len = len;
@@ -2593,7 +2593,7 @@ DECLARE_EVENT_CLASS(xfs_ag_resv_class,
 	TP_fast_assign(
 		struct xfs_ag_resv	*r = xfs_perag_resv(pag, resv);
 
-		__entry->dev = pag->pag_mount->m_super->s_dev;
+		__entry->dev = pag->pag_mount->m_super->s_view.v_dev;
 		__entry->agno = pag->pag_agno;
 		__entry->resv = resv;
 		__entry->freeblks = pag->pagf_freeblks;
@@ -2651,7 +2651,7 @@ DECLARE_EVENT_CLASS(xfs_ag_btree_lookup_class,
 		__field(xfs_lookup_t, dir)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->agbno = agbno;
 		__entry->dir = dir;
@@ -2683,7 +2683,7 @@ DECLARE_EVENT_CLASS(xfs_refcount_extent_class,
 		__field(xfs_nlink_t, refcount)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->startblock = irec->rc_startblock;
 		__entry->blockcount = irec->rc_blockcount;
@@ -2717,7 +2717,7 @@ DECLARE_EVENT_CLASS(xfs_refcount_extent_at_class,
 		__field(xfs_agblock_t, agbno)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->startblock = irec->rc_startblock;
 		__entry->blockcount = irec->rc_blockcount;
@@ -2755,7 +2755,7 @@ DECLARE_EVENT_CLASS(xfs_refcount_double_extent_class,
 		__field(xfs_nlink_t, i2_refcount)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->i1_startblock = i1->rc_startblock;
 		__entry->i1_blockcount = i1->rc_blockcount;
@@ -2800,7 +2800,7 @@ DECLARE_EVENT_CLASS(xfs_refcount_double_extent_at_class,
 		__field(xfs_agblock_t, agbno)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->i1_startblock = i1->rc_startblock;
 		__entry->i1_blockcount = i1->rc_blockcount;
@@ -2850,7 +2850,7 @@ DECLARE_EVENT_CLASS(xfs_refcount_triple_extent_class,
 		__field(xfs_nlink_t, i3_refcount)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->i1_startblock = i1->rc_startblock;
 		__entry->i1_blockcount = i1->rc_blockcount;
@@ -2943,7 +2943,7 @@ TRACE_EVENT(xfs_refcount_finish_one_leftover,
 		__field(xfs_extlen_t, new_len)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->agno = agno;
 		__entry->type = type;
 		__entry->agbno = agbno;
@@ -3247,7 +3247,7 @@ DECLARE_EVENT_CLASS(xfs_fsmap_class,
 		__field(unsigned int, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->keydev = new_decode_dev(keydev);
 		__entry->agno = agno;
 		__entry->bno = rmap->rm_startblock;
@@ -3288,7 +3288,7 @@ DECLARE_EVENT_CLASS(xfs_getfsmap_class,
 		__field(uint64_t, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->keydev = new_decode_dev(fsmap->fmr_device);
 		__entry->block = fsmap->fmr_physical;
 		__entry->len = fsmap->fmr_length;
@@ -3325,7 +3325,7 @@ TRACE_EVENT(xfs_trans_resv_calc,
 		__field(int, logflags)
 	),
 	TP_fast_assign(
-		__entry->dev = mp->m_super->s_dev;
+		__entry->dev = mp->m_super->s_view.v_dev;
 		__entry->type = type;
 		__entry->logres = res->tr_logres;
 		__entry->logcount = res->tr_logcount;

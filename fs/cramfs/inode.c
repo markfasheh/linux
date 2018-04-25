@@ -674,8 +674,8 @@ static int cramfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 
 	if (sb->s_bdev)
 		id = huge_encode_dev(sb->s_bdev->bd_dev);
-	else if (sb->s_dev)
-		id = huge_encode_dev(sb->s_dev);
+	else if (sb->s_view.v_dev)
+		id = huge_encode_dev(sb->s_view.v_dev);
 
 	buf->f_type = CRAMFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;

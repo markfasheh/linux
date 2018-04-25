@@ -63,7 +63,8 @@ static struct kset *gfs2_kset;
 static ssize_t id_show(struct gfs2_sbd *sdp, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u:%u\n",
-			MAJOR(sdp->sd_vfs->s_dev), MINOR(sdp->sd_vfs->s_dev));
+			MAJOR(sdp->sd_vfs->s_view.v_dev),
+			MINOR(sdp->sd_vfs->s_view.v_dev));
 }
 
 static ssize_t fsname_show(struct gfs2_sbd *sdp, char *buf)

@@ -760,7 +760,7 @@ static int exofs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_max_links = EXOFS_LINK_MAX;
 	atomic_set(&sbi->s_curr_pending, 0);
 	sb->s_bdev = NULL;
-	sb->s_dev = 0;
+	sb->s_view.v_dev = 0;
 
 	comp.obj.partition = sbi->one_comp.obj.partition;
 	comp.obj.id = EXOFS_SUPER_ID;
