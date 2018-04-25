@@ -855,7 +855,7 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
 		attr->ctimensec = inode->i_ctime.tv_nsec;
 	}
 
-	stat->dev = inode_sb(inode)->s_dev;
+	stat->dev = inode_view(inode)->v_dev;
 	stat->ino = attr->ino;
 	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
 	stat->nlink = attr->nlink;

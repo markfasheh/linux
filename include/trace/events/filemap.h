@@ -31,7 +31,7 @@ DECLARE_EVENT_CLASS(mm_filemap_op_page_cache,
 		__entry->i_ino = page->mapping->host->i_ino;
 		__entry->index = page->index;
 		if (inode_sb(page->mapping->host))
-			__entry->s_dev = inode_sb(page->mapping->host)->s_dev;
+			__entry->s_dev = inode_view(page->mapping->host)->v_dev;
 		else
 			__entry->s_dev = page->mapping->host->i_rdev;
 	),
@@ -69,7 +69,7 @@ TRACE_EVENT(filemap_set_wb_err,
 			__entry->i_ino = mapping->host->i_ino;
 			__entry->errseq = eseq;
 			if (inode_sb(mapping->host))
-				__entry->s_dev = inode_sb(mapping->host)->s_dev;
+				__entry->s_dev = inode_view(mapping->host)->v_dev;
 			else
 				__entry->s_dev = mapping->host->i_rdev;
 		),
@@ -97,7 +97,7 @@ TRACE_EVENT(file_check_and_advance_wb_err,
 			__entry->i_ino = file->f_mapping->host->i_ino;
 			if (inode_sb(file->f_mapping->host))
 				__entry->s_dev =
-					inode_sb(file->f_mapping->host)->s_dev;
+					inode_view(file->f_mapping->host)->v_dev;
 			else
 				__entry->s_dev =
 					file->f_mapping->host->i_rdev;

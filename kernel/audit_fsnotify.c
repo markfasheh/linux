@@ -76,7 +76,7 @@ int audit_mark_compare(struct audit_fsnotify_mark *mark, unsigned long ino, dev_
 static void audit_update_mark(struct audit_fsnotify_mark *audit_mark,
 			     const struct inode *inode)
 {
-	audit_mark->dev = inode ? inode_sb(inode)->s_dev : AUDIT_DEV_UNSET;
+	audit_mark->dev = inode ? inode_view(inode)->v_dev : AUDIT_DEV_UNSET;
 	audit_mark->ino = inode ? inode->i_ino : AUDIT_INO_UNSET;
 }
 

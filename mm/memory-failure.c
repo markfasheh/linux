@@ -98,7 +98,7 @@ static int hwpoison_filter_dev(struct page *p)
 	if (mapping == NULL || mapping->host == NULL)
 		return -EINVAL;
 
-	dev = inode_sb(mapping->host)->s_dev;
+	dev = inode_view(mapping->host)->v_dev;
 	if (hwpoison_filter_dev_major != ~0U &&
 	    hwpoison_filter_dev_major != MAJOR(dev))
 		return -EINVAL;

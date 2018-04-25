@@ -60,7 +60,7 @@ DECLARE_EVENT_CLASS(xfs_attr_list_class,
 		__field(int, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ctx->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(ctx->dp))->v_dev;
 		__entry->ino = ctx->dp->i_ino;
 		__entry->hashval = ctx->cursor->hashval;
 		__entry->blkno = ctx->cursor->blkno;
@@ -186,7 +186,7 @@ TRACE_EVENT(xfs_attr_list_node_descend,
 		__field(u32, bt_before)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ctx->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(ctx->dp))->v_dev;
 		__entry->ino = ctx->dp->i_ino;
 		__entry->hashval = ctx->cursor->hashval;
 		__entry->blkno = ctx->cursor->blkno;
@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(xfs_bmap_class,
 
 		ifp = xfs_iext_state_to_fork(ip, state);
 		xfs_iext_get_extent(ifp, cur, &r);
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->leaf = cur->leaf;
 		__entry->pos = cur->pos;
@@ -515,7 +515,7 @@ DECLARE_EVENT_CLASS(xfs_filestream_class,
 		__field(int, streams)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->agno = agno;
 		__entry->streams = xfs_filestream_peek_ag(ip->i_mount, agno);
@@ -547,7 +547,7 @@ TRACE_EVENT(xfs_filestream_pick,
 		__field(int, nscan)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->agno = agno;
 		__entry->streams = xfs_filestream_peek_ag(ip->i_mount, agno);
@@ -574,7 +574,7 @@ DECLARE_EVENT_CLASS(xfs_lock_class,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->lock_flags = lock_flags;
 		__entry->caller_ip = caller_ip;
@@ -604,7 +604,7 @@ DECLARE_EVENT_CLASS(xfs_inode_class,
 		__field(xfs_ino_t, ino)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 	),
 	TP_printk("dev %d:%d ino 0x%llx",
@@ -665,7 +665,7 @@ TRACE_EVENT(xfs_filemap_fault,
 		__field(bool, write_fault)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->pe_size = pe_size;
 		__entry->write_fault = write_fault;
@@ -691,7 +691,7 @@ DECLARE_EVENT_CLASS(xfs_iref_class,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->count = atomic_read(&VFS_I(ip)->i_count);
 		__entry->pincount = atomic_read(&ip->i_pincount);
@@ -717,7 +717,7 @@ TRACE_EVENT(xfs_iomap_prealloc_size,
 		__field(unsigned int, writeio_blocks)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->blocks = blocks;
 		__entry->shift = shift;
@@ -795,7 +795,7 @@ DECLARE_EVENT_CLASS(xfs_namespace_class,
 		__dynamic_array(char, name, name->len)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(dp))->v_dev;
 		__entry->dp_ino = dp->i_ino;
 		__entry->namelen = name->len;
 		memcpy(__get_str(name), name->name, name->len);
@@ -831,7 +831,7 @@ TRACE_EVENT(xfs_rename,
 		__dynamic_array(char, target_name, target_name->len)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(src_dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(src_dp))->v_dev;
 		__entry->src_dp_ino = src_dp->i_ino;
 		__entry->target_dp_ino = target_dp->i_ino;
 		__entry->src_namelen = src_name->len;
@@ -1132,7 +1132,7 @@ DECLARE_EVENT_CLASS(xfs_file_class,
 		__field(size_t, count)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->size = ip->i_d.di_size;
 		__entry->offset = offset;
@@ -1176,7 +1176,7 @@ DECLARE_EVENT_CLASS(xfs_page_class,
 
 		if (page_has_buffers(page))
 			xfs_count_page_state(page, &delalloc, &unwritten);
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = XFS_I(inode)->i_ino;
 		__entry->pgoff = page_offset(page);
 		__entry->size = i_size_read(inode);
@@ -1215,7 +1215,7 @@ DECLARE_EVENT_CLASS(xfs_readpage_class,
 		__field(int, nr_pages)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(inode)->s_dev;
+		__entry->dev = inode_view(inode)->v_dev;
 		__entry->ino = inode->i_ino;
 		__entry->nr_pages = nr_pages;
 	),
@@ -1248,7 +1248,7 @@ DECLARE_EVENT_CLASS(xfs_imap_class,
 		__field(xfs_filblks_t, blockcount)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->size = ip->i_d.di_size;
 		__entry->offset = offset;
@@ -1296,7 +1296,7 @@ DECLARE_EVENT_CLASS(xfs_simple_io_class,
 		__field(size_t, count)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->isize = VFS_I(ip)->i_size;
 		__entry->disize = ip->i_d.di_size;
@@ -1336,7 +1336,7 @@ DECLARE_EVENT_CLASS(xfs_itrunc_class,
 		__field(xfs_fsize_t, new_size)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->size = ip->i_d.di_size;
 		__entry->new_size = new_size;
@@ -1366,7 +1366,7 @@ TRACE_EVENT(xfs_pagecache_inval,
 		__field(xfs_off_t, finish)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->size = ip->i_d.di_size;
 		__entry->start = start;
@@ -1394,7 +1394,7 @@ TRACE_EVENT(xfs_bunmap,
 		__field(int, flags)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->size = ip->i_d.di_size;
 		__entry->bno = bno;
@@ -1682,7 +1682,7 @@ DECLARE_EVENT_CLASS(xfs_da_class,
 		__field(int, op_flags)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(args->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(args->dp))->v_dev;
 		__entry->ino = args->dp->i_ino;
 		if (args->namelen)
 			memcpy(__get_str(name), args->name, args->namelen);
@@ -1746,7 +1746,7 @@ DECLARE_EVENT_CLASS(xfs_attr_class,
 		__field(int, op_flags)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(args->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(args->dp))->v_dev;
 		__entry->ino = args->dp->i_ino;
 		if (args->namelen)
 			memcpy(__get_str(name), args->name, args->namelen);
@@ -1849,7 +1849,7 @@ DECLARE_EVENT_CLASS(xfs_dir2_space_class,
 		__field(int, idx)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(args->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(args->dp))->v_dev;
 		__entry->ino = args->dp->i_ino;
 		__entry->op_flags = args->op_flags;
 		__entry->idx = idx;
@@ -1882,7 +1882,7 @@ TRACE_EVENT(xfs_dir2_leafn_moveents,
 		__field(int, count)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(args->dp))->s_dev;
+		__entry->dev = inode_view(VFS_I(args->dp))->v_dev;
 		__entry->ino = args->dp->i_ino;
 		__entry->op_flags = args->op_flags;
 		__entry->src_idx = src_idx;
@@ -1922,7 +1922,7 @@ DECLARE_EVENT_CLASS(xfs_swap_extent_class,
 		__field(int, fork_off)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->which = which;
 		__entry->ino = ip->i_ino;
 		__entry->format = ip->i_d.di_format;
@@ -2972,7 +2972,7 @@ DECLARE_EVENT_CLASS(xfs_inode_error_class,
 		__field(unsigned long, caller_ip)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->error = error;
 		__entry->caller_ip = caller_ip;
@@ -3010,7 +3010,7 @@ DECLARE_EVENT_CLASS(xfs_double_io_class,
 		__field(loff_t, dest_offset)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(src))->s_dev;
+		__entry->dev = inode_view(VFS_I(src))->v_dev;
 		__entry->src_ino = src->i_ino;
 		__entry->src_isize = VFS_I(src)->i_size;
 		__entry->src_disize = src->i_d.di_size;
@@ -3055,7 +3055,7 @@ DECLARE_EVENT_CLASS(xfs_inode_irec_class,
 		__field(int, state)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->lblk = irec->br_startoff;
 		__entry->len = irec->br_blockcount;
@@ -3096,7 +3096,7 @@ TRACE_EVENT(xfs_reflink_remap_blocks_loop,
 		__field(xfs_fileoff_t, dest_lblk)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(src))->s_dev;
+		__entry->dev = inode_view(VFS_I(src))->v_dev;
 		__entry->src_ino = src->i_ino;
 		__entry->src_lblk = soffset;
 		__entry->len = len;
@@ -3124,7 +3124,7 @@ TRACE_EVENT(xfs_reflink_punch_range,
 		__field(xfs_extlen_t, len)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->lblk = lblk;
 		__entry->len = len;
@@ -3147,7 +3147,7 @@ TRACE_EVENT(xfs_reflink_remap,
 		__field(xfs_fsblock_t, new_pblk)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(VFS_I(ip))->s_dev;
+		__entry->dev = inode_view(VFS_I(ip))->v_dev;
 		__entry->ino = ip->i_ino;
 		__entry->lblk = lblk;
 		__entry->len = len;
@@ -3183,7 +3183,7 @@ TRACE_EVENT(xfs_ioctl_clone,
 		__field(loff_t, dest_isize)
 	),
 	TP_fast_assign(
-		__entry->dev = inode_sb(src)->s_dev;
+		__entry->dev = inode_view(src)->v_dev;
 		__entry->src_ino = src->i_ino;
 		__entry->src_isize = i_size_read(src);
 		__entry->dest_ino = dest->i_ino;
