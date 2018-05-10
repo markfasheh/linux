@@ -2050,7 +2050,7 @@ int vfs_dedupe_file_range(struct file *file, struct file_dedupe_range *same)
 		if (info->reserved) {
 			info->status = -EINVAL;
 		} else if (!allow_file_dedupe(dst_file)) {
-			info->status = -EINVAL;
+			info->status = -EPERM;
 		} else if (file->f_path.mnt != dst_file->f_path.mnt) {
 			info->status = -EXDEV;
 		} else if (S_ISDIR(dst->i_mode)) {
