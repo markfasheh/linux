@@ -1528,6 +1528,11 @@ out:
 	return ret;
 }
 
+static inline struct btrfs_qgroup_extent_record *to_qrecord(struct rb_node *node)
+{
+	return rb_entry(node, struct btrfs_qgroup_extent_record, node);
+}
+
 int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 				struct btrfs_delayed_ref_root *delayed_refs,
 				struct btrfs_qgroup_extent_record *record)
@@ -1542,8 +1547,7 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 
 	while (*p) {
 		parent_node = *p;
-		entry = rb_entry(parent_node, struct btrfs_qgroup_extent_record,
-				 node);
+		entry = to_qrecord(parent_node);
 		if (bytenr < entry->bytenr) {
 			p = &(*p)->rb_left;
 		} else if (bytenr > entry->bytenr) {
@@ -2501,8 +2505,7 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 	delayed_refs = &trans->transaction->delayed_refs;
 	qgroup_to_skip = delayed_refs->qgroup_to_skip;
 	while ((node = rb_first(&delayed_refs->dirty_extent_root))) {
-		record = rb_entry(node, struct btrfs_qgroup_extent_record,
-				  node);
+		record = to_qrecord(node);
 
 		num_dirty_extents++;
 		trace_btrfs_qgroup_account_extents(fs_info, record);
@@ -2558,6 +2561,22 @@ cleanup:
 	trace_qgroup_num_dirty_extents(fs_info, trans->transid,
 				       num_dirty_extents);
 	return ret;
+}
+
+void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans)
+{
+	struct btrfs_delayed_ref_root *delayed_refs = &trans->delayed_refs;
+	struct rb_root *root = &delayed_refs->dirty_extent_root;
+	struct rb_node *node;
+
+	lockdep_assert_held(&delayed_refs->lock);
+	while ((node = rb_first(root)) != NULL) {
+		struct btrfs_qgroup_extent_record *qrecord = to_qrecord(node);
+
+		rb_erase(node, &delayed_refs->dirty_extent_root);
+		ulist_free(qrecord->old_roots);
+		kfree(qrecord);
+	}
 }
 
 /*
