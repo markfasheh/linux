@@ -46,6 +46,7 @@ struct btrfs_qgroup_extent_record {
 	u64 bytenr;
 	u64 num_bytes;
 	struct ulist *old_roots;
+	struct list_head list;
 };
 
 /*
@@ -163,41 +164,16 @@ struct btrfs_delayed_extent_op;
  * Inform qgroup to trace one dirty extent, its info is recorded in @record.
  * So qgroup can account it at transaction committing time.
  *
- * No lock version, caller must acquire delayed ref lock and allocated memory,
- * then call btrfs_qgroup_trace_extent_post() after exiting lock context.
+ * No lock version, caller must acquire delayed ref lock and allocated memory.
  *
  * Return 0 for success insert
  * Return >0 for existing record, caller can free @record safely.
  * Error is not possible
  */
 int btrfs_qgroup_trace_extent_nolock(
-		struct btrfs_fs_info *fs_info,
+		struct btrfs_trans_handle *trans,
 		struct btrfs_delayed_ref_root *delayed_refs,
 		struct btrfs_qgroup_extent_record *record);
-
-/*
- * Post handler after qgroup_trace_extent_nolock().
- *
- * NOTE: Current qgroup does the expensive backref walk at transaction
- * committing time with TRANS_STATE_COMMIT_DOING, this blocks incoming
- * new transaction.
- * This is designed to allow btrfs_find_all_roots() to get correct new_roots
- * result.
- *
- * However for old_roots there is no need to do backref walk at that time,
- * since we search commit roots to walk backref and result will always be
- * correct.
- *
- * Due to the nature of no lock version, we can't do backref there.
- * So we must call btrfs_qgroup_trace_extent_post() after exiting
- * spinlock context.
- *
- * TODO: If we can fix and prove btrfs_find_all_roots() can get correct result
- * using current root, then we can move all expensive backref walk out of
- * transaction committing, but not now as qgroup accounting will be wrong again.
- */
-int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
-				   struct btrfs_qgroup_extent_record *qrecord);
 
 /*
  * Inform qgroup to trace one dirty extent, specified by @bytenr and
@@ -313,6 +289,7 @@ void btrfs_qgroup_free_meta_all_pertrans(struct btrfs_root *root);
 void btrfs_qgroup_convert_reserved_meta(struct btrfs_root *root, int num_bytes);
 
 void btrfs_qgroup_check_reserved_leak(struct inode *inode);
+void btrfs_qgroup_run_extent_records(struct btrfs_trans_handle *trans);
 void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans);
 
 #endif

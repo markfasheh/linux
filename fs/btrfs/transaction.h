@@ -127,6 +127,7 @@ struct btrfs_trans_handle {
 	struct btrfs_root *root;
 	struct btrfs_fs_info *fs_info;
 	struct list_head new_bgs;
+	struct list_head pending_qrecords;
 };
 
 struct btrfs_pending_snapshot {

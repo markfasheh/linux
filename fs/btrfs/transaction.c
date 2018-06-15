@@ -549,6 +549,7 @@ again:
 	h->type = type;
 	h->can_flush_pending_bgs = true;
 	INIT_LIST_HEAD(&h->new_bgs);
+	INIT_LIST_HEAD(&h->pending_qrecords);
 
 	smp_mb();
 	if (cur_trans->state >= TRANS_STATE_BLOCKED &&
@@ -853,6 +854,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
 
 	btrfs_trans_release_chunk_metadata(trans);
 
+	btrfs_qgroup_run_extent_records(trans);
+
 	if (lock && should_end_transaction(trans) &&
 	    READ_ONCE(cur_trans->state) == TRANS_STATE_RUNNING) {
 		spin_lock(&info->trans_lock);
@@ -891,6 +894,7 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
 		err = -EIO;
 	}
 
+	ASSERT(list_empty(&trans->pending_qrecords));
 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
 	if (must_run_delayed_refs) {
 		btrfs_async_run_delayed_refs(info, cur, transid,
@@ -1882,6 +1886,7 @@ static void cleanup_transaction(struct btrfs_trans_handle *trans, int err)
 		current->journal_info = NULL;
 	btrfs_scrub_cancel(fs_info);
 
+	ASSERT(list_empty(&trans->pending_qrecords));
 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
 }
 
@@ -1988,6 +1993,13 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans)
 			}
 		}
 	}
+
+	/*
+	 * Before we delay new transactions, run as many extent records
+	 * as we can to shrink what work btrfs_qgroup_account_extents
+	 * will have to do later.
+	 */
+	btrfs_qgroup_run_extent_records(trans);
 
 	spin_lock(&fs_info->trans_lock);
 	if (cur_trans->state >= TRANS_STATE_COMMIT_START) {
@@ -2277,6 +2289,7 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans)
 	if (current->journal_info == trans)
 		current->journal_info = NULL;
 
+	ASSERT(list_empty(&trans->pending_qrecords));
 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
 
 	/*

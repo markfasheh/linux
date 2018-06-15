@@ -1529,7 +1529,7 @@ static inline struct btrfs_qgroup_extent_record *to_qrecord(
 	return rb_entry(node, struct btrfs_qgroup_extent_record, node);
 }
 
-int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
+int btrfs_qgroup_trace_extent_nolock(struct btrfs_trans_handle *trans,
 				struct btrfs_delayed_ref_root *delayed_refs,
 				struct btrfs_qgroup_extent_record *record)
 {
@@ -1539,7 +1539,7 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 	u64 bytenr = record->bytenr;
 
 	lockdep_assert_held(&delayed_refs->lock);
-	trace_btrfs_qgroup_trace_extent(fs_info, record);
+	trace_btrfs_qgroup_trace_extent(trans->fs_info, record);
 
 	while (*p) {
 		parent_node = *p;
@@ -1554,34 +1554,53 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 
 	rb_link_node(&record->node, parent_node, p);
 	rb_insert_color(&record->node, &delayed_refs->dirty_extent_root);
+	list_add(&record->list, &trans->pending_qrecords);
 	return 0;
 }
 
-int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
-				   struct btrfs_qgroup_extent_record *qrecord)
+static int resolve_qrecord_old_roots(struct btrfs_fs_info *fs_info,
+				     struct btrfs_qgroup_extent_record *qrecord)
 {
-	struct ulist *old_root;
 	u64 bytenr = qrecord->bytenr;
 	int ret;
 
-	ret = btrfs_find_all_roots(NULL, fs_info, bytenr, 0, &old_root, false);
+	ASSERT(qrecord->old_roots == NULL);
+
+	ret = btrfs_find_all_roots(NULL, fs_info, bytenr, 0,
+				   &qrecord->old_roots, false);
 	if (ret < 0) {
 		fs_info->qgroup_flags |= BTRFS_QGROUP_STATUS_FLAG_INCONSISTENT;
 		btrfs_warn(fs_info,
 "error accounting new delayed refs extent (err code: %d), quota inconsistent",
 			ret);
-		return 0;
 	}
+	list_del_init(&qrecord->list);
 
-	/*
-	 * Here we don't need to get the lock of
-	 * trans->transaction->delayed_refs, since inserted qrecord won't
-	 * be deleted, only qrecord->node may be modified (new qrecord insert)
-	 *
-	 * So modifying qrecord->old_roots is safe here
-	 */
-	qrecord->old_roots = old_root;
-	return 0;
+	return ret;
+}
+
+void btrfs_qgroup_run_extent_records(struct btrfs_trans_handle *trans)
+{
+	while (!list_empty(&trans->pending_qrecords)) {
+		struct btrfs_qgroup_extent_record *qrecord;
+
+		qrecord = list_first_entry(&trans->pending_qrecords,
+					   struct btrfs_qgroup_extent_record,
+					   list);
+
+		/*
+		 * Only remove it from the list, even in failure case.
+		 * The records will be reaped during transaction commit
+		 * (or cleanup if aborted).
+		 */
+		if (trans->transaction->aborted ||
+		    trans->transaction->state >= TRANS_STATE_COMMIT_DOING) {
+			list_del_init(&qrecord->list);
+			continue;
+		}
+
+		resolve_qrecord_old_roots(trans->fs_info, qrecord);
+	}
 }
 
 int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
@@ -1603,15 +1622,14 @@ int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
 	record->bytenr = bytenr;
 	record->num_bytes = num_bytes;
 	record->old_roots = NULL;
+	INIT_LIST_HEAD(&record->list);
 
 	spin_lock(&delayed_refs->lock);
-	ret = btrfs_qgroup_trace_extent_nolock(fs_info, delayed_refs, record);
+	ret = btrfs_qgroup_trace_extent_nolock(trans, delayed_refs, record);
 	spin_unlock(&delayed_refs->lock);
-	if (ret > 0) {
+	if (ret > 0)
 		kfree(record);
-		return 0;
-	}
-	return btrfs_qgroup_trace_extent_post(fs_info, record);
+	return 0;
 }
 
 int btrfs_qgroup_trace_leaf_items(struct btrfs_trans_handle *trans,
@@ -2141,6 +2159,7 @@ void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans)
 
 		rb_erase(node, &delayed_refs->dirty_extent_root);
 		ulist_free(qrecord->old_roots);
+		list_del_init(&qrecord->list);
 		kfree(qrecord);
 	}
 }
@@ -2163,14 +2182,14 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 		trace_btrfs_qgroup_account_extents(fs_info, record);
 
 		/*
-		 * Old roots should be searched when inserting qgroup
-		 * extent record
+		 * Old roots will usually be resolved in
+		 * __btrfs_end_transaction, but commit may create
+		 * some new records or we may be ending a
+		 * transaction by committing directly.  We can
+		 * resolve them directly here.
 		 */
-		if (WARN_ON(!record->old_roots)) {
-			/* Search commit root to find old_roots */
-			ret = btrfs_find_all_roots(NULL, fs_info,
-					record->bytenr, 0,
-					&record->old_roots, false);
+		if (!record->old_roots) {
+			ret = resolve_qrecord_old_roots(fs_info, record);
 			if (ret < 0)
 				break;
 		}
@@ -2203,6 +2222,7 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 
 		ulist_free(record->old_roots);
 		rb_erase(node, &delayed_refs->dirty_extent_root);
+		BUG_ON(!list_empty(&record->list));
 		kfree(record);
 	}
 
