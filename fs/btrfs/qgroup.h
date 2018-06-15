@@ -316,5 +316,6 @@ void btrfs_qgroup_free_meta_all_pertrans(struct btrfs_root *root);
 void btrfs_qgroup_convert_reserved_meta(struct btrfs_root *root, int num_bytes);
 
 void btrfs_qgroup_check_reserved_leak(struct inode *inode);
+void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans);
 
 #endif

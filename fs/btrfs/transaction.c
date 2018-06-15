@@ -47,6 +47,7 @@ static void btrfs_release_transaction(struct btrfs_transaction *transaction)
 
 	delayed_refs = &transaction->delayed_refs;
 	WARN_ON(!RB_EMPTY_ROOT(&delayed_refs->href_root));
+	WARN_ON(!RB_EMPTY_ROOT(&delayed_refs->dirty_extent_root));
 
 	if (delayed_refs->pending_csums)
 		btrfs_err(transaction->fs_info, "pending csums is %llu",
