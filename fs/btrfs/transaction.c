@@ -39,43 +39,58 @@ static const unsigned int btrfs_blocked_trans_types[TRANS_STATE_MAX] = {
 					   __TRANS_JOIN_NOLOCK),
 };
 
+static void btrfs_release_transaction(struct btrfs_transaction *transaction)
+{
+	struct btrfs_delayed_ref_root *delayed_refs;
+
+	BUG_ON(!list_empty(&transaction->list));
+
+	delayed_refs = &transaction->delayed_refs;
+	WARN_ON(!RB_EMPTY_ROOT(&delayed_refs->href_root));
+
+	if (delayed_refs->pending_csums)
+		btrfs_err(transaction->fs_info, "pending csums is %llu",
+			  delayed_refs->pending_csums);
+
+	while (!list_empty(&transaction->pending_chunks)) {
+		struct extent_map *em;
+
+		em = list_first_entry(&transaction->pending_chunks,
+				      struct extent_map, list);
+		list_del_init(&em->list);
+		free_extent_map(em);
+	}
+
+	/*
+	 * If any block groups are found in ->deleted_bgs then it's
+	 * because the transaction was aborted and a commit did not
+	 * happen (things failed before writing the new superblock
+	 * and calling btrfs_finish_extent_commit()), so we can not
+	 * discard the physical locations of the block groups.
+	 */
+	while (!list_empty(&transaction->deleted_bgs)) {
+		struct btrfs_block_group_cache *cache;
+
+		cache = list_first_entry(&transaction->deleted_bgs,
+					 struct btrfs_block_group_cache,
+					 bg_list);
+		list_del_init(&cache->bg_list);
+		btrfs_put_block_group_trimming(cache);
+		btrfs_put_block_group(cache);
+	}
+
+	kfree(transaction);
+}
+
 void btrfs_put_transaction(struct btrfs_transaction *transaction)
 {
+	/*
+	 * The refcount API checks underflows but
+	 * only when CONFIG_REFCOUNT_FULL=y.
+	 */
 	WARN_ON(refcount_read(&transaction->use_count) == 0);
-	if (refcount_dec_and_test(&transaction->use_count)) {
-		BUG_ON(!list_empty(&transaction->list));
-		WARN_ON(!RB_EMPTY_ROOT(&transaction->delayed_refs.href_root));
-		if (transaction->delayed_refs.pending_csums)
-			btrfs_err(transaction->fs_info,
-				  "pending csums is %llu",
-				  transaction->delayed_refs.pending_csums);
-		while (!list_empty(&transaction->pending_chunks)) {
-			struct extent_map *em;
-
-			em = list_first_entry(&transaction->pending_chunks,
-					      struct extent_map, list);
-			list_del_init(&em->list);
-			free_extent_map(em);
-		}
-		/*
-		 * If any block groups are found in ->deleted_bgs then it's
-		 * because the transaction was aborted and a commit did not
-		 * happen (things failed before writing the new superblock
-		 * and calling btrfs_finish_extent_commit()), so we can not
-		 * discard the physical locations of the block groups.
-		 */
-		while (!list_empty(&transaction->deleted_bgs)) {
-			struct btrfs_block_group_cache *cache;
-
-			cache = list_first_entry(&transaction->deleted_bgs,
-						 struct btrfs_block_group_cache,
-						 bg_list);
-			list_del_init(&cache->bg_list);
-			btrfs_put_block_group_trimming(cache);
-			btrfs_put_block_group(cache);
-		}
-		kfree(transaction);
-	}
+	if (refcount_dec_and_test(&transaction->use_count))
+		btrfs_release_transaction(transaction);
 }
 
 static void clear_btree_io_tree(struct extent_io_tree *tree)
