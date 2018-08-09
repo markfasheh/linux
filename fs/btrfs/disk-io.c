@@ -4445,6 +4445,7 @@ void btrfs_cleanup_one_transaction(struct btrfs_transaction *cur_trans,
 				   struct btrfs_fs_info *fs_info)
 {
 	btrfs_cleanup_dirty_bgs(cur_trans, fs_info);
+	btrfs_cleanup_deleted_bgs(cur_trans);
 	ASSERT(list_empty(&cur_trans->dirty_bgs));
 	ASSERT(list_empty(&cur_trans->io_bgs));
 

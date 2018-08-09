@@ -61,24 +61,7 @@ static void btrfs_release_transaction(struct btrfs_transaction *transaction)
 		free_extent_map(em);
 	}
 
-	/*
-	 * If any block groups are found in ->deleted_bgs then it's
-	 * because the transaction was aborted and a commit did not
-	 * happen (things failed before writing the new superblock
-	 * and calling btrfs_finish_extent_commit()), so we can not
-	 * discard the physical locations of the block groups.
-	 */
-	while (!list_empty(&transaction->deleted_bgs)) {
-		struct btrfs_block_group_cache *cache;
-
-		cache = list_first_entry(&transaction->deleted_bgs,
-					 struct btrfs_block_group_cache,
-					 bg_list);
-		list_del_init(&cache->bg_list);
-		btrfs_put_block_group_trimming(cache);
-		btrfs_put_block_group(cache);
-	}
-
+	WARN_ON(btrfs_cleanup_deleted_bgs(transaction));
 	kfree(transaction);
 }
 
