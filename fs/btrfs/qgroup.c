@@ -2162,47 +2162,51 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 
 		trace_btrfs_qgroup_account_extents(fs_info, record);
 
-		if (!ret) {
-			/*
-			 * Old roots should be searched when inserting qgroup
-			 * extent record
-			 */
-			if (WARN_ON(!record->old_roots)) {
-				/* Search commit root to find old_roots */
-				ret = btrfs_find_all_roots(NULL, fs_info,
-						record->bytenr, 0,
-						&record->old_roots, false);
-				if (ret < 0)
-					goto cleanup;
-			}
-
-			/*
-			 * Use SEQ_LAST as time_seq to do special search, which
-			 * doesn't lock tree or delayed_refs and search current
-			 * root. It's safe inside commit_transaction().
-			 */
-			ret = btrfs_find_all_roots(trans, fs_info,
-				record->bytenr, SEQ_LAST, &new_roots, false);
+		/*
+		 * Old roots should be searched when inserting qgroup
+		 * extent record
+		 */
+		if (WARN_ON(!record->old_roots)) {
+			/* Search commit root to find old_roots */
+			ret = btrfs_find_all_roots(NULL, fs_info,
+					record->bytenr, 0,
+					&record->old_roots, false);
 			if (ret < 0)
-				goto cleanup;
-			if (qgroup_to_skip) {
-				ulist_del(new_roots, qgroup_to_skip, 0);
-				ulist_del(record->old_roots, qgroup_to_skip,
-					  0);
-			}
-			ret = btrfs_qgroup_account_extent(trans, record->bytenr,
-							  record->num_bytes,
-							  record->old_roots,
-							  new_roots);
+				break;
 		}
-cleanup:
-		ulist_free(record->old_roots);
+
+		/*
+		 * Use SEQ_LAST as time_seq to do special search, which
+		 * doesn't lock tree or delayed_refs and search current
+		 * root. It's safe inside commit_transaction().
+		 */
+		ret = btrfs_find_all_roots(trans, fs_info, record->bytenr,
+					   SEQ_LAST, &new_roots, false);
+		if (ret < 0)
+			break;
+
+		if (qgroup_to_skip) {
+			ulist_del(new_roots, qgroup_to_skip, 0);
+			ulist_del(record->old_roots, qgroup_to_skip, 0);
+		}
+
+		ret = btrfs_qgroup_account_extent(trans, fs_info,
+						  record->bytenr,
+						  record->num_bytes,
+						  record->old_roots, new_roots);
+
+		/* This needs to be released either way */
 		ulist_free(new_roots);
-		new_roots = NULL;
+
+		if (ret)
+			break;
+
+		ulist_free(record->old_roots);
 		rb_erase(node, &delayed_refs->dirty_extent_root);
 		kfree(record);
-
 	}
+
+	btrfs_qgroup_destroy_extent_records(trans->transaction);
 	return ret;
 }
 
