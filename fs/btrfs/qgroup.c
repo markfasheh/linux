@@ -2042,9 +2042,10 @@ static int maybe_fs_roots(struct ulist *roots)
 	return is_fstree(unode->val);
 }
 
-int btrfs_qgroup_account_extent(struct btrfs_trans_handle *trans, u64 bytenr,
-				u64 num_bytes, struct ulist *old_roots,
-				struct ulist *new_roots)
+static int btrfs_qgroup_account_extent(struct btrfs_trans_handle *trans,
+				       u64 bytenr, u64 num_bytes,
+				       struct ulist *old_roots,
+				       struct ulist *new_roots)
 {
 	struct btrfs_fs_info *fs_info = trans->fs_info;
 	struct ulist *qgroups = NULL;
