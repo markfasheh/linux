@@ -2486,8 +2486,6 @@ out:
 out_free:
 	ulist_free(tmp);
 	ulist_free(qgroups);
-	ulist_free(old_roots);
-	ulist_free(new_roots);
 	return ret;
 }
 
@@ -2547,8 +2545,6 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 							  record->num_bytes,
 							  record->old_roots,
 							  new_roots);
-			record->old_roots = NULL;
-			new_roots = NULL;
 		}
 cleanup:
 		ulist_free(record->old_roots);
@@ -3118,6 +3114,8 @@ static int qgroup_rescan_leaf(struct btrfs_trans_handle *trans,
 		/* For rescan, just pass old_roots as NULL */
 		ret = btrfs_qgroup_account_extent(trans, found.objectid,
 						  num_bytes, NULL, roots);
+		ulist_free(roots);
+		roots = NULL;
 		if (ret < 0)
 			goto out;
 	}
