@@ -28,6 +28,7 @@ struct __btrfs_workqueue;
 struct btrfs_qgroup_extent_record;
 struct btrfs_qgroup;
 struct prelim_ref;
+struct btrfs_trans_handle;
 
 TRACE_DEFINE_ENUM(FLUSH_DELAYED_ITEMS_NR);
 TRACE_DEFINE_ENUM(FLUSH_DELAYED_ITEMS);
@@ -1547,16 +1548,24 @@ DECLARE_EVENT_CLASS(btrfs_qgroup_extent,
 	TP_STRUCT__entry_btrfs(
 		__field(	u64,  bytenr		)
 		__field(	u64,  num_bytes		)
+		__field( unsigned long, trans		)
+		__field( unsigned long, addr		)
+		__field( bool, list)
 	),
 
 	TP_fast_assign_btrfs(fs_info,
 		__entry->bytenr		= rec->bytenr,
 		__entry->num_bytes	= rec->num_bytes;
+		__entry->trans		= (unsigned long)rec->trans;
+		__entry->addr		= (unsigned long)rec;
+		__entry->list		= list_empty(&rec->list);
 	),
 
-	TP_printk_btrfs("bytenr=%llu num_bytes=%llu",
+	TP_printk_btrfs("bytenr=%llu num_bytes=%llu record=%lx trans=%lx list=%d",
 		  (unsigned long long)__entry->bytenr,
-		  (unsigned long long)__entry->num_bytes)
+		  (unsigned long long)__entry->num_bytes,
+		  __entry->addr, __entry->trans,
+		  __entry->list)
 );
 
 DEFINE_EVENT(btrfs_qgroup_extent, btrfs_qgroup_account_extents,
@@ -1574,6 +1583,15 @@ DEFINE_EVENT(btrfs_qgroup_extent, btrfs_qgroup_trace_extent,
 
 	TP_ARGS(fs_info, rec)
 );
+
+DEFINE_EVENT(btrfs_qgroup_extent, resolve_qrecord_old_roots,
+
+	TP_PROTO(const struct btrfs_fs_info *fs_info,
+		 const struct btrfs_qgroup_extent_record *rec),
+
+	TP_ARGS(fs_info, rec)
+);
+
 
 TRACE_EVENT(btrfs_qgroup_account_extent,
 
@@ -1810,6 +1828,85 @@ TRACE_EVENT(btrfs_inode_mod_outstanding_extents,
 	TP_printk_btrfs("root=%llu(%s) ino=%llu mod=%d",
 			show_root_type(__entry->root_objectid),
 			__entry->ino, __entry->mod)
+);
+
+TRACE_EVENT(btrfs_start_transaction,
+	TP_PROTO(const struct btrfs_trans_handle *trans, int num_items,
+		 int type, int flush, bool enforce_qgroups),
+	TP_ARGS(trans, num_items, type, flush, enforce_qgroups),
+	TP_STRUCT__entry_btrfs(
+		__field(   unsigned long, handle		)
+		__field(   unsigned long, transaction		)
+		__field(	     u64, transid		)
+		__field(	     int, count			)
+		__field(	     int, num_items		)
+		__field(	     int, flush			)
+		__field(	    bool, enforce_qgroups	)
+	),
+
+	TP_fast_assign_btrfs(trans->fs_info,
+		__entry->handle		 = (unsigned long) trans;
+		__entry->transaction	 = (unsigned long) trans->transaction;
+		__entry->transid	 = trans->transaction->transid,
+		__entry->count		 = refcount_read(&trans->use_count),
+		__entry->num_items	 = num_items,
+		__entry->flush		 = flush,
+		__entry->enforce_qgroups = enforce_qgroups
+	),
+
+	TP_printk_btrfs("handle=%lx trans=%lx transid=%llu count=%d num_items=%d flush=%s enforce_qgroups=%d",
+			__entry->handle, __entry->transaction,
+			__entry->transid, __entry->count,
+			__entry->num_items, show_flush_action(__entry->flush),
+			__entry->enforce_qgroups)
+);
+
+TRACE_EVENT(btrfs_commit_transaction,
+	TP_PROTO(const struct btrfs_trans_handle *trans, int error),
+	TP_ARGS(trans, error),
+	TP_STRUCT__entry_btrfs(
+		__field(   unsigned long, handle		)
+		__field(   unsigned long, transaction		)
+		__field(	     u64, transid		)
+		__field(	     int, count			)
+		__field(	     int, error		)
+	),
+
+	TP_fast_assign_btrfs(trans->fs_info,
+		__entry->handle		 = (unsigned long) trans;
+		__entry->transaction	 = (unsigned long) trans->transaction;
+		__entry->transid	 = trans->transaction->transid,
+		__entry->error		 = error
+	),
+
+	TP_printk_btrfs("handle=%lx trans=%lx transid=%llu error=%d",
+			__entry->handle, __entry->transaction,
+			__entry->transid, __entry->error)
+);
+
+TRACE_EVENT(btrfs_end_transaction,
+	TP_PROTO(const struct btrfs_trans_handle *trans, int throttle),
+	TP_ARGS(trans, throttle),
+	TP_STRUCT__entry_btrfs(
+		__field(   unsigned long, handle		)
+		__field(   unsigned long, transaction		)
+		__field(	     u64, transid		)
+		__field(	     int, count			)
+		__field(	     int, throttle		)
+	),
+
+	TP_fast_assign_btrfs(trans->fs_info,
+		__entry->handle		 = (unsigned long) trans;
+		__entry->transaction	 = (unsigned long) trans->transaction;
+		__entry->transid	 = trans->transaction->transid,
+		__entry->count		 = refcount_read(&trans->use_count),
+		__entry->throttle	 = throttle
+	),
+
+	TP_printk_btrfs("handle=%lx trans=%lx transid=%llu count=%d throttle=%d",
+			__entry->handle, __entry->transaction,
+			__entry->transid, __entry->count,
+			__entry->throttle)
 );
 
 DECLARE_EVENT_CLASS(btrfs__block_group,

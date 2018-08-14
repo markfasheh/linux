@@ -10,6 +10,7 @@
 #include <linux/pagemap.h>
 #include <linux/blkdev.h>
 #include <linux/uuid.h>
+#include <trace/events/btrfs.h>
 #include "ctree.h"
 #include "disk-io.h"
 #include "transaction.h"
@@ -572,6 +573,9 @@ got_it:
 
 	if (!current->journal_info)
 		current->journal_info = h;
+
+	trace_btrfs_start_transaction(h, num_items, type, flush,
+				      enforce_qgroups);
 	return h;
 
 join_fail:
@@ -822,6 +826,7 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
 	if (refcount_read(&trans->use_count) > 1) {
 		refcount_dec(&trans->use_count);
 		trans->block_rsv = trans->orig_rsv;
+		trace_btrfs_end_transaction(trans, throttle);
 		return 0;
 	}
 
@@ -900,6 +905,7 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
 		btrfs_async_run_delayed_refs(info, cur, transid,
 					     must_run_delayed_refs == 1);
 	}
+	trace_btrfs_end_transaction(trans, throttle);
 	return err;
 }
 
@@ -1886,6 +1892,15 @@ static void cleanup_transaction(struct btrfs_trans_handle *trans, int err)
 		current->journal_info = NULL;
 	btrfs_scrub_cancel(fs_info);
 
+	{
+	struct btrfs_qgroup_extent_record *qrecord;
+	list_for_each_entry(qrecord, &trans->pending_qrecords, list) {
+
+		pr_info("btrfs: qrecord still around too late: %px %px\n",
+			qrecord->list.next, qrecord->list.prev);
+		btrfs_print_stack_trace(fs_info, &qrecord->trace);
+	}
+	}
 	ASSERT(list_empty(&trans->pending_qrecords));
 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
 }
@@ -2282,6 +2297,7 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans)
 	if (trans->type & __TRANS_FREEZABLE)
 		sb_end_intwrite(fs_info->sb);
 
+	trace_btrfs_commit_transaction(trans, ret);
 	trace_btrfs_transaction_commit(trans->root);
 
 	btrfs_scrub_continue(fs_info);
@@ -2313,6 +2329,7 @@ cleanup_transaction:
 	if (current->journal_info == trans)
 		current->journal_info = NULL;
 	cleanup_transaction(trans, ret);
+	trace_btrfs_commit_transaction(trans, ret);
 
 	return ret;
 }

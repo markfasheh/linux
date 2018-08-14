@@ -1555,6 +1555,7 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_trans_handle *trans,
 	rb_link_node(&record->node, parent_node, p);
 	rb_insert_color(&record->node, &delayed_refs->dirty_extent_root);
 	list_add(&record->list, &trans->pending_qrecords);
+	btrfs_save_stack_trace(&record->trace);
 	return 0;
 }
 
@@ -1575,6 +1576,7 @@ static int resolve_qrecord_old_roots(struct btrfs_fs_info *fs_info,
 			ret);
 	}
 	list_del_init(&qrecord->list);
+	qrecord->trans = NULL;
 
 	return ret;
 }
@@ -1599,6 +1601,7 @@ void btrfs_qgroup_run_extent_records(struct btrfs_trans_handle *trans)
 			continue;
 		}
 
+		trace_resolve_qrecord_old_roots(trans->fs_info, qrecord);
 		resolve_qrecord_old_roots(trans->fs_info, qrecord);
 	}
 }
@@ -1614,7 +1617,9 @@ int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
 	if (!test_bit(BTRFS_FS_QUOTA_ENABLED, &fs_info->flags)
 	    || bytenr == 0 || num_bytes == 0)
 		return 0;
-	record = kmalloc(sizeof(*record), gfp_flag);
+	if (WARN_ON(trans == NULL))
+		return -EINVAL;
+	record = kzalloc(sizeof(*record), gfp_flag);
 	if (!record)
 		return -ENOMEM;
 
@@ -1623,6 +1628,7 @@ int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
 	record->num_bytes = num_bytes;
 	record->old_roots = NULL;
 	INIT_LIST_HEAD(&record->list);
+	record->trans = NULL;
 
 	spin_lock(&delayed_refs->lock);
 	ret = btrfs_qgroup_trace_extent_nolock(trans, delayed_refs, record);
@@ -2160,6 +2166,7 @@ void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans)
 		rb_erase(node, &delayed_refs->dirty_extent_root);
 		ulist_free(qrecord->old_roots);
 		list_del_init(&qrecord->list);
+		qrecord->trans = NULL;
 		kfree(qrecord);
 	}
 }
@@ -2180,6 +2187,18 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 		record = to_qrecord(node);
 
 		trace_btrfs_qgroup_account_extents(fs_info, record);
+#if 0
+		if (!list_empty(&record->list)) {
+			if (WARN_ON(record->trans != trans)) {
+				pr_info("btrfs: got qrecord from a different trans handle\n");
+				btrfs_print_stack_trace(fs_info,
+							&record->trace);
+			}
+			BUG_ON(record->trans != trans);
+			resolve_qrecord_old_roots(fs_info, record);
+			list_del_init(&record->list);
+		}
+#endif
 
 		/*
 		 * Old roots will usually be resolved in

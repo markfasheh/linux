@@ -5921,3 +5921,31 @@ int btrfs_previous_extent_item(struct btrfs_root *root,
 	}
 	return 1;
 }
+
+#ifdef CONFIG_STACKTRACE
+void btrfs_save_stack_trace(struct btrfs_stack_trace *trace)
+{
+	struct stack_trace stack_trace;
+
+	stack_trace.max_entries = ARRAY_SIZE(trace->trace);
+	stack_trace.nr_entries = 0;
+	stack_trace.entries = trace->trace;
+	stack_trace.skip = 2;
+	save_stack_trace(&stack_trace);
+	trace->trace_len = stack_trace.nr_entries;
+}
+
+void btrfs_print_stack_trace(struct btrfs_fs_info *fs_info,
+			     struct btrfs_stack_trace *trace)
+{
+	struct stack_trace stack_trace;
+
+	if (trace->trace_len == 0) {
+		btrfs_err(fs_info, "  btrfs-debug: no stacktrace");
+		return;
+	}
+	stack_trace.nr_entries = trace->trace_len;
+	stack_trace.entries = trace->trace;
+	print_stack_trace(&stack_trace, 2);
+}
+#endif

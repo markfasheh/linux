@@ -3752,4 +3752,21 @@ static inline void cond_wake_up_nomb(struct wait_queue_head *wq)
 		wake_up(wq);
 }
 
+#ifdef CONFIG_STACKTRACE
+#define BTRFS_MAX_TRACE 16
+struct btrfs_stack_trace {
+	unsigned long trace[BTRFS_MAX_TRACE];
+	unsigned int trace_len;
+};
+
+void btrfs_save_stack_trace(struct btrfs_stack_trace *trace);
+void btrfs_print_stack_trace(struct btrfs_fs_info *fs_info,
+			     struct btrfs_stack_trace *trace);
+#else
+struct btrfs_stack_trace {};
+static inline void btrfs_save_stack_trace(struct btrfs_stack_trace *trace) { }
+static inline void btrfs_print_stack_trace(struct btrfs_fs_info *fs_info,
+					   struct btrfs_stack_trace *trace) { }
+#endif
+
 #endif
