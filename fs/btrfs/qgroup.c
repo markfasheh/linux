@@ -2159,7 +2159,6 @@ void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans)
 	struct rb_root *root = &delayed_refs->dirty_extent_root;
 	struct rb_node *node;
 
-	lockdep_assert_held(&delayed_refs->lock);
 	while ((node = rb_first(root)) != NULL) {
 		struct btrfs_qgroup_extent_record *qrecord = to_qrecord(node);
 
