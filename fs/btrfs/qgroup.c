@@ -2227,8 +2227,7 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 			ulist_del(record->old_roots, qgroup_to_skip, 0);
 		}
 
-		ret = btrfs_qgroup_account_extent(trans, fs_info,
-						  record->bytenr,
+		ret = btrfs_qgroup_account_extent(trans, record->bytenr,
 						  record->num_bytes,
 						  record->old_roots, new_roots);
 
