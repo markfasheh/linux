@@ -6,6 +6,8 @@
 #ifndef BTRFS_BACKREF_CACHE_H
 #define BTRFS_BACKREF_CACHE_H
 
+#include "owner-cache.h"
+
 /*
  * present a tree block in the backref cache
  */
@@ -48,6 +50,8 @@ struct backref_node {
 	 * backref node.
 	 */
 	unsigned int detached:1;
+
+	struct owner_cache owners;
 };
 
 /*
@@ -109,5 +113,7 @@ struct reloc_control;
 struct backref_node *build_backref_tree(struct reloc_control *rc,
 					struct btrfs_key *node_key,
 					int level, u64 bytenr);
+
+void backref_cache_collate_owners(struct backref_node *node);
 
 #endif /* BTRFS_BACKREF_CACHE_H */
