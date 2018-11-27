@@ -85,6 +85,7 @@ struct backref_node *alloc_backref_node(struct backref_cache *cache)
 		INIT_LIST_HEAD(&node->upper);
 		INIT_LIST_HEAD(&node->lower);
 		RB_CLEAR_NODE(&node->rb_node);
+		owner_cache_init(&node->owners);
 		cache->nr_nodes++;
 	}
 	return node;
@@ -143,6 +144,7 @@ static void drop_backref_node(struct backref_cache *tree,
 	list_del(&node->lower);
 	if (!RB_EMPTY_NODE(&node->rb_node))
 		rb_erase(&node->rb_node, &tree->rb_root);
+	owner_cache_destroy(&node->owners);
 	free_backref_node(tree, node);
 }
 
@@ -909,4 +911,25 @@ void __mark_block_processed(struct reloc_control *rc, struct backref_node *node)
 		mark_block_processed(rc, node->bytenr, blocksize);
 	}
 	node->processed = 1;
+}
+
+void backref_cache_collate_owners(struct backref_node *node)
+{
+	struct backref_edge *edge;
+
+	if (!RB_EMPTY_ROOT(&node->owners.root)) {
+		return;
+	}
+
+	list_for_each_entry(edge, &node->upper, list[LOWER]) {
+		backref_cache_collate_owners(edge->node[UPPER]);
+		owner_cache_merge(&edge->node[UPPER]->owners, &node->owners);
+	}
+
+	if (node->root) {
+		int ret;
+		u64 root = node->root->objectid;
+		ret = owner_cache_add_root(&node->owners, root);
+		BUG_ON(ret);
+	}
 }
