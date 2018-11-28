@@ -107,6 +107,8 @@ struct btrfs_qgroup_extent_record {
 	struct rb_node node;
 	u64 bytenr;
 	u64 num_bytes;
+	int metadata;
+	int level; //ignored if !metadata
 
 	/*
 	 * For qgroup reserved data space freeing.
@@ -120,6 +122,10 @@ struct btrfs_qgroup_extent_record {
 	u64 data_rsv_refroot;	/* which root the reserved data belongs to */
 	struct ulist *old_roots;
 };
+
+void btrfs_init_qgroup_extent_record(struct btrfs_qgroup_extent_record *qrecord,
+				     u64 bytenr, u64 num_bytes, bool metadata,
+				     int level);
 
 struct btrfs_qgroup_swapped_block {
 	struct rb_node node;
@@ -303,8 +309,9 @@ int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
  * Return <0 for error, like memory allocation failure or invalid parameter
  * (NULL trans)
  */
-int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
-			      u64 num_bytes, gfp_t gfp_flag);
+int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans,
+			      u64 bytenr, u64 num_bytes, int tree_block,
+			      int level, gfp_t gfp_flag);
 
 /*
  * Inform qgroup to trace all leaf items of data
