@@ -111,13 +111,6 @@ static int find_extent_in_eb(const struct extent_buffer *eb,
 	return 0;
 }
 
-struct preftree {
-	struct rb_root root;
-	unsigned int count;
-};
-
-#define PREFTREE_INIT	{ .root = RB_ROOT, .count = 0 }
-
 struct preftrees {
 	struct preftree direct;    /* BTRFS_SHARED_[DATA|BLOCK]_REF_KEY */
 	struct preftree indirect;  /* BTRFS_[TREE_BLOCK|EXTENT_DATA]_REF_KEY */
@@ -279,7 +272,7 @@ static void prelim_ref_insert(const struct btrfs_fs_info *fs_info,
  * Release the entire tree.  We don't care about internal consistency so
  * just free everything and then reset the tree root.
  */
-static void prelim_release(struct preftree *preftree)
+void prelim_release(struct preftree *preftree)
 {
 	struct prelim_ref *ref, *next_ref;
 
@@ -1106,11 +1099,12 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
  *
  * FIXME some caching might speed things up
  */
-static int find_parent_nodes(struct btrfs_trans_handle *trans,
-			     struct btrfs_fs_info *fs_info, u64 bytenr,
-			     u64 time_seq, struct ulist *refs,
-			     struct ulist *roots, const u64 *extent_item_pos,
-			     struct share_check *sc, bool ignore_offset)
+int find_parent_nodes(struct btrfs_trans_handle *trans,
+		      struct btrfs_fs_info *fs_info, u64 bytenr,
+		      u64 time_seq, struct ulist *refs,
+		      struct ulist *roots, const u64 *extent_item_pos,
+		      struct share_check *sc, bool ignore_offset,
+		      struct preftree *reftree)
 {
 	struct btrfs_key key;
 	struct btrfs_path *path;
@@ -1319,7 +1313,11 @@ again:
 out:
 	btrfs_free_path(path);
 
-	prelim_release(&preftrees.direct);
+	if (!reftree || ret < 0)
+		prelim_release(&preftrees.direct);
+	else
+		*reftree = preftrees.direct;
+
 	prelim_release(&preftrees.indirect);
 	prelim_release(&preftrees.indirect_missing_keys);
 
@@ -1366,7 +1364,8 @@ static int btrfs_find_all_leafs(struct btrfs_trans_handle *trans,
 		return -ENOMEM;
 
 	ret = find_parent_nodes(trans, fs_info, bytenr, time_seq,
-				*leafs, NULL, extent_item_pos, NULL, ignore_offset);
+				*leafs, NULL, extent_item_pos, NULL,
+				ignore_offset, NULL);
 	if (ret < 0 && ret != -ENOENT) {
 		free_leaf_list(*leafs);
 		return ret;
@@ -1410,7 +1409,7 @@ static int btrfs_find_all_roots_safe(struct btrfs_trans_handle *trans,
 	ULIST_ITER_INIT(&uiter);
 	while (1) {
 		ret = find_parent_nodes(trans, fs_info, bytenr, time_seq,
-					tmp, *roots, NULL, NULL, ignore_offset);
+					tmp, *roots, NULL, NULL, ignore_offset, NULL);
 		if (ret < 0 && ret != -ENOENT) {
 			ulist_free(tmp);
 			ulist_free(*roots);
@@ -1492,7 +1491,7 @@ int btrfs_check_shared(struct btrfs_root *root, u64 inum, u64 bytenr)
 	ULIST_ITER_INIT(&uiter);
 	while (1) {
 		ret = find_parent_nodes(trans, fs_info, bytenr, elem.seq, tmp,
-					roots, NULL, &shared, false);
+					roots, NULL, &shared, false, NULL);
 		if (ret == BACKREF_FOUND_SHARED) {
 			/* this is the only condition under which we return 1 */
 			ret = 1;
