@@ -84,15 +84,21 @@ struct backref_cache {
 
 	int nr_nodes;
 	int nr_edges;
+
+	struct extent_io_tree processed_blocks;
+	struct btrfs_fs_info *fs_info;
 };
 
-void backref_cache_init(struct backref_cache *cache);
+void backref_cache_init(struct backref_cache *cache,
+			struct btrfs_fs_info *fs_info);
 void backref_cache_cleanup(struct backref_cache *cache);
 struct backref_node *alloc_backref_node(struct backref_cache *cache);
 void free_backref_node(struct backref_cache *cache, struct backref_node *node);
 struct backref_edge *alloc_backref_edge(struct backref_cache *cache);
 void free_backref_edge(struct backref_cache *cache,
 		       struct backref_edge *edge);
+struct backref_node *backref_tree_search(struct backref_cache *cache,
+					 u64 bytenr);
 
 void drop_node_buffer(struct backref_node *node);
 void remove_backref_node(struct backref_cache *cache, struct backref_node *node);
@@ -104,15 +110,19 @@ int update_backref_cache(struct btrfs_trans_handle *trans,
 			 struct backref_cache *cache);
 
 /* for relocation.c */
-void backref_tree_panic(struct rb_node *rb_node, int errno, u64 bytenr);
-void mark_block_processed(struct reloc_control *rc, u64 bytenr, u32 blocksize);
+#define backref_tree_panic(rb_node, errno, bytenr)			\
+	__backref_tree_panic(rb_node, errno, bytenr, __FILE__, __LINE__)
+void __backref_tree_panic(struct rb_node *rb_node, int errno, u64 bytenr,
+			  const char *filename, unsigned long lineno);
 void __mark_block_processed(struct reloc_control *rc, struct backref_node *node);
 
 struct reloc_control;
 
 struct backref_node *build_backref_tree(struct reloc_control *rc,
+					struct backref_cache *cache,
 					struct btrfs_key *node_key,
-					int level, u64 bytenr);
+					int level, u64 bytenr,
+					int search_commit_root);
 
 void backref_cache_collate_owners(struct backref_node *node);
 

@@ -23,7 +23,13 @@
 
 #include "backref-cache.h"
 
-void backref_tree_panic(struct rb_node *rb_node, int errno, u64 bytenr)
+static void mark_block_processed(struct reloc_control *rc,
+				 struct btrfs_fs_info *fs_info,
+				 struct extent_io_tree *processed_blocks,
+				 struct backref_node *node);
+
+void __backref_tree_panic(struct rb_node *rb_node, int errno, u64 bytenr,
+			  const char *filename, unsigned long lineno)
 {
 
 	struct btrfs_fs_info *fs_info = NULL;
@@ -32,19 +38,26 @@ void backref_tree_panic(struct rb_node *rb_node, int errno, u64 bytenr)
 	if (bnode->root)
 		fs_info = bnode->root->fs_info;
 	btrfs_panic(fs_info, errno,
-		    "Inconsistency in backref cache found at offset %llu",
-		    bytenr);
+		    "%s:%lu Inconsistency in backref cache found at offset %llu",
+		    filename, lineno, bytenr);
 }
 
-void backref_cache_init(struct backref_cache *cache)
+void backref_cache_init(struct backref_cache *cache,
+			struct btrfs_fs_info *fs_info)
 {
 	int i;
 	cache->rb_root = RB_ROOT;
-	for (i = 0; i < BTRFS_MAX_LEVEL; i++)
+	for (i = 0; i < BTRFS_MAX_LEVEL; i++) {
 		INIT_LIST_HEAD(&cache->pending[i]);
+		cache->path[i] = NULL;
+	}
 	INIT_LIST_HEAD(&cache->changed);
 	INIT_LIST_HEAD(&cache->detached);
 	INIT_LIST_HEAD(&cache->leaves);
+	cache->last_trans = 0ULL;
+	cache->nr_nodes = cache->nr_edges = 0;
+	extent_io_tree_init(&cache->processed_blocks, NULL);
+	cache->fs_info = fs_info;
 }
 
 void backref_cache_cleanup(struct backref_cache *cache)
@@ -73,6 +86,17 @@ void backref_cache_cleanup(struct backref_cache *cache)
 	ASSERT(RB_EMPTY_ROOT(&cache->rb_root));
 	ASSERT(!cache->nr_nodes);
 	ASSERT(!cache->nr_edges);
+}
+
+struct backref_node *backref_tree_search(struct backref_cache *cache,
+					 u64 bytenr)
+{
+	struct rb_node *node;
+
+	node = tree_search(&cache->rb_root, bytenr);
+	if (node)
+		return rb_entry(node, struct backref_node, rb_node);
+	return NULL;
 }
 
 struct backref_node *alloc_backref_node(struct backref_cache *cache)
@@ -259,6 +283,9 @@ static int should_ignore_root(struct btrfs_root *root)
 	if (!test_bit(BTRFS_ROOT_REF_COWS, &root->state))
 		return 0;
 
+	if (test_bit(BTRFS_FS_QUOTA_ENABLED, &root->fs_info->flags))
+		return 0;
+
 	reloc_root = root->reloc_root;
 	if (!reloc_root)
 		return 0;
@@ -296,7 +323,7 @@ static struct btrfs_root *find_reloc_root(struct reloc_control *rc,
 
 #ifdef BTRFS_COMPAT_EXTENT_TREE_V0
 static noinline_for_stack
-struct btrfs_root *find_tree_root(struct reloc_control *rc,
+struct btrfs_root *find_tree_root(struct btrfs_fs_info *fs_info,
 				  struct extent_buffer *leaf,
 				  struct btrfs_extent_ref_v0 *ref0)
 {
@@ -306,7 +333,7 @@ struct btrfs_root *find_tree_root(struct reloc_control *rc,
 
 	BUG_ON(root_objectid == BTRFS_TREE_RELOC_OBJECTID);
 
-	root = read_fs_root(rc->extent_root->fs_info, root_objectid);
+	root = read_fs_root(fs_info, root_objectid);
 	BUG_ON(IS_ERR(root));
 
 	if (test_bit(BTRFS_ROOT_REF_COWS, &root->state) &&
@@ -376,14 +403,15 @@ int find_inline_backref(struct extent_buffer *leaf, int slot,
  */
 noinline_for_stack
 struct backref_node *build_backref_tree(struct reloc_control *rc,
+					struct backref_cache *cache,
 					struct btrfs_key *node_key,
-					int level, u64 bytenr)
+					int level, u64 bytenr,
+					int search_commit_root)
 {
-	struct backref_cache *cache = &rc->backref_cache;
 	struct btrfs_path *path1;
 	struct btrfs_path *path2;
 	struct extent_buffer *eb;
-	struct btrfs_root *root;
+	struct btrfs_root *root, *extent_root;
 	struct backref_node *cur;
 	struct backref_node *upper;
 	struct backref_node *lower;
@@ -392,6 +420,8 @@ struct backref_node *build_backref_tree(struct reloc_control *rc,
 	struct backref_edge *edge;
 	struct rb_node *rb_node;
 	struct btrfs_key key;
+	struct extent_io_tree *processed_blocks;
+	struct btrfs_fs_info *fs_info = cache->fs_info;
 	unsigned long end;
 	unsigned long ptr;
 	LIST_HEAD(list);
@@ -400,6 +430,15 @@ struct backref_node *build_backref_tree(struct reloc_control *rc,
 	int ret;
 	int err = 0;
 	bool need_check = true;
+	int keep_nodes = 0;
+
+	extent_root = fs_info->extent_root;
+	if (rc) {
+		processed_blocks = &rc->processed_blocks;
+	} else {
+		processed_blocks = &cache->processed_blocks;
+		keep_nodes = 1;
+	}
 
 	path1 = btrfs_alloc_path();
 	path2 = btrfs_alloc_path();
@@ -420,6 +459,8 @@ struct backref_node *build_backref_tree(struct reloc_control *rc,
 	node->level = level;
 	node->lowest = 1;
 	cur = node;
+	printk("backref: build tree for bytenr %llu level %d\n", node->bytenr,
+	       level);
 again:
 	end = 0;
 	ptr = 0;
@@ -427,10 +468,9 @@ again:
 	key.type = BTRFS_METADATA_ITEM_KEY;
 	key.offset = (u64)-1;
 
-	path1->search_commit_root = 1;
-	path1->skip_locking = 1;
-	ret = btrfs_search_slot(NULL, rc->extent_root, &key, path1,
-				0, 0);
+	path1->search_commit_root = search_commit_root;
+	path1->skip_locking = search_commit_root;
+	ret = btrfs_search_slot(NULL, extent_root, &key, path1, 0, 0);
 	if (ret < 0) {
 		err = ret;
 		goto out;
@@ -461,13 +501,16 @@ again:
 		exist = NULL;
 	}
 
+	printk("backref: search slot for key (%llu %d %lld) exist %p\n",
+	       key.objectid, key.type, key.offset, exist);
+
 	while (1) {
 		cond_resched();
 		eb = path1->nodes[0];
 
 		if (ptr >= end) {
 			if (path1->slots[0] >= btrfs_header_nritems(eb)) {
-				ret = btrfs_next_leaf(rc->extent_root, path1);
+				ret = btrfs_next_leaf(extent_root, path1);
 				if (ret < 0) {
 					err = ret;
 					goto out;
@@ -527,10 +570,11 @@ again:
 				ref0 = btrfs_item_ptr(eb, path1->slots[0],
 						struct btrfs_extent_ref_v0);
 				if (key.objectid == key.offset) {
-					root = find_tree_root(rc, eb, ref0);
+					root = find_tree_root(fs_info, eb,
+							      ref0);
 					if (root && !should_ignore_root(root))
 						cur->root = root;
-					else
+					else if (!keep_nodes)
 						list_add(&cur->list, &useless);
 					break;
 				}
@@ -547,9 +591,11 @@ again:
 				 * only root blocks of reloc trees use
 				 * backref of this type.
 				 */
-				root = find_reloc_root(rc, cur->bytenr);
-				ASSERT(root);
-				cur->root = root;
+				if (!keep_nodes) {
+					root = find_reloc_root(rc, cur->bytenr);
+					ASSERT(root);
+					cur->root = root;
+				}
 				break;
 			}
 
@@ -589,19 +635,26 @@ again:
 		}
 
 		/* key.type == BTRFS_TREE_BLOCK_REF_KEY */
-		root = read_fs_root(rc->extent_root->fs_info, key.offset);
+		root = read_fs_root(fs_info, key.offset);
 		if (IS_ERR(root)) {
 			err = PTR_ERR(root);
 			goto out;
 		}
+
+		printk("backref: read_fs_root (ret %p %llu) item key (%llu %d %lld) "
+		       "should_ignore: %d\n",
+		       root, root ? root->objectid : 0ULL, key.objectid, key.type, key.offset,
+		       should_ignore_root(root));
 
 		if (!test_bit(BTRFS_ROOT_REF_COWS, &root->state))
 			cur->cowonly = 1;
 
 		if (btrfs_root_level(&root->root_item) == cur->level) {
 			/* tree root */
-			ASSERT(btrfs_root_bytenr(&root->root_item) ==
-			       cur->bytenr);
+			if (search_commit_root)
+				ASSERT(root->commit_root->start == cur->bytenr);
+			else
+				ASSERT(root->node->start == cur->bytenr);
 			if (should_ignore_root(root))
 				list_add(&cur->list, &useless);
 			else
@@ -615,8 +668,8 @@ again:
 		 * searching the tree to find upper level blocks
 		 * reference the block.
 		 */
-		path2->search_commit_root = 1;
-		path2->skip_locking = 1;
+		path2->search_commit_root = search_commit_root;
+		path2->skip_locking = search_commit_root;
 		path2->lowest_level = level;
 		ret = btrfs_search_slot(NULL, root, node_key, path2, 0, 0);
 		path2->lowest_level = 0;
@@ -626,6 +679,9 @@ again:
 		}
 		if (ret > 0 && path2->slots[level] > 0)
 			path2->slots[level]--;
+
+		printk("backref: 2nd search found node_key (%llu %d %lld)\n",
+		       node_key->objectid, node_key->type, node_key->offset);
 
 		eb = path2->nodes[level];
 		if (btrfs_node_blockptr(eb, path2->slots[level]) !=
@@ -642,8 +698,10 @@ again:
 		need_check = true;
 		for (; level < BTRFS_MAX_LEVEL; level++) {
 			if (!path2->nodes[level]) {
-				ASSERT(btrfs_root_bytenr(&root->root_item) ==
-				       lower->bytenr);
+				if (search_commit_root)
+					ASSERT(root->commit_root->start == lower->bytenr);
+				else
+					ASSERT(root->node->start == lower->bytenr);
 				if (should_ignore_root(root))
 					list_add(&lower->list, &useless);
 				else
@@ -835,7 +893,7 @@ next:
 			if (list_empty(&lower->upper))
 				list_add(&lower->list, &useless);
 		}
-		__mark_block_processed(rc, upper);
+		mark_block_processed(rc, fs_info, processed_blocks, upper);
 		if (upper->level > 0) {
 			list_add(&upper->list, &cache->detached);
 			upper->detached = 1;
@@ -896,27 +954,33 @@ out:
 	return node;
 }
 
-void mark_block_processed(struct reloc_control *rc, u64 bytenr, u32 blocksize)
+static void mark_block_processed(struct reloc_control *rc,
+				 struct btrfs_fs_info *fs_info,
+				 struct extent_io_tree *processed_blocks,
+				 struct backref_node *node)
 {
-	set_extent_bits(&rc->processed_blocks, bytenr, bytenr + blocksize - 1,
-			EXTENT_DIRTY);
+	u32 blocksize = fs_info->nodesize;
+	u64 bytenr = node->bytenr;
+
+	if (!rc || node->level == 0 ||
+	    in_block_group(node->bytenr, rc->block_group))
+		set_extent_bits(processed_blocks, bytenr,
+				bytenr + blocksize - 1,	EXTENT_DIRTY);
+	node->processed = 1;
 }
 
 void __mark_block_processed(struct reloc_control *rc, struct backref_node *node)
 {
-	u32 blocksize;
-	if (node->level == 0 ||
-	    in_block_group(node->bytenr, rc->block_group)) {
-		blocksize = rc->extent_root->fs_info->nodesize;
-		mark_block_processed(rc, node->bytenr, blocksize);
-	}
-	node->processed = 1;
+	mark_block_processed(rc, rc->extent_root->fs_info,
+			     &rc->processed_blocks, node);
 }
 
 void backref_cache_collate_owners(struct backref_node *node)
 {
 	struct backref_edge *edge;
 
+	printk("Collate: bytenr %llu  RB_EMPTY_ROOT: %d  node->root: %p\n",
+	       node->bytenr,!!RB_EMPTY_ROOT(&node->owners.root), node->root);
 	if (!RB_EMPTY_ROOT(&node->owners.root)) {
 		return;
 	}
