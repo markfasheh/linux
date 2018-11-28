@@ -73,4 +73,17 @@ struct prelim_ref {
 	u64 wanted_disk_byte;
 };
 
+struct preftree {
+	struct rb_root root;
+	unsigned int count;
+};
+#define PREFTREE_INIT	{ .root = RB_ROOT, .count = 0 }
+void prelim_release(struct preftree *preftree);
+struct share_check;
+int find_parent_nodes(struct btrfs_trans_handle *trans,
+		      struct btrfs_fs_info *fs_info, u64 bytenr,
+		      u64 time_seq, struct ulist *refs,
+		      struct ulist *roots, const u64 *extent_item_pos,
+		      struct share_check *sc, bool ignore_offset,
+		      struct preftree *reftree);
 #endif
