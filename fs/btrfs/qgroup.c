@@ -21,7 +21,8 @@
 #include "backref.h"
 #include "extent_io.h"
 #include "qgroup.h"
-
+#include "owner-cache.h"
+#include "backref-cache.h"
 
 /* TODO XXX FIXME
  *  - subvol delete -> delete when ref goes to 0? delete limits also?
@@ -1492,14 +1493,127 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 	return 0;
 }
 
+static int add_roots(struct owner_cache *cache, u64 root, void *data)
+{
+	struct ulist *roots = data;
+
+	printk(" added root %llu\n", root);
+	if (ulist_add(roots, root, 0, 0) < 0)
+		return ENOMEM;
+	return 0;
+}
+
+static int roots_from_backrefs(struct btrfs_trans_handle *handle,
+			       struct btrfs_fs_info *fs_info,
+			       u64 time_seq,
+			       struct btrfs_qgroup_extent_record *qrecord,
+			       struct ulist **ret_roots)
+{
+	int ret = 0;
+	struct btrfs_transaction *trans = NULL;
+	struct ulist *roots = ulist_alloc(GFP_NOFS);
+	struct ulist *refs = ulist_alloc(GFP_NOFS);
+	struct backref_node *backref;
+	struct preftree reftree = PREFTREE_INIT;
+	struct rb_node *node;
+	struct prelim_ref *ref;
+
+	if (!roots || !refs) {
+		ulist_free(roots);
+		ulist_free(refs);
+		return -ENOMEM;
+	}
+	if (handle)
+		trans = handle->transaction;
+
+	down_read(&fs_info->commit_root_sem);
+	ret = find_parent_nodes(handle, fs_info, qrecord->bytenr, time_seq,
+				refs, roots, NULL, NULL, false, &reftree);
+	up_read(&fs_info->commit_root_sem);
+	if (ret < 0) {
+		printk("ERR %d from find_parent_nodes\n", ret);
+		goto out;
+	}
+	ret = 0;/* find_parent_nodes can return > 0 on non-error */
+	printk("roots_from_backrefs: bytenr %llu, reftree empty: %d\n",
+	       qrecord->bytenr, RB_EMPTY_ROOT(&reftree.root));
+
+	node = rb_first(&reftree.root);
+	while (node) {
+		ref = rb_entry(node, struct prelim_ref, rbnode);
+
+		printk("roots_from_backrefs: bytenr %llu ref parent %llu root_id %llu level "
+		       "%d key_for_search (%llu %u %llu)\n", qrecord->bytenr,
+		       ref->parent, ref->root_id, ref->level, ref->key_for_search.objectid,
+		       ref->key_for_search.type, ref->key_for_search.offset);
+
+		/* check ref type: */
+		if (!ref->parent) {
+			/* No parent == root of tree */
+			ret = ulist_add(roots, ref->root_id, 0, GFP_NOFS);
+			if (ret < 0)
+				goto out;
+
+			goto next_ref;
+		}
+
+		backref = NULL;
+		mutex_lock(&fs_info->qgroup_backref_lock);
+		if (ref->parent &&
+		    !backref_tree_search(fs_info->qgroup_backref_cache,
+					qrecord->bytenr)) {
+			backref = build_backref_tree(NULL,
+					     fs_info->qgroup_backref_cache,
+					     &ref->key_for_search,
+					     ref->level, ref->parent,
+					     (trans ? 0 : 1));
+		}
+		mutex_unlock(&fs_info->qgroup_backref_lock);
+		if (backref) {
+			if (IS_ERR(backref)) {
+				ret = PTR_ERR(backref);
+				printk("ERR %d from build_backref_tree\n", ret);
+				goto out;
+			}
+			printk("roots_from_backrefs: bytenr %llu got backref"
+			       " %llu\n", qrecord->bytenr, backref->bytenr);
+			mutex_lock(&fs_info->qgroup_backref_lock);
+			backref_cache_collate_owners(backref);
+			mutex_unlock(&fs_info->qgroup_backref_lock);
+
+			ret = owner_cache_iterate_owners(&backref->owners,
+							 add_roots, roots);
+			if (ret) {
+				printk("ERR %d from owner_cache_iterate_owners\n", ret);
+				goto out;
+			}
+		}
+next_ref:
+		node = rb_next(node);
+	}
+
+	ret = 0;
+out:
+	BUG_ON(ret > 0);
+	if (ret == 0)
+		*ret_roots = roots;
+	else
+		ulist_free(roots);
+
+	ulist_free(refs);
+	prelim_release(&reftree);
+	return ret;
+}
+
 int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
 				   struct btrfs_qgroup_extent_record *qrecord)
 {
 	struct ulist *old_root;
-	u64 bytenr = qrecord->bytenr;
 	int ret;
 
-	ret = btrfs_find_all_roots(NULL, fs_info, bytenr, 0, &old_root, false);
+	printk("trace_extent_post: extent (%llu %llu) old roots %p\n",
+	       qrecord->bytenr, qrecord->num_bytes, qrecord->old_roots);
+	ret = roots_from_backrefs(NULL, fs_info, 0, qrecord, &old_root);
 	if (ret < 0) {
 		fs_info->qgroup_flags |= BTRFS_QGROUP_STATUS_FLAG_INCONSISTENT;
 		btrfs_warn(fs_info,
@@ -2077,8 +2191,11 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 	struct btrfs_delayed_ref_root *delayed_refs;
 	struct ulist *new_roots = NULL;
 	struct rb_node *node;
+	struct backref_cache cache;
 	u64 qgroup_to_skip;
 	int ret = 0;
+
+	backref_cache_init(&cache, fs_info);
 
 	delayed_refs = &trans->transaction->delayed_refs;
 	qgroup_to_skip = delayed_refs->qgroup_to_skip;
@@ -2095,9 +2212,9 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 			 */
 			if (WARN_ON(!record->old_roots)) {
 				/* Search commit root to find old_roots */
-				ret = btrfs_find_all_roots(NULL, fs_info,
-						record->bytenr, 0,
-						&record->old_roots, false);
+				ret = roots_from_backrefs(NULL, fs_info,
+							  0, record,
+							  &record->old_roots);
 				if (ret < 0)
 					goto cleanup;
 			}
@@ -2107,8 +2224,8 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 			 * doesn't lock tree or delayed_refs and search current
 			 * root. It's safe inside commit_transaction().
 			 */
-			ret = btrfs_find_all_roots(trans, fs_info,
-				record->bytenr, SEQ_LAST, &new_roots, false);
+			ret = roots_from_backrefs(trans, fs_info, SEQ_LAST,
+						  record, &new_roots);
 			if (ret < 0)
 				goto cleanup;
 			if (qgroup_to_skip) {
@@ -2128,8 +2245,14 @@ cleanup:
 		new_roots = NULL;
 		rb_erase(node, &delayed_refs->dirty_extent_root);
 		kfree(record);
-
 	}
+	backref_cache_cleanup(&cache);
+
+	/* clean up and re-initialize our cache for the next transaction
+	 * XXX: does this neeed to be locked?? */
+	backref_cache_cleanup(fs_info->qgroup_backref_cache);
+	backref_cache_init(fs_info->qgroup_backref_cache, fs_info);
+
 	return ret;
 }
 
