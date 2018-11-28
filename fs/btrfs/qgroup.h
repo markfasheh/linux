@@ -45,12 +45,17 @@ struct btrfs_qgroup_extent_record {
 	struct rb_node node;
 	u64 bytenr;
 	u64 num_bytes;
+	int metadata;
+	int level; //ignored if !metadata
 	struct ulist *old_roots;
 	struct list_head list;
 	struct btrfs_trans_handle *trans;
 	struct btrfs_stack_trace trace;
 };
 
+void btrfs_init_qgroup_extent_record(struct btrfs_qgroup_extent_record *qrecord,
+				     u64 bytenr, u64 num_bytes, bool metadata,
+				     int level);
 /*
  * Qgroup reservation types:
  *
@@ -190,8 +195,9 @@ int btrfs_qgroup_trace_extent_nolock(
  * Return <0 for error, like memory allocation failure or invalid parameter
  * (NULL trans)
  */
-int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans, u64 bytenr,
-			      u64 num_bytes, gfp_t gfp_flag);
+int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans,
+			      u64 bytenr, u64 num_bytes, int tree_block,
+			      int level, gfp_t gfp_flag);
 
 /*
  * Inform qgroup to trace all leaf items of data

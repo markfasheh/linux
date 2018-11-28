@@ -38,6 +38,7 @@
 #include "compression.h"
 #include "tree-checker.h"
 #include "ref-verify.h"
+#include "backref-cache.h"
 
 #ifdef CONFIG_X86
 #include <asm/cpufeature.h>
@@ -2173,6 +2174,8 @@ static void btrfs_init_qgroup(struct btrfs_fs_info *fs_info)
 	fs_info->qgroup_ulist = NULL;
 	fs_info->qgroup_rescan_running = false;
 	mutex_init(&fs_info->qgroup_rescan_lock);
+	mutex_init(&fs_info->qgroup_backref_lock);
+	backref_cache_init(fs_info->qgroup_backref_cache, fs_info);
 }
 
 static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
@@ -2765,6 +2768,13 @@ int open_ctree(struct super_block *sb,
 	sema_init(&fs_info->uuid_tree_rescan_sem, 1);
 
 	btrfs_init_dev_replace_locks(fs_info);
+
+	fs_info->qgroup_backref_cache =
+		kzalloc(sizeof(*fs_info->qgroup_backref_cache), GFP_KERNEL);
+	if (!fs_info->qgroup_backref_cache) {
+		ret = -ENOMEM;
+		goto fail_alloc;
+	}
 	btrfs_init_qgroup(fs_info);
 
 	btrfs_init_free_cluster(&fs_info->meta_alloc_cluster);
@@ -3304,6 +3314,7 @@ fail_sb_buffer:
 	btrfs_stop_all_workers(fs_info);
 	btrfs_free_block_groups(fs_info);
 fail_alloc:
+	kfree(fs_info->qgroup_backref_cache);
 fail_iput:
 	btrfs_mapping_tree_free(&fs_info->mapping_tree);
 
@@ -3980,6 +3991,7 @@ void close_ctree(struct btrfs_fs_info *fs_info)
 	set_bit(BTRFS_FS_CLOSING_DONE, &fs_info->flags);
 
 	btrfs_free_qgroup_config(fs_info);
+	kfree(fs_info->qgroup_backref_cache);
 	ASSERT(list_empty(&fs_info->delalloc_roots));
 
 	if (percpu_counter_sum(&fs_info->delalloc_bytes)) {

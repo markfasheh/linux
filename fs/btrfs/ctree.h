@@ -1072,6 +1072,9 @@ struct btrfs_fs_info {
 	struct btrfs_work qgroup_rescan_work;
 	bool qgroup_rescan_running;	/* protected by qgroup_rescan_lock */
 
+	struct mutex qgroup_backref_lock; /* protects backref walk */
+	struct backref_cache *qgroup_backref_cache;
+
 	/* filesystem state */
 	unsigned long fs_state;
 
