@@ -372,6 +372,7 @@ static int add_prelim_ref(const struct btrfs_fs_info *fs_info,
 	ref->parent = parent;
 	ref->wanted_disk_byte = wanted_disk_byte;
 	prelim_ref_insert(fs_info, preftree, ref, sc);
+	printk("add_prelim_ref: root_id %llu parent %llu level %d count %d key for search (%llu, %u, %lld)\n", ref->root_id, ref->parent, ref->level, ref->count, ref->key_for_search.objectid, ref->key_for_search.type, ref->key_for_search.offset);
 	return extent_is_shared(sc);
 }
 
@@ -909,6 +910,9 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 		BUG_ON(!(flags & BTRFS_EXTENT_FLAG_DATA));
 	}
 
+	if (ptr >= end)
+		printk("add_inline_refs: bytenr %llu ref info_level %d exit, adding no refs\n", bytenr, *info_level);
+
 	while (ptr < end) {
 		struct btrfs_extent_inline_ref *iref;
 		u64 offset;
@@ -921,7 +925,25 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 			return -EINVAL;
 
 		offset = btrfs_extent_inline_ref_offset(leaf, iref);
-
+		{
+			char *str = "???";
+			switch (type) {
+			case BTRFS_SHARED_BLOCK_REF_KEY:
+				str = "BTRFS_SHARED_BLOCK_REF_KEY";
+				break;
+			case BTRFS_SHARED_DATA_REF_KEY:
+				str = "BTRFS_SHARED_DATA_REF_KEY";
+				break;
+			case BTRFS_TREE_BLOCK_REF_KEY:
+				str = "BTRFS_TREE_BLOCK_REF_KEY";
+				break;
+			case BTRFS_EXTENT_DATA_REF_KEY:
+				str = "BTRFS_EXTENT_DATA_REF_KEY";
+				break;
+			}
+			printk("add_inline_refs: bytenr %llu ref offset %llu "
+			       "level %d type %s\n", bytenr, offset, *info_level, str);
+		}
 		switch (type) {
 		case BTRFS_SHARED_BLOCK_REF_KEY:
 			ret = add_direct_ref(fs_info, preftrees,
@@ -994,6 +1016,7 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 	int slot;
 	struct extent_buffer *leaf;
 	struct btrfs_key key;
+	char *str = "???";
 
 	while (1) {
 		ret = btrfs_next_item(extent_root, path);
@@ -1015,8 +1038,30 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 		if (key.type > BTRFS_SHARED_DATA_REF_KEY)
 			break;
 
+//		{
+//			char *str = "???";
 		switch (key.type) {
 		case BTRFS_SHARED_BLOCK_REF_KEY:
+			str = "BTRFS_SHARED_BLOCK_REF_KEY";
+			break;
+		case BTRFS_SHARED_DATA_REF_KEY:
+			str = "BTRFS_SHARED_DATA_REF_KEY";
+			break;
+		case BTRFS_TREE_BLOCK_REF_KEY:
+			str = "BTRFS_TREE_BLOCK_REF_KEY";
+			break;
+		case BTRFS_EXTENT_DATA_REF_KEY:
+			str = "BTRFS_EXTENT_DATA_REF_KEY";
+			break;
+		}
+		printk("add_keyed_refs: bytenr %llu ref offset %llu "
+		       "info_level %d type %s\n", bytenr, key.offset, info_level, str);
+//		}
+		switch (key.type) {
+		case BTRFS_SHARED_BLOCK_REF_KEY:
+//			printk("add_keyed_refs: bytenr %llu ref offset %llu "
+//			       "level %d type %s\n", bytenr, key.offset, info_level + 1,
+//				str);
 			/* SHARED DIRECT METADATA backref */
 			ret = add_direct_ref(fs_info, preftrees,
 					     info_level + 1, key.offset,
@@ -1123,6 +1168,7 @@ int find_parent_nodes(struct btrfs_trans_handle *trans,
 		.indirect_missing_keys = PREFTREE_INIT
 	};
 
+	printk("find_parent_nodes: bytenr %llu\n", bytenr);
 	key.objectid = bytenr;
 	key.offset = (u64)-1;
 	if (btrfs_fs_incompat(fs_info, SKINNY_METADATA))
@@ -1202,6 +1248,8 @@ again:
 		leaf = path->nodes[0];
 		slot = path->slots[0];
 		btrfs_item_key_to_cpu(leaf, &key, slot);
+		printk("find_parent_nodes: bytenr: %llu key (%llu, %u, %lld)\n",
+		       bytenr, key.objectid, key.type, key.offset);
 		if (key.objectid == bytenr &&
 		    (key.type == BTRFS_EXTENT_ITEM_KEY ||
 		     key.type == BTRFS_METADATA_ITEM_KEY)) {

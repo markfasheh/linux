@@ -1565,7 +1565,8 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 			backref = build_backref_tree(NULL,
 					     fs_info->qgroup_backref_cache,
 					     &ref->key_for_search,
-					     ref->level, ref->parent,
+					     ref->level,
+					     ref->parent,
 					     (trans ? 0 : 1));
 		}
 		mutex_unlock(&fs_info->qgroup_backref_lock);
@@ -2204,6 +2205,8 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 				  node);
 
 		trace_btrfs_qgroup_account_extents(fs_info, record);
+		printk("Account extent %llu num_bytes: %llu\n", record->bytenr,
+		       record->num_bytes);
 
 		if (!ret) {
 			/*
