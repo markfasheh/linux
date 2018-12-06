@@ -1536,16 +1536,20 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 	int ret = 0;
 	struct btrfs_transaction *trans = NULL;
 	struct ulist *roots = ulist_alloc(GFP_NOFS);
-	struct ulist *refs = ulist_alloc(GFP_NOFS);
+//	struct ulist *refs = ulist_alloc(GFP_NOFS);
 	struct backref_node *backref;
-	struct preftree reftree = PREFTREE_INIT;
-	struct rb_node *node;
-	struct prelim_ref *ref;
+//	struct preftree reftree = PREFTREE_INIT;
+//	struct rb_node *node;
+//	struct prelim_ref *ref;
 	struct btrfs_key key;
 
-	if (!roots || !refs) {
+	WARN_ON(*ret_roots);
+	*ret_roots = NULL;
+
+//	if (!roots || !refs) {
+	if (!roots) {
 		ulist_free(roots);
-		ulist_free(refs);
+//		ulist_free(refs);
 		return -ENOMEM;
 	}
 	if (handle)
@@ -1558,6 +1562,7 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 			printk("ERR %d from get_tree_block_key\n", ret);
 			goto out;
 		}
+
 		mutex_lock(&fs_info->qgroup_backref_lock);
 		backref = backref_tree_search(fs_info->qgroup_backref_cache,
 					      qrecord->bytenr);
@@ -1579,6 +1584,7 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 		}
 		printk("roots_from_backrefs: bytenr %llu got backref"
 		       " %llu\n", qrecord->bytenr, backref->bytenr);
+
 		mutex_lock(&fs_info->qgroup_backref_lock);
 		backref_cache_collate_owners(backref);
 		mutex_unlock(&fs_info->qgroup_backref_lock);
@@ -1590,10 +1596,16 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 			goto out;
 		}
 	}
+
 	*ret_roots = roots;
 out:
-	ulist_free(refs);
-	return 0;
+	if (ret < 0) {
+		ulist_free(roots);
+		BUG_ON(*ret_roots);
+	}
+
+//	ulist_free(refs);
+	return ret;
 #if 0
 	down_read(&fs_info->commit_root_sem);
 	ret = find_parent_nodes(handle, fs_info, qrecord->bytenr, time_seq,
@@ -1679,7 +1691,7 @@ out:
 int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
 				   struct btrfs_qgroup_extent_record *qrecord)
 {
-	struct ulist *old_root;
+	struct ulist *old_root = NULL;
 	int ret;
 
 	printk("trace_extent_post: extent (%llu %llu) meta %d level %d old "
