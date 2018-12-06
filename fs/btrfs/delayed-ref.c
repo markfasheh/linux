@@ -530,7 +530,7 @@ static void init_delayed_ref_head(struct btrfs_delayed_ref_head *head_ref,
 				  struct btrfs_qgroup_extent_record *qrecord,
 				  u64 bytenr, u64 num_bytes, u64 ref_root,
 				  u64 reserved, int action, bool is_data,
-				  bool is_system)
+				  bool is_system, int level)
 {
 	int count_mod = 1;
 	int must_insert_reserved = 0;
@@ -587,6 +587,8 @@ static void init_delayed_ref_head(struct btrfs_delayed_ref_head *head_ref,
 
 		qrecord->bytenr = bytenr;
 		qrecord->num_bytes = num_bytes;
+		qrecord->metadata = !is_data;
+		qrecord->level = level;
 		qrecord->old_roots = NULL;
 	}
 }
@@ -752,7 +754,7 @@ int btrfs_add_delayed_tree_ref(struct btrfs_fs_info *fs_info,
 	}
 
 	init_delayed_ref_head(head_ref, record, bytenr, num_bytes,
-			      ref_root, 0, action, false, is_system);
+			      ref_root, 0, action, false, is_system, level);
 	head_ref->extent_op = extent_op;
 
 	delayed_refs = &trans->transaction->delayed_refs;
@@ -840,7 +842,7 @@ int btrfs_add_delayed_data_ref(struct btrfs_fs_info *fs_info,
 	}
 
 	init_delayed_ref_head(head_ref, record, bytenr, num_bytes, ref_root,
-			      reserved, action, true, false);
+			      reserved, action, true, false, 0);
 	head_ref->extent_op = NULL;
 
 	delayed_refs = &trans->transaction->delayed_refs;
@@ -883,7 +885,7 @@ int btrfs_add_delayed_extent_op(struct btrfs_fs_info *fs_info,
 
 	init_delayed_ref_head(head_ref, NULL, bytenr, num_bytes, 0, 0,
 			      BTRFS_UPDATE_DELAYED_HEAD, extent_op->is_data,
-			      false);
+			      false, 0);
 	head_ref->extent_op = extent_op;
 
 	delayed_refs = &trans->transaction->delayed_refs;

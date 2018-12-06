@@ -45,6 +45,8 @@ struct btrfs_qgroup_extent_record {
 	struct rb_node node;
 	u64 bytenr;
 	u64 num_bytes;
+	int metadata;
+	int level; //ignored if !metadata
 	struct ulist *old_roots;
 };
 
@@ -219,7 +221,7 @@ int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
  */
 int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans,
 		struct btrfs_fs_info *fs_info, u64 bytenr, u64 num_bytes,
-		gfp_t gfp_flag);
+		int tree_block, int level, gfp_t gfp_flag);
 
 /*
  * Inform qgroup to trace all leaf items of data

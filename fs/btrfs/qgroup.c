@@ -1503,6 +1503,30 @@ static int add_roots(struct owner_cache *cache, u64 root, void *data)
 	return 0;
 }
 
+static int get_tree_block_key(struct btrfs_fs_info *fs_info,
+			      u64 bytenr, int level, struct btrfs_key *key)
+{
+	struct extent_buffer *eb;
+
+	eb = read_tree_block(fs_info, bytenr, 0, level, NULL);
+	if (IS_ERR(eb)) {
+		return PTR_ERR(eb);
+	} else if (!extent_buffer_uptodate(eb)) {
+		free_extent_buffer(eb);
+		return -EIO;
+	}
+
+	WARN_ON(btrfs_header_level(eb) != level);
+	if (level == 0)
+		btrfs_item_key_to_cpu(eb, key, 0);
+	else
+		btrfs_node_key_to_cpu(eb, key, 0);
+
+	free_extent_buffer(eb);
+
+	return 0;
+}
+
 static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 			       struct btrfs_fs_info *fs_info,
 			       u64 time_seq,
@@ -1517,6 +1541,7 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 	struct preftree reftree = PREFTREE_INIT;
 	struct rb_node *node;
 	struct prelim_ref *ref;
+	struct btrfs_key key;
 
 	if (!roots || !refs) {
 		ulist_free(roots);
@@ -1526,6 +1551,50 @@ static int roots_from_backrefs(struct btrfs_trans_handle *handle,
 	if (handle)
 		trans = handle->transaction;
 
+	if (qrecord->metadata) {
+		ret = get_tree_block_key(fs_info, qrecord->bytenr,
+					 qrecord->level, &key);
+		if (ret) {
+			printk("ERR %d from get_tree_block_key\n", ret);
+			goto out;
+		}
+		mutex_lock(&fs_info->qgroup_backref_lock);
+		backref = backref_tree_search(fs_info->qgroup_backref_cache,
+					      qrecord->bytenr);
+		if (!backref) {
+			backref = build_backref_tree(NULL,
+					     fs_info->qgroup_backref_cache,
+					     &key,
+					     qrecord->level,
+					     qrecord->bytenr,
+					     trans ? 0 : 1);
+		}
+		mutex_unlock(&fs_info->qgroup_backref_lock);
+		if (IS_ERR_OR_NULL(backref)) {
+			ret = -EIO;
+			if (backref)
+				ret = PTR_ERR(backref);
+			printk("ERR %d from build_backref_tree\n", ret);
+			goto out;
+		}
+		printk("roots_from_backrefs: bytenr %llu got backref"
+		       " %llu\n", qrecord->bytenr, backref->bytenr);
+		mutex_lock(&fs_info->qgroup_backref_lock);
+		backref_cache_collate_owners(backref);
+		mutex_unlock(&fs_info->qgroup_backref_lock);
+
+		ret = owner_cache_iterate_owners(&backref->owners,
+						 add_roots, roots);
+		if (ret) {
+			printk("ERR %d from owner_cache_iterate_owners\n", ret);
+			goto out;
+		}
+	}
+	*ret_roots = roots;
+out:
+	ulist_free(refs);
+	return 0;
+#if 0
 	down_read(&fs_info->commit_root_sem);
 	ret = find_parent_nodes(handle, fs_info, qrecord->bytenr, time_seq,
 				refs, roots, NULL, NULL, false, &reftree);
@@ -1604,6 +1673,7 @@ out:
 	ulist_free(refs);
 	prelim_release(&reftree);
 	return ret;
+#endif
 }
 
 int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
@@ -1612,8 +1682,10 @@ int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
 	struct ulist *old_root;
 	int ret;
 
-	printk("trace_extent_post: extent (%llu %llu) old roots %p\n",
-	       qrecord->bytenr, qrecord->num_bytes, qrecord->old_roots);
+	printk("trace_extent_post: extent (%llu %llu) meta %d level %d old "
+	       "roots %p\n",
+	       qrecord->bytenr, qrecord->num_bytes, qrecord->metadata,
+	       qrecord->level, qrecord->old_roots);
 	ret = roots_from_backrefs(NULL, fs_info, 0, qrecord, &old_root);
 	if (ret < 0) {
 		fs_info->qgroup_flags |= BTRFS_QGROUP_STATUS_FLAG_INCONSISTENT;
@@ -1636,6 +1708,7 @@ int btrfs_qgroup_trace_extent_post(struct btrfs_fs_info *fs_info,
 
 int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans,
 		struct btrfs_fs_info *fs_info, u64 bytenr, u64 num_bytes,
+		int tree_block, int level,
 		gfp_t gfp_flag)
 {
 	struct btrfs_qgroup_extent_record *record;
@@ -1655,6 +1728,8 @@ int btrfs_qgroup_trace_extent(struct btrfs_trans_handle *trans,
 	record->bytenr = bytenr;
 	record->num_bytes = num_bytes;
 	record->old_roots = NULL;
+	record->metadata = tree_block;
+	record->level = level;
 
 	spin_lock(&delayed_refs->lock);
 	ret = btrfs_qgroup_trace_extent_nolock(fs_info, delayed_refs, record);
@@ -1700,7 +1775,7 @@ int btrfs_qgroup_trace_leaf_items(struct btrfs_trans_handle *trans,
 		num_bytes = btrfs_file_extent_disk_num_bytes(eb, fi);
 
 		ret = btrfs_qgroup_trace_extent(trans, fs_info, bytenr,
-						num_bytes, GFP_NOFS);
+						num_bytes, 0, 0, GFP_NOFS);
 		if (ret)
 			return ret;
 	}
@@ -1854,6 +1929,8 @@ walk_down:
 			ret = btrfs_qgroup_trace_extent(trans, fs_info,
 							child_bytenr,
 							fs_info->nodesize,
+							1,
+							btrfs_header_level(eb),
 							GFP_NOFS);
 			if (ret)
 				goto out;
@@ -2205,8 +2282,9 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 				  node);
 
 		trace_btrfs_qgroup_account_extents(fs_info, record);
-		printk("Account extent %llu num_bytes: %llu\n", record->bytenr,
-		       record->num_bytes);
+		printk("Account extent %llu num_bytes %llu meta %d level %d\n",
+		       record->bytenr, record->num_bytes, record->metadata,
+		       record->level);
 
 		if (!ret) {
 			/*
