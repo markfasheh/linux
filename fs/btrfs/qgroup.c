@@ -1464,6 +1464,27 @@ out:
 	return ret;
 }
 
+static int test_qrecord(struct btrfs_qgroup_extent_record *recordA,
+			struct btrfs_qgroup_extent_record *recordB)
+{
+	if (recordA->metadata < recordB->metadata)
+		return -1;
+	else if (recordA->metadata > recordB->metadata)
+		return 1;
+	else if (recordA->metadata) {
+		if (recordA->level < recordB->level)
+			return -1;
+		else if (recordA->level > recordB->level)
+			return 1;
+	}
+
+	if (recordA->bytenr < recordB->bytenr)
+		return -1;
+	else if (recordA->bytenr > recordB->bytenr)
+		return 1;
+	return 0;
+}
+
 int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 				struct btrfs_delayed_ref_root *delayed_refs,
 				struct btrfs_qgroup_extent_record *record)
@@ -1471,7 +1492,7 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 	struct rb_node **p = &delayed_refs->dirty_extent_root.rb_node;
 	struct rb_node *parent_node = NULL;
 	struct btrfs_qgroup_extent_record *entry;
-	u64 bytenr = record->bytenr;
+	int ret;
 
 	lockdep_assert_held(&delayed_refs->lock);
 	trace_btrfs_qgroup_trace_extent(fs_info, record);
@@ -1480,9 +1501,11 @@ int btrfs_qgroup_trace_extent_nolock(struct btrfs_fs_info *fs_info,
 		parent_node = *p;
 		entry = rb_entry(parent_node, struct btrfs_qgroup_extent_record,
 				 node);
-		if (bytenr < entry->bytenr)
+
+		ret = test_qrecord(record, entry);
+		if (ret < 0)
 			p = &(*p)->rb_left;
-		else if (bytenr > entry->bytenr)
+		else if (ret > 0)
 			p = &(*p)->rb_right;
 		else
 			return 1;
