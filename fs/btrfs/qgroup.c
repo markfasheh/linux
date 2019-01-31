@@ -1580,13 +1580,11 @@ static int find_metadata_roots(struct btrfs_transaction *trans,
 	printk("find_metadata_roots: bytenr %llu level %d key (%llu %u %llu)\n",
 	       bytenr, level, key.objectid, key.type, key.offset);
 
-	mutex_lock(&fs_info->qgroup_backref_lock);
 	backref = backref_tree_search(cache, bytenr);
 	if (!backref) {
 		backref = build_backref_tree(NULL, cache, &key, level, bytenr,
 					     trans ? 0 : 1);
 	}
-	mutex_unlock(&fs_info->qgroup_backref_lock);
 	if (IS_ERR_OR_NULL(backref)) {
 		ret = -EIO;
 		if (backref)
@@ -1597,9 +1595,7 @@ static int find_metadata_roots(struct btrfs_transaction *trans,
 	printk("find_metadata_roots: bytenr %llu found backref %llu\n", bytenr,
 	       backref->bytenr);
 
-	mutex_lock(&fs_info->qgroup_backref_lock);
 	backref_cache_collate_owners(backref);
-	mutex_unlock(&fs_info->qgroup_backref_lock);
 
 	ret = owner_cache_iterate_owners(&backref->owners, add_roots, roots);
 	if (ret)
