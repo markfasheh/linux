@@ -2477,13 +2477,11 @@ int btrfs_qgroup_account_extents(struct btrfs_trans_handle *trans)
 		/* XXX: Are we leaking new_roots? */
 	}
 
-	backref_cache_cleanup(cache);
-	kfree(cache);
-
-	/* clean up and re-initialize our cache for the next transaction
-	 * XXX: does this neeed to be locked?? */
-	backref_cache_cleanup(fs_info->qgroup_backref_cache);
-	backref_cache_init(fs_info->qgroup_backref_cache, fs_info);
+	/* Our new cache can now become our old cache */
+	mutex_lock(&fs_info->qgroup_backref_lock);
+	kfree(fs_info->qgroup_backref_cache);
+	fs_info->qgroup_backref_cache = cache;
+	mutex_unlock(&fs_info->qgroup_backref_lock);
 
 	btrfs_qgroup_destroy_extent_records(trans->transaction);
 	return ret;
