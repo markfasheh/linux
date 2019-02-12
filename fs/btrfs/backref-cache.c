@@ -1109,6 +1109,9 @@ void backref_cache_collate_owners(struct backref_node *node)
 
 	printk("Collate: bytenr %llu  RB_EMPTY_ROOT: %d  node->root: %p\n",
 	       node->bytenr,!!RB_EMPTY_ROOT(&node->owners.root), node->root);
+
+	wait_on_backref(node);
+
 	if (!RB_EMPTY_ROOT(&node->owners.root)) {
 		return;
 	}
