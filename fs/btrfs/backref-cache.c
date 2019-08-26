@@ -336,6 +336,61 @@ int find_inline_backref(struct extent_buffer *leaf, int slot,
 	return 0;
 }
 
+#define SEARCH_COMPLETE	1
+#define SEARCH_NEXT	2
+static int find_next_ref(struct btrfs_root *extent_root, u64 cur_bytenr,
+			 struct btrfs_path *path, unsigned long *ptr,
+			 unsigned long *end, struct btrfs_key *key, bool exist)
+{
+	struct extent_buffer *eb = path->nodes[0];
+	int ret;
+
+	if (*ptr >= *end) {
+		if (path->slots[0] >= btrfs_header_nritems(eb)) {
+			ret = btrfs_next_leaf(extent_root, path);
+			if (ret < 0)
+				goto out;
+			if (ret > 0)
+				return SEARCH_COMPLETE;
+			eb = path->nodes[0];
+		}
+
+		btrfs_item_key_to_cpu(eb, key, path->slots[0]);
+		if (key->objectid != cur_bytenr) {
+			WARN_ON(exist);
+			return SEARCH_COMPLETE;
+		}
+
+		if (key->type == BTRFS_EXTENT_ITEM_KEY ||
+		    key->type == BTRFS_METADATA_ITEM_KEY) {
+			ret = find_inline_backref(eb, path->slots[0],
+						  ptr, end);
+			if (ret)
+				return SEARCH_NEXT;
+		}
+	}
+
+	if (*ptr < *end) {
+		/* update key for inline back ref */
+		struct btrfs_extent_inline_ref *iref;
+		int type;
+		iref = (struct btrfs_extent_inline_ref *)(*ptr);
+		type = btrfs_get_extent_inline_ref_type(eb, iref,
+							BTRFS_REF_TYPE_BLOCK);
+		if (type == BTRFS_REF_TYPE_INVALID) {
+			ret = -EUCLEAN;
+			goto out;
+		}
+		key->type = type;
+		key->offset = btrfs_extent_inline_ref_offset(eb, iref);
+
+		WARN_ON(key->type != BTRFS_TREE_BLOCK_REF_KEY &&
+			key->type != BTRFS_SHARED_BLOCK_REF_KEY);
+	}
+	ret = 0;
+out:
+	return ret;
+}
 
 /*
  * build backref tree for a given tree block. root of the backref tree
@@ -439,52 +494,17 @@ again:
 
 	while (1) {
 		cond_resched();
+		ret = find_next_ref(rc->extent_root, cur->bytenr, path1, &ptr,
+				    &end, &key, exist != NULL);
+		if (ret < 0) {
+			err = ret;
+			goto out;
+		}
 		eb = path1->nodes[0];
-
-		if (ptr >= end) {
-			if (path1->slots[0] >= btrfs_header_nritems(eb)) {
-				ret = btrfs_next_leaf(rc->extent_root, path1);
-				if (ret < 0) {
-					err = ret;
-					goto out;
-				}
-				if (ret > 0)
-					break;
-				eb = path1->nodes[0];
-			}
-
-			btrfs_item_key_to_cpu(eb, &key, path1->slots[0]);
-			if (key.objectid != cur->bytenr) {
-				WARN_ON(exist);
-				break;
-			}
-
-			if (key.type == BTRFS_EXTENT_ITEM_KEY ||
-			    key.type == BTRFS_METADATA_ITEM_KEY) {
-				ret = find_inline_backref(eb, path1->slots[0],
-							  &ptr, &end);
-				if (ret)
-					goto next;
-			}
-		}
-
-		if (ptr < end) {
-			/* update key for inline back ref */
-			struct btrfs_extent_inline_ref *iref;
-			int type;
-			iref = (struct btrfs_extent_inline_ref *)ptr;
-			type = btrfs_get_extent_inline_ref_type(eb, iref,
-							BTRFS_REF_TYPE_BLOCK);
-			if (type == BTRFS_REF_TYPE_INVALID) {
-				err = -EUCLEAN;
-				goto out;
-			}
-			key.type = type;
-			key.offset = btrfs_extent_inline_ref_offset(eb, iref);
-
-			WARN_ON(key.type != BTRFS_TREE_BLOCK_REF_KEY &&
-				key.type != BTRFS_SHARED_BLOCK_REF_KEY);
-		}
+		if (ret == SEARCH_COMPLETE)
+			break;
+		else if (ret == SEARCH_NEXT)
+			goto next;
 
 		/*
 		 * Parent node found and matches current inline ref, no need to
