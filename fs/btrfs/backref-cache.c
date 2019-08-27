@@ -336,6 +336,51 @@ int find_inline_backref(struct extent_buffer *leaf, int slot,
 	return 0;
 }
 
+/*
+ * process useless backref nodes. backref nodes for tree leaves are
+ * deleted from the cache. backref nodes for upper level tree blocks
+ * are left in the cache to avoid unnecessary backref lookup.
+ */
+static void process_useless_backrefs(struct reloc_control *rc,
+				     struct backref_node *node,
+				     struct list_head *useless)
+{
+	struct backref_node *lower;
+	struct backref_node *upper;
+	struct backref_edge *edge;
+
+	while (!list_empty(useless)) {
+		upper = list_entry(useless->next, struct backref_node, list);
+		list_del_init(&upper->list);
+		ASSERT(list_empty(&upper->upper));
+		if (upper == node)
+			node = NULL;
+		if (upper->lowest) {
+			list_del_init(&upper->lower);
+			upper->lowest = 0;
+		}
+		while (!list_empty(&upper->lower)) {
+			edge = list_entry(upper->lower.next,
+					  struct backref_edge, list[UPPER]);
+			list_del(&edge->list[UPPER]);
+			list_del(&edge->list[LOWER]);
+			lower = edge->node[LOWER];
+			free_backref_edge(&rc->backref_cache, edge);
+
+			if (list_empty(&lower->upper))
+				list_add(&lower->list, useless);
+		}
+		__mark_block_processed(rc, upper);
+		if (upper->level > 0) {
+			list_add(&upper->list, &rc->backref_cache.detached);
+			upper->detached = 1;
+		} else {
+			rb_erase(&upper->rb_node, &rc->backref_cache.rb_root);
+			free_backref_node(&rc->backref_cache, upper);
+		}
+	}
+}
+
 #define SEARCH_COMPLETE	1
 #define SEARCH_NEXT	2
 static int find_next_ref(struct btrfs_root *extent_root, u64 cur_bytenr,
@@ -797,42 +842,9 @@ next:
 		list_for_each_entry(edge, &upper->upper, list[LOWER])
 			list_add_tail(&edge->list[UPPER], &list);
 	}
-	/*
-	 * process useless backref nodes. backref nodes for tree leaves
-	 * are deleted from the cache. backref nodes for upper level
-	 * tree blocks are left in the cache to avoid unnecessary backref
-	 * lookup.
-	 */
-	while (!list_empty(&useless)) {
-		upper = list_entry(useless.next, struct backref_node, list);
-		list_del_init(&upper->list);
-		ASSERT(list_empty(&upper->upper));
-		if (upper == node)
-			node = NULL;
-		if (upper->lowest) {
-			list_del_init(&upper->lower);
-			upper->lowest = 0;
-		}
-		while (!list_empty(&upper->lower)) {
-			edge = list_entry(upper->lower.next,
-					  struct backref_edge, list[UPPER]);
-			list_del(&edge->list[UPPER]);
-			list_del(&edge->list[LOWER]);
-			lower = edge->node[LOWER];
-			free_backref_edge(cache, edge);
 
-			if (list_empty(&lower->upper))
-				list_add(&lower->list, &useless);
-		}
-		__mark_block_processed(rc, upper);
-		if (upper->level > 0) {
-			list_add(&upper->list, &cache->detached);
-			upper->detached = 1;
-		} else {
-			rb_erase(&upper->rb_node, &cache->rb_root);
-			free_backref_node(cache, upper);
-		}
-	}
+	process_useless_backrefs(rc, node, &useless);
+
 out:
 	btrfs_free_path(path1);
 	btrfs_free_path(path2);
