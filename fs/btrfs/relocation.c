@@ -2092,8 +2092,8 @@ int relocate_tree_blocks(struct btrfs_trans_handle *trans,
 
 	/* Do tree relocation */
 	rbtree_postorder_for_each_entry_safe(block, next, blocks, rb_node) {
-		node = build_backref_tree(rc, &block->key,
-					  block->level, block->bytenr);
+		node = build_backref_tree(rc, &rc->backref_cache, &block->key,
+					  block->level, block->bytenr, 1);
 		if (IS_ERR(node)) {
 			err = PTR_ERR(node);
 			goto out;
@@ -3252,7 +3252,7 @@ static struct reloc_control *alloc_reloc_control(struct btrfs_fs_info *fs_info)
 
 	INIT_LIST_HEAD(&rc->reloc_roots);
 	INIT_LIST_HEAD(&rc->dirty_subvol_roots);
-	backref_cache_init(&rc->backref_cache);
+	backref_cache_init(&rc->backref_cache, fs_info);
 	mapping_tree_init(&rc->reloc_root_tree);
 	extent_io_tree_init(fs_info, &rc->processed_blocks,
 			    IO_TREE_RELOC_BLOCKS, NULL);
