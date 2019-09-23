@@ -408,8 +408,8 @@ static void process_useless_backrefs(struct reloc_control *rc,
 			list_add(&upper->list, &backref_cache->detached);
 			upper->detached = 1;
 		} else {
-			rb_erase(&upper->rb_node, &rc->backref_cache.rb_root);
-			free_backref_node(&rc->backref_cache, upper);
+			rb_erase(&upper->rb_node, &backref_cache->rb_root);
+			free_backref_node(backref_cache, upper);
 		}
 	}
 }
