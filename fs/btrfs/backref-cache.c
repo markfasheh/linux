@@ -47,6 +47,7 @@ void backref_cache_init(struct backref_cache *cache,
 {
 	int i;
 	cache->rb_root = RB_ROOT;
+	spin_lock_init(&cache->lock);
 	for (i = 0; i < BTRFS_MAX_LEVEL; i++) {
 		INIT_LIST_HEAD(&cache->pending[i]);
 		cache->path[i] = NULL;
@@ -55,7 +56,8 @@ void backref_cache_init(struct backref_cache *cache,
 	INIT_LIST_HEAD(&cache->detached);
 	INIT_LIST_HEAD(&cache->leaves);
 	cache->last_trans = 0ULL;
-	cache->nr_nodes = cache->nr_edges = 0;
+	atomic_set(&cache->nr_nodes, 0);
+	atomic_set(&cache->nr_edges, 0);
 	extent_io_tree_init(fs_info, &cache->processed_blocks,
 			    IO_TREE_BACKREF_CACHE, NULL);
 	cache->fs_info = fs_info;
@@ -85,18 +87,31 @@ void backref_cache_cleanup(struct backref_cache *cache)
 	ASSERT(list_empty(&cache->changed));
 	ASSERT(list_empty(&cache->detached));
 	ASSERT(RB_EMPTY_ROOT(&cache->rb_root));
-	ASSERT(!cache->nr_nodes);
-	ASSERT(!cache->nr_edges);
+	ASSERT(!atomic_read(&cache->nr_nodes));
+	ASSERT(!atomic_read(&cache->nr_edges));
+}
+
+static void wait_on_backref(struct backref_node *backref)
+{
+	int ret;
+	ret = wait_on_bit_io(&backref->in_progress, 0, TASK_UNINTERRUPTIBLE);
+	BUG_ON(ret);/* We should never get here */
 }
 
 struct backref_node *backref_tree_search(struct backref_cache *cache,
 					 u64 bytenr)
 {
+	struct backref_node *backref;
 	struct rb_node *node;
 
+	spin_lock(&cache->lock);
 	node = tree_search(&cache->rb_root, bytenr);
-	if (node)
-		return rb_entry(node, struct backref_node, rb_node);
+	spin_unlock(&cache->lock);
+	if (node) {
+		backref = rb_entry(node, struct backref_node, rb_node);
+		wait_on_backref(backref);
+		return backref;
+	}
 	return NULL;
 }
 
@@ -111,15 +126,93 @@ struct backref_node *alloc_backref_node(struct backref_cache *cache)
 		INIT_LIST_HEAD(&node->lower);
 		RB_CLEAR_NODE(&node->rb_node);
 		owner_cache_init(&node->owners);
-		cache->nr_nodes++;
+		set_bit(0, &node->in_progress);
+		atomic_inc(&cache->nr_nodes);
 	}
 	return node;
+}
+
+struct backref_node *backref_tree_insert(struct backref_cache *cache,
+					 struct backref_node *cur)
+{
+	struct backref_node *backref;
+	struct rb_node *node;
+
+	spin_lock(&cache->lock);
+	node = tree_search(&cache->rb_root, cur->bytenr);
+	if (node) {
+		if (node == &cur->rb_node) {
+			spin_unlock(&cache->lock);
+			return cur;
+		}
+		spin_unlock(&cache->lock);
+
+		free_backref_node(cache, cur);
+
+		backref = rb_entry(node, struct backref_node, rb_node);
+		wait_on_backref(backref);
+		return backref;
+	}
+	tree_insert(&cache->rb_root, cur->bytenr, &cur->rb_node);
+	spin_unlock(&cache->lock);
+
+	return cur;
+}
+
+struct backref_node *backref_tree_search_insert(struct backref_cache *cache,
+						u64 bytenr, int level)
+{
+	struct backref_node *insert = NULL;
+	struct backref_node *backref;
+	struct rb_node *node;
+
+retry:
+	spin_lock(&cache->lock);
+	node = tree_search(&cache->rb_root, bytenr);
+	if (!node) {
+		if (insert) {
+			tree_insert(&cache->rb_root, insert->bytenr,
+				    &insert->rb_node);
+			spin_unlock(&cache->lock);
+			return insert;
+		}
+		spin_unlock(&cache->lock);
+
+		insert = alloc_backref_node(cache);
+		if (!insert)
+			return NULL;
+
+		insert->bytenr = bytenr;
+		insert->level = level;
+		goto retry;
+	}
+	spin_unlock(&cache->lock);
+
+	free_backref_node(cache, insert);
+
+	backref = rb_entry(node, struct backref_node, rb_node);
+	wait_on_backref(backref);
+
+	return backref;
+}
+
+static void maybe_unlock_backref(struct backref_node *node)
+{
+	/*
+	 * If we always wait on the lock bit, and
+	 * the bit is never set again after being cleared, then a set
+	 * bit here means we own the lock
+	 */
+	if (test_bit(0, &node->in_progress)) {
+		node->complete = 1;
+		clear_and_wake_up_bit(0, &node->in_progress);
+	}
 }
 
 void free_backref_node(struct backref_cache *cache, struct backref_node *node)
 {
 	if (node) {
-		cache->nr_nodes--;
+		atomic_dec(&cache->nr_nodes);
 		kfree(node);
 	}
 }
@@ -130,14 +223,14 @@ struct backref_edge *alloc_backref_edge(struct backref_cache *cache)
 
 	edge = kzalloc(sizeof(*edge), GFP_NOFS);
 	if (edge)
-		cache->nr_edges++;
+		atomic_inc(&cache->nr_edges);
 	return edge;
 }
 
 void free_backref_edge(struct backref_cache *cache, struct backref_edge *edge)
 {
 	if (edge) {
-		cache->nr_edges--;
+		atomic_dec(&cache->nr_edges);
 		kfree(edge);
 	}
 }
@@ -537,6 +630,8 @@ struct backref_node *build_backref_tree(struct reloc_control *rc,
 		goto out;
 	}
 
+	ASSERT(!backref_tree_search(cache, bytenr));
+
 	node->bytenr = bytenr;
 	node->level = level;
 	node->lowest = 1;
@@ -550,6 +645,16 @@ again:
 	key.type = BTRFS_METADATA_ITEM_KEY;
 	key.offset = (u64)-1;
 
+	cur = backref_tree_insert(cache, cur);
+	/* Do we make node=cur here? */
+	if (cur->complete) {
+		/*
+		 * We have already cache backrefs for this block and
+		 * refs of those refs, etc
+		 */
+		goto next_block;
+	}
+
 	path1->search_commit_root = search_commit_root;
 	path1->skip_locking = search_commit_root;
 	ret = btrfs_search_slot(NULL, extent_root, &key, path1, 0, 0);
@@ -562,7 +667,7 @@ again:
 
 	path1->slots[0]--;
 
-	WARN_ON(cur->checked);
+	WARN_ON(!keep_nodes && cur->checked);
 	if (!list_empty(&cur->upper)) {
 		/*
 		 * the backref was added previously when processing
@@ -623,7 +728,8 @@ again:
 				if (!keep_nodes) {
 					root = find_reloc_root(rc, cur->bytenr);
 					ASSERT(root);
-					cur->root = root;
+					if (!cur->complete)
+						cur->root = root;
 				}
 				break;
 			}
@@ -633,31 +739,30 @@ again:
 				err = -ENOMEM;
 				goto out;
 			}
-			rb_node = tree_search(&cache->rb_root, key.offset);
-			if (!rb_node) {
-				upper = alloc_backref_node(cache);
-				if (!upper) {
-					free_backref_edge(cache, edge);
-					err = -ENOMEM;
-					goto out;
-				}
-				upper->bytenr = key.offset;
-				upper->level = cur->level + 1;
+			upper = backref_tree_search_insert(cache, key.offset,
+							   cur->level + 1);
+			if (!upper) {
+				err = -ENOMEM;
+				goto out;
+			}
+			if (!upper->complete) {
 				/*
-				 *  backrefs for the upper level block isn't
-				 *  cached, add the block to pending list
+				 * We have allocated the node, add it
+				 * to our list so that we check it
+				 * later
 				 */
 				list_add_tail(&edge->list[UPPER], &list);
 			} else {
-				upper = rb_entry(rb_node, struct backref_node,
-						 rb_node);
+				rb_node = &upper->rb_node;
 				ASSERT(upper->checked);
 				INIT_LIST_HEAD(&edge->list[UPPER]);
 			}
-			list_add_tail(&edge->list[LOWER], &cur->upper);
+
 			edge->node[LOWER] = cur;
 			edge->node[UPPER] = upper;
-
+			spin_lock(&cache->lock);
+			list_add_tail(&edge->list[LOWER], &cur->upper);
+			spin_unlock(&cache->lock);
 			goto next;
 		} else if (unlikely(key.type == BTRFS_EXTENT_REF_V0_KEY)) {
 			err = -EINVAL;
@@ -685,7 +790,7 @@ again:
 		       root, root ? root->root_key.objectid : 0ULL, key.objectid, key.type, key.offset,
 		       should_ignore_root(root));
 
-		if (!test_bit(BTRFS_ROOT_REF_COWS, &root->state))
+		if (!cur->complete && !test_bit(BTRFS_ROOT_REF_COWS, &root->state))
 			cur->cowonly = 1;
 
 		if (btrfs_root_level(&root->root_item) == cur->level) {
@@ -694,10 +799,12 @@ again:
 				ASSERT(root->commit_root->start == cur->bytenr);
 			else
 				ASSERT(root->node->start == cur->bytenr);
-			if (should_ignore_root(root))
-				list_add(&cur->list, &useless);
-			else
-				cur->root = root;
+			if (!cur->complete) {
+				if (should_ignore_root(root))
+					list_add(&cur->list, &useless);
+				else
+					cur->root = root;
+			}
 			break;
 		}
 
@@ -741,10 +848,29 @@ again:
 					ASSERT(root->commit_root->start == lower->bytenr);
 				else
 					ASSERT(root->node->start == lower->bytenr);
-				if (should_ignore_root(root))
-					list_add(&lower->list, &useless);
-				else
-					lower->root = root;
+				if (!lower->complete) {
+					if (should_ignore_root(root))
+						list_add(&lower->list, &useless);
+					else
+						lower->root = root;
+					break;
+				}
+			}
+
+			eb = path2->nodes[level];
+			upper = backref_tree_search_insert(cache, eb->start,
+							   lower->level + 1);
+			if (!upper) {
+				err = -ENOMEM;
+				goto out;
+			}
+
+			if (lower->complete && upper->complete) {
+				rb_node = &upper->rb_node;
+				ASSERT(upper->checked);
+				/* XXX: What to do here? */
+				if (!upper->owner)
+					upper->owner = btrfs_header_owner(eb);
 				break;
 			}
 
@@ -754,62 +880,42 @@ again:
 				goto out;
 			}
 
-			eb = path2->nodes[level];
-			rb_node = tree_search(&cache->rb_root, eb->start);
-			if (!rb_node) {
-				upper = alloc_backref_node(cache);
-				if (!upper) {
-					free_backref_edge(cache, edge);
-					err = -ENOMEM;
-					goto out;
-				}
-				upper->bytenr = eb->start;
-				upper->owner = btrfs_header_owner(eb);
-				upper->level = lower->level + 1;
-				if (!test_bit(BTRFS_ROOT_REF_COWS,
-					      &root->state))
-					upper->cowonly = 1;
+			upper->owner = btrfs_header_owner(eb);
+			if (!test_bit(BTRFS_ROOT_REF_COWS,
+				      &root->state))
+				upper->cowonly = 1;
 
-				if (btrfs_root_level(&root->root_item) == upper->level &&
-				    !should_ignore_root(root))
-					upper->root = root;
+			if (btrfs_root_level(&root->root_item) == upper->level
+			    && !should_ignore_root(root))
+				upper->root = root;
 
-				/*
-				 * if we know the block isn't shared
-				 * we can void checking its backrefs.
-				 */
-				if (btrfs_block_can_be_shared(root, eb))
-					upper->checked = 0;
-				else
-					upper->checked = 1;
+			/*
+			 * if we know the block isn't shared
+			 * we can void checking its backrefs.
+			 */
+			if (btrfs_block_can_be_shared(root, eb))
+				upper->checked = 0;
+			else
+				upper->checked = 1;
 
-				/*
-				 * add the block to pending list if we
-				 * need check its backrefs, we only do this once
-				 * while walking up a tree as we will catch
-				 * anything else later on.
-				 */
-				if (!upper->checked && need_check) {
-					need_check = false;
-					list_add_tail(&edge->list[UPPER],
-						      &list);
-				} else {
-					if (upper->checked)
-						need_check = true;
-					INIT_LIST_HEAD(&edge->list[UPPER]);
-				}
+			/*
+			 * add the block to pending list if we
+			 * need check its backrefs, we only do this once
+			 * while walking up a tree as we will catch
+			 * anything else later on.
+			 */
+			if (!upper->checked && need_check) {
+				need_check = false;
+				list_add_tail(&edge->list[UPPER], &list);
 			} else {
-				upper = rb_entry(rb_node, struct backref_node,
-						 rb_node);
-				ASSERT(upper->checked);
+				if (upper->checked)
+					need_check = true;
 				INIT_LIST_HEAD(&edge->list[UPPER]);
-				if (!upper->owner)
-					upper->owner = btrfs_header_owner(eb);
 			}
+
 			list_add_tail(&edge->list[LOWER], &lower->upper);
 			edge->node[LOWER] = lower;
 			edge->node[UPPER] = upper;
-
 			if (rb_node)
 				break;
 			lower = upper;
@@ -833,11 +939,13 @@ next:
 	cur->checked = 1;
 	WARN_ON(exist);
 
+next_block:
 	/* the pending list isn't empty, take the first block to process */
-	if (!list_empty(&list)) {
+	while (!list_empty(&list)) {
 		edge = list_entry(list.next, struct backref_edge, list[UPPER]);
 		list_del_init(&edge->list[UPPER]);
 		cur = edge->node[UPPER];
+		WARN_ON(cur->checked || cur->complete);
 		goto again;
 	}
 
@@ -848,11 +956,9 @@ next:
 	ASSERT(node->checked);
 	cowonly = node->cowonly;
 	if (!cowonly) {
-		rb_node = tree_insert(&cache->rb_root, node->bytenr,
-				      &node->rb_node);
-		if (rb_node)
-			backref_tree_panic(rb_node, -EEXIST, node->bytenr);
+		node = backref_tree_insert(cache, node);
 		list_add_tail(&node->lower, &cache->leaves);
+		node->uppers_complete = 1;
 	}
 
 	list_for_each_entry(edge, &node->upper, list[LOWER])
@@ -868,17 +974,17 @@ next:
 			free_backref_edge(cache, edge);
 			if (list_empty(&lower->upper))
 				list_add(&lower->list, &useless);
-			continue;
+			goto unlock_next;
 		}
 
-		if (!RB_EMPTY_NODE(&upper->rb_node)) {
+		if (!upper->uppers_complete && !RB_EMPTY_NODE(&upper->rb_node)) {
 			if (upper->lowest) {
 				list_del_init(&upper->lower);
 				upper->lowest = 0;
 			}
 
 			list_add_tail(&edge->list[UPPER], &upper->lower);
-			continue;
+			goto unlock_next;
 		}
 
 		if (!upper->checked) {
@@ -896,19 +1002,17 @@ next:
 			goto out;
 		}
 
-		if (!cowonly) {
-			rb_node = tree_insert(&cache->rb_root, upper->bytenr,
-					      &upper->rb_node);
-			if (rb_node)
-				backref_tree_panic(rb_node, -EEXIST,
-						   upper->bytenr);
-		}
+		if (!cowonly)
+			upper->uppers_complete = 1;
 
 		list_add_tail(&edge->list[UPPER], &upper->lower);
 
 		list_for_each_entry(edge, &upper->upper, list[LOWER])
 			list_add_tail(&edge->list[UPPER], &list);
+unlock_next:
+		maybe_unlock_backref(upper);
 	}
+	maybe_unlock_backref(node);
 
 	process_useless_backrefs(rc, cache, fs_info, processed_blocks, node,
 				 &useless);

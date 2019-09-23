@@ -50,8 +50,14 @@ struct backref_node {
 	 * backref node.
 	 */
 	unsigned int detached:1;
+	/*
+	 * The node is mostly readonly at this point.
+	 */
+	unsigned int complete:1;
+	unsigned int uppers_complete:1;
 
 	struct owner_cache owners;
+	unsigned long in_progress;
 };
 
 /*
@@ -68,6 +74,7 @@ struct backref_edge {
 struct backref_cache {
 	/* red black tree of all backref nodes in the cache */
 	struct rb_root rb_root;
+	spinlock_t lock;
 	/* for passing backref nodes to btrfs_reloc_cow_block */
 	struct backref_node *path[BTRFS_MAX_LEVEL];
 	/*
@@ -85,8 +92,8 @@ struct backref_cache {
 
 	u64 last_trans;
 
-	int nr_nodes;
-	int nr_edges;
+	atomic_t nr_nodes;
+	atomic_t nr_edges;
 
 	struct extent_io_tree processed_blocks;
 	struct btrfs_fs_info *fs_info;
